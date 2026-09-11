@@ -11,7 +11,7 @@
 --   2) الملف **قابل لإعادة التشغيل** (Idempotent): كل عبارة محميّة بـ IF NOT EXISTS
 --      أو DROP IF EXISTS، فتشغيله مرة واحدة أو عشر مرات يعطي نفس النتيجة.
 --
---   3) اسم كل جدول جديد يبدأ بـ **Edu_** ثم اسم الجدول:  Edu_Users، Edu_Students ...
+--   3) اسم كل جدول جديد يبدأ بـ **Edu_** ثم اسم الجدول.
 --
 --   4) يعمل الآن على **Supabase (PostgreSQL)**، ونسخة **SQL Server** جاهزة في
 --      آخر الملف (مُعلَّقة) للانتقال المستقبلي إلى سيرفر الشركة.
@@ -32,20 +32,30 @@
 
 
 -- ============================================================================
---  1) Edu_Users — موظفو المنصة (المدرسون، المشرفون، المديرون، الأونر)
+--  أعمدة الحساب المشتركة (مكرّرة نصًّا في كل جدول حساب: Users / Students / Parents)
 -- ============================================================================
 --
---  role          : 0 = مدرس | 1 = مشرف | 2 = مدير | 3 = أونر
---                  (يبدأ من 0 للمدرس ويزيد رقمًا مع كل دور أعلى)
---  password      : تُخزَّن **مُجزَّأة (hashed)** ولا يُخزَّن النص الصريح أبدًا.
---                  التجزئة تتم في طبقة التطبيق (bcrypt / PBKDF2) لأن SQL Server
+--  email         : البريد الإلكتروني — فريد، ويُخزَّن بحروف صغيرة (lowercase)
+--  password      : **هاش** كلمة المرور — لا يُخزَّن النص الصريح أبدًا.
+--                  التجزئة في طبقة التطبيق (bcrypt / PBKDF2) لأن SQL Server
 --                  لا يملك دوال تجزئة مكافئة لـ pgcrypto.
 --  token         : توكن الدخول الحالي — NULL يعني لا توجد جلسة فعّالة
 --  states        : 0 = الحساب غير ظاهر للناس | 1 = ظاهر
 --  access        : 0 = غير مفعّل، لا يستطيع الدخول للمنصة إطلاقًا | 1 = مفعّل
---  img_url       : رابط صورة المستخدم إن وُجدت (NULL = لا توجد صورة)
---  notifications : هل إنشاء هذا المستخدم **أُرسل كإشعار للكل** أم لا
+--  img_url       : رابط صورة الحساب إن وُجدت — NULL يعني لا توجد صورة
+--  notifications : هل إنشاء هذا الحساب **أُرسل كإشعار للكل** أم لا
 --                  0 = أُنشئ ولم يُرسل إشعار للكل | 1 = أُرسل إشعار للكل
+--  created_at/updated_at : وupdated_at يُحدَّث تلقائيًا بتريجر
+--
+-- ============================================================================
+
+
+-- ============================================================================
+--  1) Edu_Users — موظفو المنصة (المدرسون، المشرفون، المديرون، الأونر)
+-- ============================================================================
+--
+--  role : 0 = مدرس | 1 = مشرف | 2 = مدير | 3 = أونر
+--         (يبدأ من 0 للمدرس ويزيد رقمًا مع كل دور أعلى)
 --
 -- ============================================================================
 
@@ -71,52 +81,18 @@ CREATE TABLE IF NOT EXISTS "Edu_Users" (
 );
 
 COMMENT ON TABLE  "Edu_Users"               IS 'موظفو المنصة: مدرس، مشرف، مدير، أونر';
-COMMENT ON COLUMN "Edu_Users".email         IS 'البريد الإلكتروني — يُخزَّن بحروف صغيرة (lowercase)';
-COMMENT ON COLUMN "Edu_Users".password      IS 'هاش كلمة المرور (bcrypt/PBKDF2) — لا يُخزَّن النص الصريح';
 COMMENT ON COLUMN "Edu_Users".role          IS '0=مدرس, 1=مشرف, 2=مدير, 3=أونر';
-COMMENT ON COLUMN "Edu_Users".token         IS 'توكن الدخول الحالي — NULL إذا لا توجد جلسة';
-COMMENT ON COLUMN "Edu_Users".states        IS '0=غير ظاهر للناس, 1=ظاهر';
-COMMENT ON COLUMN "Edu_Users".access        IS '0=غير مفعّل (لا يمكنه الدخول), 1=مفعّل';
-COMMENT ON COLUMN "Edu_Users".img_url       IS 'رابط صورة المستخدم إن وُجدت — NULL إذا لا توجد صورة';
 COMMENT ON COLUMN "Edu_Users".notifications IS 'هل إنشاء هذا المستخدم أُرسل كإشعار للكل: 0=لا, 1=نعم';
-COMMENT ON COLUMN "Edu_Users".created_at    IS 'تاريخ الإنشاء';
-COMMENT ON COLUMN "Edu_Users".updated_at    IS 'تاريخ آخر تعديل (يُحدَّث تلقائيًا)';
 
--- فهارس: البحث بالتوكن (تسجيل الدخول بكل طلب) وبالدور (تقارير وتصفية)
 CREATE INDEX IF NOT EXISTS "ix_Edu_Users_token" ON "Edu_Users" (token);
 CREATE INDEX IF NOT EXISTS "ix_Edu_Users_role"  ON "Edu_Users" (role);
-
--- تحديث updated_at تلقائيًا عند أي تعديل على الصف (دالة عامة تُستخدم لكل الجداول)
-CREATE OR REPLACE FUNCTION "Edu_SetUpdatedAt"() RETURNS trigger AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS "trg_Edu_Users_updated_at" ON "Edu_Users";
-CREATE TRIGGER "trg_Edu_Users_updated_at"
-    BEFORE UPDATE ON "Edu_Users"
-    FOR EACH ROW
-    EXECUTE FUNCTION "Edu_SetUpdatedAt"();
 
 
 -- ============================================================================
 --  2) Edu_Students — الطلاب
 -- ============================================================================
 --
---  لا يوجد عمود role: كل صف هنا طالب. (ولي الأمر سيأتي في جدول مستقل لاحقًا.)
---
---  password      : هاش كلمة المرور (نفس أسلوب Edu_Users)
---  token         : توكن الدخول الحالي — NULL يعني لا توجد جلسة فعّالة
---  states        : 0 = الحساب غير ظاهر للناس | 1 = ظاهر
---  access        : 0 = غير مفعّل، لا يستطيع الدخول للمنصة إطلاقًا | 1 = مفعّل
---  img_url       : رابط صورة الطالب إن وُجدت (NULL = لا توجد صورة)
---  notifications : هل إنشاء هذا الطالب **أُرسل كإشعار للكل** أم لا
---                  0 = أُنشئ ولم يُرسل إشعار للكل | 1 = أُرسل إشعار للكل
---
---  ⚠️ تمييز البريد: فريد داخل جدول الطلاب فقط. هل يُمنع نفس البريد من أن يكون
---     مدرسًا وطالبًا في نفس الوقت؟ (سؤال مفتوح لم يُحسم بعد.)
+--  لا يوجد عمود role: كل صف هنا طالب.
 --
 -- ============================================================================
 
@@ -140,27 +116,135 @@ CREATE TABLE IF NOT EXISTS "Edu_Students" (
 );
 
 COMMENT ON TABLE  "Edu_Students"               IS 'طلاب المنصة';
-COMMENT ON COLUMN "Edu_Students".email         IS 'البريد الإلكتروني — يُخزَّن بحروف صغيرة (lowercase)';
-COMMENT ON COLUMN "Edu_Students".password      IS 'هاش كلمة المرور (bcrypt/PBKDF2) — لا يُخزَّن النص الصريح';
-COMMENT ON COLUMN "Edu_Students".token         IS 'توكن الدخول الحالي — NULL إذا لا توجد جلسة';
-COMMENT ON COLUMN "Edu_Students".states        IS '0=غير ظاهر للناس, 1=ظاهر';
-COMMENT ON COLUMN "Edu_Students".access        IS '0=غير مفعّل (لا يمكنه الدخول), 1=مفعّل';
-COMMENT ON COLUMN "Edu_Students".img_url       IS 'رابط صورة الطالب إن وُجدت — NULL إذا لا توجد صورة';
 COMMENT ON COLUMN "Edu_Students".notifications IS 'هل إنشاء هذا الطالب أُرسل كإشعار للكل: 0=لا, 1=نعم';
-COMMENT ON COLUMN "Edu_Students".created_at    IS 'تاريخ الإنشاء';
-COMMENT ON COLUMN "Edu_Students".updated_at    IS 'تاريخ آخر تعديل (يُحدَّث تلقائيًا)';
 
 CREATE INDEX IF NOT EXISTS "ix_Edu_Students_token" ON "Edu_Students" (token);
+
+
+-- ============================================================================
+--  3) Edu_Parents — أولياء الأمور
+-- ============================================================================
+--
+--  نفس أعمدة Edu_Students تمامًا (بدون role).
+--
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "Edu_Parents" (
+    id            BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    email         VARCHAR(255) NOT NULL,
+    password      VARCHAR(255) NOT NULL,
+    token         TEXT,
+    states        SMALLINT     NOT NULL DEFAULT 0,
+    access        SMALLINT     NOT NULL DEFAULT 0,
+    img_url       TEXT,
+    notifications SMALLINT     NOT NULL DEFAULT 0,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_parents               PRIMARY KEY (id),
+    CONSTRAINT uq_edu_parents_email         UNIQUE (email),
+    CONSTRAINT ck_edu_parents_states        CHECK (states IN (0, 1)),
+    CONSTRAINT ck_edu_parents_access        CHECK (access IN (0, 1)),
+    CONSTRAINT ck_edu_parents_notifications CHECK (notifications IN (0, 1))
+);
+
+COMMENT ON TABLE  "Edu_Parents"               IS 'أولياء أمور الطلاب';
+COMMENT ON COLUMN "Edu_Parents".notifications IS 'هل إنشاء ولي الأمر أُرسل كإشعار للكل: 0=لا, 1=نعم';
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_Parents_token" ON "Edu_Parents" (token);
+
+
+-- ============================================================================
+--  4) Edu_StudentParents — جدول الربط بين الطالب وولي الأمر (علاقة متعدد لمتعدد)
+-- ============================================================================
+--
+--  لماذا جدول منفصل؟ لأن العلاقة **متعدد لمتعدد**:
+--     • ولي أمر واحد قد يكون له أكثر من طالب (أخوان على المنصة)
+--     • الطالب الواحد قد يكون له أكثر من ولي أمر (الأب والأم مثلًا)
+--  ولو وضعنا parent_id داخل Edu_Students لقبلنا ولي أمر واحد فقط، ولو وضعنا
+--  student_id داخل Edu_Parents لقبلنا طالبًا واحدًا فقط.
+--
+--  relation   : صلة القرابة بين ولي الأمر والطالب
+--               0 = أب | 1 = أم | 2 = وصي / ولي أمر | 3 = أخرى
+--  is_primary : 0 = ولي أمر عادي | 1 = **ولي الأمر الأساسي** (أول من يُتواصل معه)
+--               ومقيّد بفهرس فريد جزئي: **ولي أمر أساسي واحد فقط لكل طالب**
+--  states     : 0 = الرابط موقوف (لا يُحتسب) | 1 = فعّال
+--               لاحظ: الافتراضي هنا **1** بخلاف جداول الحسابات (افتراضيها 0)،
+--               لأن الرابط يُنشئه المشرف فيكون فعّالًا فورًا.
+--
+--  ⚠️ لا يوجد عمود notifications هنا عن قصد: الإنشاء هنا ربطٌ بين سجلين
+--     وليس حدثًا يُعلَن للكل. (لو أردت العمود للتوحيد، قوله.)
+--
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "Edu_StudentParents" (
+    id         BIGINT      GENERATED BY DEFAULT AS IDENTITY,
+    student_id BIGINT      NOT NULL,
+    parent_id  BIGINT      NOT NULL,
+    relation   SMALLINT    NOT NULL DEFAULT 0,
+    is_primary SMALLINT    NOT NULL DEFAULT 0,
+    states     SMALLINT    NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_student_parents          PRIMARY KEY (id),
+    CONSTRAINT fk_edu_student_parents_student  FOREIGN KEY (student_id) REFERENCES "Edu_Students" (id) ON DELETE CASCADE,
+    CONSTRAINT fk_edu_student_parents_parent   FOREIGN KEY (parent_id)  REFERENCES "Edu_Parents" (id)  ON DELETE CASCADE,
+    CONSTRAINT uq_edu_student_parents_pair     UNIQUE (student_id, parent_id),
+    CONSTRAINT ck_edu_student_parents_relation CHECK (relation IN (0, 1, 2, 3)),
+    CONSTRAINT ck_edu_student_parents_primary  CHECK (is_primary IN (0, 1)),
+    CONSTRAINT ck_edu_student_parents_states   CHECK (states IN (0, 1))
+);
+
+COMMENT ON TABLE  "Edu_StudentParents"            IS 'ربط الطلاب بأولياء أمورهم (متعدد لمتعدد)';
+COMMENT ON COLUMN "Edu_StudentParents".relation   IS '0=أب, 1=أم, 2=وصي/ولي أمر, 3=أخرى';
+COMMENT ON COLUMN "Edu_StudentParents".is_primary IS '1 = ولي الأمر الأساسي (واحد فقط لكل طالب)';
+COMMENT ON COLUMN "Edu_StudentParents".states     IS '0=الرابط موقوف, 1=فعّال';
+
+-- فهارس الاتجاهين: من الطالب لأولياء أمره، ومن ولي الأمر لأبنائه
+CREATE INDEX IF NOT EXISTS "ix_Edu_StudentParents_student" ON "Edu_StudentParents" (student_id);
+CREATE INDEX IF NOT EXISTS "ix_Edu_StudentParents_parent"  ON "Edu_StudentParents" (parent_id);
+
+-- ولي أمر أساسي واحد فقط لكل طالب (فهرس فريد جزئي — مدعوم في المحرّكين)
+CREATE UNIQUE INDEX IF NOT EXISTS "ux_Edu_StudentParents_one_primary"
+    ON "Edu_StudentParents" (student_id)
+    WHERE is_primary = 1;
+
+
+-- ============================================================================
+--  دالة تحديث updated_at (عامة لكل الجداول)
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION "Edu_SetUpdatedAt"() RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS "trg_Edu_Users_updated_at" ON "Edu_Users";
+CREATE TRIGGER "trg_Edu_Users_updated_at"
+    BEFORE UPDATE ON "Edu_Users"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
 
 DROP TRIGGER IF EXISTS "trg_Edu_Students_updated_at" ON "Edu_Students";
 CREATE TRIGGER "trg_Edu_Students_updated_at"
     BEFORE UPDATE ON "Edu_Students"
-    FOR EACH ROW
-    EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+DROP TRIGGER IF EXISTS "trg_Edu_Parents_updated_at" ON "Edu_Parents";
+CREATE TRIGGER "trg_Edu_Parents_updated_at"
+    BEFORE UPDATE ON "Edu_Parents"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+DROP TRIGGER IF EXISTS "trg_Edu_StudentParents_updated_at" ON "Edu_StudentParents";
+CREATE TRIGGER "trg_Edu_StudentParents_updated_at"
+    BEFORE UPDATE ON "Edu_StudentParents"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
 
 
 -- ============================================================================
---  3) إضافات جديدة (كل تعديل قادم يُضاف هنا بالترتيب)
+--  5) إضافات جديدة (كل تعديل قادم يُضاف هنا بالترتيب)
 -- ============================================================================
 --
 --  اكتب الإضافة بنفس النمط:
@@ -177,7 +261,6 @@ CREATE TRIGGER "trg_Edu_Students_updated_at"
 --  لقواعد بيانات أُنشئت قبل هذا التعديل.
 -- ----------------------------------------------------------------------------
 ALTER TABLE "Edu_Users" ADD COLUMN IF NOT EXISTS img_url TEXT;
-COMMENT ON COLUMN "Edu_Users".img_url IS 'رابط صورة المستخدم إن وُجدت — NULL إذا لا توجد صورة';
 
 -- ============================================================================
 
@@ -196,7 +279,7 @@ COMMENT ON COLUMN "Edu_Users".img_url IS 'رابط صورة المستخدم إ�
 --     • القيم الافتراضية : CONSTRAINT ... DEFAULT بدل DEFAULT المضمّن
 --     • حماية الإنشاء    : IF OBJECT_ID(...) IS NULL بدل CREATE TABLE IF NOT EXISTS
 --     • إضافة عمود       : IF COL_LENGTH(...) IS NULL بدل ADD COLUMN IF NOT EXISTS
---     • تحديث updated_at : تريجر AFTER UPDATE   بدل تريجر BEFORE UPDATE
+--     • تحديث updated_at : تريجر AFTER UPDATE لكل جدول بدل تريجر BEFORE UPDATE
 --          (وكل ما عدا ذلك — القيود والفهارس وأسماء الأعمدة — متطابق)
 -- ============================================================================
 -- ============================================================================
@@ -268,36 +351,109 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Students_token' AN
     CREATE INDEX ix_Edu_Students_token ON Edu_Students (token);
 GO
 
--- تحديث updated_at تلقائيًا لكل جدول (في SQL Server تريجر AFTER UPDATE لكل جدول)
-IF OBJECT_ID('trg_Edu_Users_updated_at', 'TR') IS NOT NULL
-    DROP TRIGGER trg_Edu_Users_updated_at;
-GO
-CREATE TRIGGER trg_Edu_Users_updated_at
-ON Edu_Users
-AFTER UPDATE
-AS
+-- ---- Edu_Parents ----
+IF OBJECT_ID('Edu_Parents', 'U') IS NULL
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE u
-       SET u.updated_at = SYSUTCDATETIME()
-      FROM Edu_Users AS u
-     INNER JOIN inserted AS i ON i.id = u.id;
+    CREATE TABLE Edu_Parents (
+        id            BIGINT        IDENTITY(1,1) NOT NULL,
+        email         NVARCHAR(255) NOT NULL,
+        password      NVARCHAR(255) NOT NULL,
+        token         NVARCHAR(MAX) NULL,
+        states        SMALLINT      NOT NULL CONSTRAINT df_edu_parents_states        DEFAULT 0,
+        access        SMALLINT      NOT NULL CONSTRAINT df_edu_parents_access        DEFAULT 0,
+        img_url       NVARCHAR(MAX) NULL,
+        notifications SMALLINT      NOT NULL CONSTRAINT df_edu_parents_notifications DEFAULT 0,
+        created_at    DATETIME2     NOT NULL CONSTRAINT df_edu_parents_created_at    DEFAULT SYSUTCDATETIME(),
+        updated_at    DATETIME2     NOT NULL CONSTRAINT df_edu_parents_updated_at    DEFAULT SYSUTCDATETIME(),
+
+        CONSTRAINT pk_edu_parents               PRIMARY KEY (id),
+        CONSTRAINT uq_edu_parents_email         UNIQUE (email),
+        CONSTRAINT ck_edu_parents_states        CHECK (states IN (0, 1)),
+        CONSTRAINT ck_edu_parents_access        CHECK (access IN (0, 1)),
+        CONSTRAINT ck_edu_parents_notifications CHECK (notifications IN (0, 1))
+    );
 END
 GO
 
-IF OBJECT_ID('trg_Edu_Students_updated_at', 'TR') IS NOT NULL
-    DROP TRIGGER trg_Edu_Students_updated_at;
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Parents_token' AND object_id = OBJECT_ID('Edu_Parents'))
+    CREATE INDEX ix_Edu_Parents_token ON Edu_Parents (token);
 GO
-CREATE TRIGGER trg_Edu_Students_updated_at
-ON Edu_Students
-AFTER UPDATE
-AS
+
+-- ---- Edu_StudentParents ----
+IF OBJECT_ID('Edu_StudentParents', 'U') IS NULL
+BEGIN
+    CREATE TABLE Edu_StudentParents (
+        id         BIGINT      IDENTITY(1,1) NOT NULL,
+        student_id BIGINT      NOT NULL,
+        parent_id  BIGINT      NOT NULL,
+        relation   SMALLINT    NOT NULL CONSTRAINT df_edu_student_parents_relation   DEFAULT 0,
+        is_primary SMALLINT    NOT NULL CONSTRAINT df_edu_student_parents_is_primary DEFAULT 0,
+        states     SMALLINT    NOT NULL CONSTRAINT df_edu_student_parents_states     DEFAULT 1,
+        created_at DATETIME2   NOT NULL CONSTRAINT df_edu_student_parents_created_at DEFAULT SYSUTCDATETIME(),
+        updated_at DATETIME2   NOT NULL CONSTRAINT df_edu_student_parents_updated_at DEFAULT SYSUTCDATETIME(),
+
+        CONSTRAINT pk_edu_student_parents          PRIMARY KEY (id),
+        CONSTRAINT fk_edu_student_parents_student  FOREIGN KEY (student_id) REFERENCES Edu_Students (id) ON DELETE CASCADE,
+        CONSTRAINT fk_edu_student_parents_parent   FOREIGN KEY (parent_id)  REFERENCES Edu_Parents (id)  ON DELETE CASCADE,
+        CONSTRAINT uq_edu_student_parents_pair     UNIQUE (student_id, parent_id),
+        CONSTRAINT ck_edu_student_parents_relation CHECK (relation IN (0, 1, 2, 3)),
+        CONSTRAINT ck_edu_student_parents_primary  CHECK (is_primary IN (0, 1)),
+        CONSTRAINT ck_edu_student_parents_states   CHECK (states IN (0, 1))
+    );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_StudentParents_student' AND object_id = OBJECT_ID('Edu_StudentParents'))
+    CREATE INDEX ix_Edu_StudentParents_student ON Edu_StudentParents (student_id);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_StudentParents_parent' AND object_id = OBJECT_ID('Edu_StudentParents'))
+    CREATE INDEX ix_Edu_StudentParents_parent ON Edu_StudentParents (parent_id);
+GO
+
+-- ولي أمر أساسي واحد فقط لكل طالب (فهرس فريد مُرشَّح)
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ux_Edu_StudentParents_one_primary' AND object_id = OBJECT_ID('Edu_StudentParents'))
+    CREATE UNIQUE INDEX ux_Edu_StudentParents_one_primary ON Edu_StudentParents (student_id) WHERE is_primary = 1;
+GO
+
+-- ---- تريجرات updated_at (في SQL Server تريجر AFTER UPDATE لكل جدول) ----
+IF OBJECT_ID('trg_Edu_Users_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Users_updated_at;
+GO
+CREATE TRIGGER trg_Edu_Users_updated_at ON Edu_Users AFTER UPDATE AS
 BEGIN
     SET NOCOUNT ON;
-    UPDATE s
-       SET s.updated_at = SYSUTCDATETIME()
-      FROM Edu_Students AS s
-     INNER JOIN inserted AS i ON i.id = s.id;
+    UPDATE u SET u.updated_at = SYSUTCDATETIME()
+      FROM Edu_Users AS u INNER JOIN inserted AS i ON i.id = u.id;
+END
+GO
+
+IF OBJECT_ID('trg_Edu_Students_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Students_updated_at;
+GO
+CREATE TRIGGER trg_Edu_Students_updated_at ON Edu_Students AFTER UPDATE AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE s SET s.updated_at = SYSUTCDATETIME()
+      FROM Edu_Students AS s INNER JOIN inserted AS i ON i.id = s.id;
+END
+GO
+
+IF OBJECT_ID('trg_Edu_Parents_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Parents_updated_at;
+GO
+CREATE TRIGGER trg_Edu_Parents_updated_at ON Edu_Parents AFTER UPDATE AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE p SET p.updated_at = SYSUTCDATETIME()
+      FROM Edu_Parents AS p INNER JOIN inserted AS i ON i.id = p.id;
+END
+GO
+
+IF OBJECT_ID('trg_Edu_StudentParents_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_StudentParents_updated_at;
+GO
+CREATE TRIGGER trg_Edu_StudentParents_updated_at ON Edu_StudentParents AFTER UPDATE AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE sp SET sp.updated_at = SYSUTCDATETIME()
+      FROM Edu_StudentParents AS sp INNER JOIN inserted AS i ON i.id = sp.id;
 END
 GO
 */
