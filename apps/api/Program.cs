@@ -36,12 +36,19 @@ builder.Services.AddOpenApi();
 var provider = builder.Configuration["Database:Provider"] ?? "Sqlite";
 var connectionString = builder.Configuration.GetConnectionString(provider) ?? string.Empty;
 
+var isPostgres =
+    provider.Equals("Postgres", StringComparison.OrdinalIgnoreCase) ||
+    provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase);
+
+// Supabase تعطي سلسلة بصيغة URI — تُحوَّل هنا إلى صيغة Npgsql تلقائيًا،
+// فيكفي لصق سلسلة Supabase كما هي بلا أي تعديل.
+var postgresConnectionString = ConnectionStringNormalizer.ForNpgsql(connectionString);
+
 builder.Services.AddDbContext<EduDbContext>(options =>
 {
-    if (provider.Equals("Postgres", StringComparison.OrdinalIgnoreCase) ||
-        provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+    if (isPostgres)
     {
-        options.UseNpgsql(connectionString);
+        options.UseNpgsql(postgresConnectionString);
     }
     else
     {
@@ -117,6 +124,13 @@ if (app.Configuration.GetValue("Database:ProbeOnStartup", true))
 
     try
     {
+        if (isPostgres)
+        {
+            // يوضّح للمطوّر أنه متصل فعلًا بأي خادم — بلا كلمة المرور
+            dbLogger.LogInformation(
+                "جهة الاتصال: {Target}", ConnectionStringNormalizer.Describe(connectionString));
+        }
+
         if (await probeDb.Database.CanConnectAsync())
         {
             var usersCount = await probeDb.Users.CountAsync();

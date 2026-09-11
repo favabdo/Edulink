@@ -96,6 +96,7 @@ curl -X POST http://localhost:5279/api/setup/owner -H "Content-Type: application
 | `docs/07-database.md` | قواعد قاعدة البيانات + الجداول + خطة SQL Server |
 | `docs/08-backend.md` | الباك اند: التقنية، البنية، تدفق الدخول، الصفحة الداخلية |
 | `docs/09-structure.md` | **استراكشر المشروع وقواعده (اقرأه قبل إضافة أي صفحة)** |
+| `docs/10-supabase-connection.md` | **ربط Supabase بالمشروع + كيف تتأكد أن القراءة منها** |
 | `database/schema.sql` | **الملف الوحيد لكل تغييرات قاعدة البيانات** |
 | `apps/api/README.md` | تشغيل الباك اند + نقاط النهاية |
 | `docs/reference/` | صور الريفيرنس الأصلية |
