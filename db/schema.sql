@@ -11,7 +11,7 @@
 --   2) الملف **قابل لإعادة التشغيل** (Idempotent): كل عبارة محميّة بـ IF NOT EXISTS
 --      أو DROP IF EXISTS، فتشغيله مرة واحدة أو عشر مرات يعطي نفس النتيجة.
 --
---   3) اسم كل جدول جديد يبدأ بـ **Edu_** ثم اسم الجدول:  Edu_Users، Edu_Sessions ...
+--   3) اسم كل جدول جديد يبدأ بـ **Edu_** ثم اسم الجدول:  Edu_Users، Edu_Students ...
 --
 --   4) يعمل الآن على **Supabase (PostgreSQL)**، ونسخة **SQL Server** جاهزة في
 --      آخر الملف (مُعلَّقة) للانتقال المستقبلي إلى سيرفر الشركة.
@@ -32,7 +32,7 @@
 
 
 -- ============================================================================
---  1) Edu_Users — مستخدمو المنصة (المدرسون، المشرفون، المديرون، الأونر)
+--  1) Edu_Users — موظفو المنصة (المدرسون، المشرفون، المديرون، الأونر)
 -- ============================================================================
 --
 --  role          : 0 = مدرس | 1 = مشرف | 2 = مدير | 3 = أونر
@@ -43,7 +43,9 @@
 --  token         : توكن الدخول الحالي — NULL يعني لا توجد جلسة فعّالة
 --  states        : 0 = الحساب غير ظاهر للناس | 1 = ظاهر
 --  access        : 0 = غير مفعّل، لا يستطيع الدخول للمنصة إطلاقًا | 1 = مفعّل
---  notifications : 0 = لا يوجد إشعار جديد | 1 = يوجد إشعار بانتظاره
+--  img_url       : رابط صورة المستخدم إن وُجدت (NULL = لا توجد صورة)
+--  notifications : هل إنشاء هذا المستخدم **أُرسل كإشعار للكل** أم لا
+--                  0 = أُنشئ ولم يُرسل إشعار للكل | 1 = أُرسل إشعار للكل
 --
 -- ============================================================================
 
@@ -55,6 +57,7 @@ CREATE TABLE IF NOT EXISTS "Edu_Users" (
     token         TEXT,
     states        SMALLINT     NOT NULL DEFAULT 0,
     access        SMALLINT     NOT NULL DEFAULT 0,
+    img_url       TEXT,
     notifications SMALLINT     NOT NULL DEFAULT 0,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -67,14 +70,15 @@ CREATE TABLE IF NOT EXISTS "Edu_Users" (
     CONSTRAINT ck_edu_users_notifications CHECK (notifications IN (0, 1))
 );
 
-COMMENT ON TABLE  "Edu_Users"               IS 'مستخدمو المنصة: مدرس، مشرف، مدير، أونر';
+COMMENT ON TABLE  "Edu_Users"               IS 'موظفو المنصة: مدرس، مشرف، مدير، أونر';
 COMMENT ON COLUMN "Edu_Users".email         IS 'البريد الإلكتروني — يُخزَّن بحروف صغيرة (lowercase)';
 COMMENT ON COLUMN "Edu_Users".password      IS 'هاش كلمة المرور (bcrypt/PBKDF2) — لا يُخزَّن النص الصريح';
 COMMENT ON COLUMN "Edu_Users".role          IS '0=مدرس, 1=مشرف, 2=مدير, 3=أونر';
 COMMENT ON COLUMN "Edu_Users".token         IS 'توكن الدخول الحالي — NULL إذا لا توجد جلسة';
 COMMENT ON COLUMN "Edu_Users".states        IS '0=غير ظاهر للناس, 1=ظاهر';
 COMMENT ON COLUMN "Edu_Users".access        IS '0=غير مفعّل (لا يمكنه الدخول), 1=مفعّل';
-COMMENT ON COLUMN "Edu_Users".notifications IS '0=لا إشعار جديد, 1=يوجد إشعار جديد';
+COMMENT ON COLUMN "Edu_Users".img_url       IS 'رابط صورة المستخدم إن وُجدت — NULL إذا لا توجد صورة';
+COMMENT ON COLUMN "Edu_Users".notifications IS 'هل إنشاء هذا المستخدم أُرسل كإشعار للكل: 0=لا, 1=نعم';
 COMMENT ON COLUMN "Edu_Users".created_at    IS 'تاريخ الإنشاء';
 COMMENT ON COLUMN "Edu_Users".updated_at    IS 'تاريخ آخر تعديل (يُحدَّث تلقائيًا)';
 
@@ -82,7 +86,7 @@ COMMENT ON COLUMN "Edu_Users".updated_at    IS 'تاريخ آخر تعديل (ي
 CREATE INDEX IF NOT EXISTS "ix_Edu_Users_token" ON "Edu_Users" (token);
 CREATE INDEX IF NOT EXISTS "ix_Edu_Users_role"  ON "Edu_Users" (role);
 
--- تحديث updated_at تلقائيًا عند أي تعديل على الصف
+-- تحديث updated_at تلقائيًا عند أي تعديل على الصف (دالة عامة تُستخدم لكل الجداول)
 CREATE OR REPLACE FUNCTION "Edu_SetUpdatedAt"() RETURNS trigger AS $$
 BEGIN
     NEW.updated_at = now();
@@ -98,18 +102,84 @@ CREATE TRIGGER "trg_Edu_Users_updated_at"
 
 
 -- ============================================================================
---  2) إضافات جديدة (الجداول القادمة تُضاف هنا بالترتيب)
+--  2) Edu_Students — الطلاب
 -- ============================================================================
 --
---  اكتب الجدول الجديد بنفس النمط:
---     CREATE TABLE IF NOT EXISTS "Edu_<الاسم>" ( ... );
---     COMMENT ON TABLE ...
---     CREATE INDEX IF NOT EXISTS ...
+--  لا يوجد عمود role: كل صف هنا طالب. (ولي الأمر سيأتي في جدول مستقل لاحقًا.)
 --
---  ولا تحذف أي شيء من الأعلى — الملف تراكمي.
+--  password      : هاش كلمة المرور (نفس أسلوب Edu_Users)
+--  token         : توكن الدخول الحالي — NULL يعني لا توجد جلسة فعّالة
+--  states        : 0 = الحساب غير ظاهر للناس | 1 = ظاهر
+--  access        : 0 = غير مفعّل، لا يستطيع الدخول للمنصة إطلاقًا | 1 = مفعّل
+--  img_url       : رابط صورة الطالب إن وُجدت (NULL = لا توجد صورة)
+--  notifications : هل إنشاء هذا الطالب **أُرسل كإشعار للكل** أم لا
+--                  0 = أُنشئ ولم يُرسل إشعار للكل | 1 = أُرسل إشعار للكل
+--
+--  ⚠️ تمييز البريد: فريد داخل جدول الطلاب فقط. هل يُمنع نفس البريد من أن يكون
+--     مدرسًا وطالبًا في نفس الوقت؟ (سؤال مفتوح لم يُحسم بعد.)
 --
 -- ============================================================================
 
+CREATE TABLE IF NOT EXISTS "Edu_Students" (
+    id            BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    email         VARCHAR(255) NOT NULL,
+    password      VARCHAR(255) NOT NULL,
+    token         TEXT,
+    states        SMALLINT     NOT NULL DEFAULT 0,
+    access        SMALLINT     NOT NULL DEFAULT 0,
+    img_url       TEXT,
+    notifications SMALLINT     NOT NULL DEFAULT 0,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_students               PRIMARY KEY (id),
+    CONSTRAINT uq_edu_students_email         UNIQUE (email),
+    CONSTRAINT ck_edu_students_states        CHECK (states IN (0, 1)),
+    CONSTRAINT ck_edu_students_access        CHECK (access IN (0, 1)),
+    CONSTRAINT ck_edu_students_notifications CHECK (notifications IN (0, 1))
+);
+
+COMMENT ON TABLE  "Edu_Students"               IS 'طلاب المنصة';
+COMMENT ON COLUMN "Edu_Students".email         IS 'البريد الإلكتروني — يُخزَّن بحروف صغيرة (lowercase)';
+COMMENT ON COLUMN "Edu_Students".password      IS 'هاش كلمة المرور (bcrypt/PBKDF2) — لا يُخزَّن النص الصريح';
+COMMENT ON COLUMN "Edu_Students".token         IS 'توكن الدخول الحالي — NULL إذا لا توجد جلسة';
+COMMENT ON COLUMN "Edu_Students".states        IS '0=غير ظاهر للناس, 1=ظاهر';
+COMMENT ON COLUMN "Edu_Students".access        IS '0=غير مفعّل (لا يمكنه الدخول), 1=مفعّل';
+COMMENT ON COLUMN "Edu_Students".img_url       IS 'رابط صورة الطالب إن وُجدت — NULL إذا لا توجد صورة';
+COMMENT ON COLUMN "Edu_Students".notifications IS 'هل إنشاء هذا الطالب أُرسل كإشعار للكل: 0=لا, 1=نعم';
+COMMENT ON COLUMN "Edu_Students".created_at    IS 'تاريخ الإنشاء';
+COMMENT ON COLUMN "Edu_Students".updated_at    IS 'تاريخ آخر تعديل (يُحدَّث تلقائيًا)';
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_Students_token" ON "Edu_Students" (token);
+
+DROP TRIGGER IF EXISTS "trg_Edu_Students_updated_at" ON "Edu_Students";
+CREATE TRIGGER "trg_Edu_Students_updated_at"
+    BEFORE UPDATE ON "Edu_Students"
+    FOR EACH ROW
+    EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+
+-- ============================================================================
+--  3) إضافات جديدة (كل تعديل قادم يُضاف هنا بالترتيب)
+-- ============================================================================
+--
+--  اكتب الإضافة بنفس النمط:
+--     ALTER TABLE "Edu_X" ADD COLUMN IF NOT EXISTS ... ;      -- عمود جديد
+--     CREATE TABLE IF NOT EXISTS "Edu_X" ( ... );             -- جدول جديد
+--     CREATE INDEX IF NOT EXISTS ... ;                        -- فهرس جديد
+--
+--  ولا تحذف أي شيء من الأعلى — الملف تراكمي.
+--
+-- ----------------------------------------------------------------------------
+--  [2026-09-11] إضافة العمود img_url إلى Edu_Users
+--
+--  موجود بالفعل في تعريف الجدول أعلى الملف، والسطر التالي يضمن إضافته أيضًا
+--  لقواعد بيانات أُنشئت قبل هذا التعديل.
+-- ----------------------------------------------------------------------------
+ALTER TABLE "Edu_Users" ADD COLUMN IF NOT EXISTS img_url TEXT;
+COMMENT ON COLUMN "Edu_Users".img_url IS 'رابط صورة المستخدم إن وُجدت — NULL إذا لا توجد صورة';
+
+-- ============================================================================
 
 
 
@@ -125,6 +195,7 @@ CREATE TRIGGER "trg_Edu_Users_updated_at"
 --     • النص الطويل      : NVARCHAR(MAX)        بدل  TEXT
 --     • القيم الافتراضية : CONSTRAINT ... DEFAULT بدل DEFAULT المضمّن
 --     • حماية الإنشاء    : IF OBJECT_ID(...) IS NULL بدل CREATE TABLE IF NOT EXISTS
+--     • إضافة عمود       : IF COL_LENGTH(...) IS NULL بدل ADD COLUMN IF NOT EXISTS
 --     • تحديث updated_at : تريجر AFTER UPDATE   بدل تريجر BEFORE UPDATE
 --          (وكل ما عدا ذلك — القيود والفهارس وأسماء الأعمدة — متطابق)
 -- ============================================================================
@@ -142,6 +213,7 @@ BEGIN
         token         NVARCHAR(MAX) NULL,
         states        SMALLINT      NOT NULL CONSTRAINT df_edu_users_states        DEFAULT 0,
         access        SMALLINT      NOT NULL CONSTRAINT df_edu_users_access        DEFAULT 0,
+        img_url       NVARCHAR(MAX) NULL,
         notifications SMALLINT      NOT NULL CONSTRAINT df_edu_users_notifications DEFAULT 0,
         created_at    DATETIME2     NOT NULL CONSTRAINT df_edu_users_created_at    DEFAULT SYSUTCDATETIME(),
         updated_at    DATETIME2     NOT NULL CONSTRAINT df_edu_users_updated_at    DEFAULT SYSUTCDATETIME(),
@@ -156,6 +228,10 @@ BEGIN
 END
 GO
 
+IF COL_LENGTH('Edu_Users', 'img_url') IS NULL
+    ALTER TABLE Edu_Users ADD img_url NVARCHAR(MAX) NULL;
+GO
+
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Users_token' AND object_id = OBJECT_ID('Edu_Users'))
     CREATE INDEX ix_Edu_Users_token ON Edu_Users (token);
 GO
@@ -164,7 +240,35 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Users_role' AND ob
     CREATE INDEX ix_Edu_Users_role ON Edu_Users (role);
 GO
 
--- تحديث updated_at تلقائيًا (في SQL Server يكون AFTER UPDATE لا BEFORE UPDATE)
+-- ---- Edu_Students ----
+IF OBJECT_ID('Edu_Students', 'U') IS NULL
+BEGIN
+    CREATE TABLE Edu_Students (
+        id            BIGINT        IDENTITY(1,1) NOT NULL,
+        email         NVARCHAR(255) NOT NULL,
+        password      NVARCHAR(255) NOT NULL,
+        token         NVARCHAR(MAX) NULL,
+        states        SMALLINT      NOT NULL CONSTRAINT df_edu_students_states        DEFAULT 0,
+        access        SMALLINT      NOT NULL CONSTRAINT df_edu_students_access        DEFAULT 0,
+        img_url       NVARCHAR(MAX) NULL,
+        notifications SMALLINT      NOT NULL CONSTRAINT df_edu_students_notifications DEFAULT 0,
+        created_at    DATETIME2     NOT NULL CONSTRAINT df_edu_students_created_at    DEFAULT SYSUTCDATETIME(),
+        updated_at    DATETIME2     NOT NULL CONSTRAINT df_edu_students_updated_at    DEFAULT SYSUTCDATETIME(),
+
+        CONSTRAINT pk_edu_students               PRIMARY KEY (id),
+        CONSTRAINT uq_edu_students_email         UNIQUE (email),
+        CONSTRAINT ck_edu_students_states        CHECK (states IN (0, 1)),
+        CONSTRAINT ck_edu_students_access        CHECK (access IN (0, 1)),
+        CONSTRAINT ck_edu_students_notifications CHECK (notifications IN (0, 1))
+    );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Students_token' AND object_id = OBJECT_ID('Edu_Students'))
+    CREATE INDEX ix_Edu_Students_token ON Edu_Students (token);
+GO
+
+-- تحديث updated_at تلقائيًا لكل جدول (في SQL Server تريجر AFTER UPDATE لكل جدول)
 IF OBJECT_ID('trg_Edu_Users_updated_at', 'TR') IS NOT NULL
     DROP TRIGGER trg_Edu_Users_updated_at;
 GO
@@ -178,6 +282,22 @@ BEGIN
        SET u.updated_at = SYSUTCDATETIME()
       FROM Edu_Users AS u
      INNER JOIN inserted AS i ON i.id = u.id;
+END
+GO
+
+IF OBJECT_ID('trg_Edu_Students_updated_at', 'TR') IS NOT NULL
+    DROP TRIGGER trg_Edu_Students_updated_at;
+GO
+CREATE TRIGGER trg_Edu_Students_updated_at
+ON Edu_Students
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE s
+       SET s.updated_at = SYSUTCDATETIME()
+      FROM Edu_Students AS s
+     INNER JOIN inserted AS i ON i.id = s.id;
 END
 GO
 */
