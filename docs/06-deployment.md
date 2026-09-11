@@ -29,9 +29,31 @@ vercel --prod          # النشر للإنتاج
 
 ## الطريقة الثانية: GitHub + Vercel (نشر تلقائي عند كل تعديل)
 
-> **المستودع المرتبط موجود بالفعل:** `https://github.com/favabdo/Edulink` —
-> و**جذر المستودع هو مجلد `eduspace-web` نفسه**، أي أن `package.json` و`vercel.json`
-> في جذر المستودع، فلا حاجة لضبط Root Directory إطلاقًا.
+> **المستودع المرتبط:** `https://github.com/favabdo/Edulink` — وهو **monorepo**:
+> الفرونت في `apps/web` والباك اند في `apps/api` وقاعدة البيانات في `database/`.
+
+### ⚠️ مهم جدًا بعد إعادة الهيكلة إلى monorepo
+
+البناء ينجح لكن Vercel لا يجد مجلد المخرجات، لأن الفرونت انتقل إلى `apps/web`:
+
+```
+Error: No Output Directory named "dist" found after the Build completed.
+```
+
+**الحل (اختر واحدًا):**
+
+**الأفضل — اضبط Root Directory:** من **Project → Settings → General → Root Directory** اختر **`apps/web`**، ثم أعد النشر.
+هذا هو الإعداد القياسي للـ monorepo، و`apps/web/vercel.json` يتكفّل بالباقي.
+
+**أو اترك الإعداد كما هو:** أُضيف `vercel.json` في **جذر المستودع** يحدّد
+`outputDirectory: "apps/web/dist"` — فيعمل النشر بلا أي تغيير في الإعدادات.
+
+> ℹ️ لو ضبطت Root Directory على `apps/web`، ملف `vercel.json` في الجذر يصبح **غير مستخدم**
+> ويُفضَّل حذفه لاحقًا حتى لا تتكرر نفس الإعدادات في مكانين.
+
+> ⚠️ **لا تضبط `installCommand` داخل `apps/web`** — ملف القفل (`package-lock.json`) موجود في
+> **جذر الـ workspace** بعد التحوّل إلى npm workspaces، فتشغيل `npm ci` داخل `apps/web` يفشل.
+> اترك Vercel يكتشف الـ workspace ويتثبّت من الجذر تلقائيًا.
 
 ### الرفع على GitHub
 
