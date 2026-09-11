@@ -1,0 +1,33 @@
+/* الصفحة بارتفاع الشاشة بالكامل بلا أي تمرير */
+.page {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-page);
+}
+
+@supports (height: 100dvh) {
+  .page {
+    height: 100dvh;
+  }
+}
+
+.shell {
+  display: flex;
+  height: 100%;
+}
+
+/* الكارت يتوسّط رأسيًا في اللوحة */
+.formPane {
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: calc(48 * var(--u)) calc(24 * var(--u));
+}
+
+@media (max-width: 980px) {
+  .formPane {
+    padding: calc(40 * var(--u)) calc(20 * var(--u));
+  }
+}

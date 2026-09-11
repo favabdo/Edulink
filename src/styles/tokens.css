@@ -1,0 +1,188 @@
+/* ============================================================
+   EduLink — Design tokens
+   كل القيم مقاسة بالبكسل من ريفيرنس صفحة اللوجين
+   (docs/reference/login-page.png — تفاصيل القياس في docs/03-design-reference.md)
+   ============================================================ */
+
+:root {
+  /* --- ألوان المكعب (اللوجو) --- */
+  --logo-top: #2b6ec8;
+  --logo-left: #5bd2c6;
+  --logo-right: #1f5093;
+
+  /* --- الخطوط --- */
+  --font-latin: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-arabic: 'Cairo', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-latin);
+
+  /* --- الاستدارة (روح المشروع: كل العناصر التفاعلية بيضاوية) --- */
+  --radius-control: 999px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-pill: 999px;
+
+  /* --- المسافات --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* --- الانتقالات --- */
+  --transition-fast: 140ms ease;
+  --transition-base: 220ms ease;
+
+  /* ------------------------------------------------------------
+     مقياس الصفحة الموحّد
+     التصميم مبني على لوحة 1536×1024 (نسبة 3:2 من الريفيرنس).
+     --u = معامل واحد يكبّر/يصغّر التصميم **ككتلة واحدة** بحيث تبقى
+     كل النِسَب كما هي — ومنها نسبة الكارت إلى الصورة (544:811) —
+     ويأخذ أصغر القيدين: العرض أو الارتفاع، فلا يظهر أي تمرير.
+
+     العرض:  1536 هو عرض لوحة التصميم.
+     الارتفاع: 970 = 858 (الكارت) + 96 (حشو اللوحة) + هامش أمان بسيط.
+     ------------------------------------------------------------ */
+  --screen-h: 100vh;
+  --u: min(calc(100vw / 1536), calc(100vh / 970));
+
+  color-scheme: light;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --screen-h: 100dvh;
+    --u: min(calc(100vw / 1536), calc(100dvh / 970));
+  }
+}
+
+/* على الشاشات الضيقة تختفي لوحة العرض، فيُحسب المقياس على عرض الكارت وحده */
+@media (max-width: 980px) {
+  :root {
+    --u: min(calc(100vw / 600), calc(var(--screen-h) / 970));
+  }
+}
+
+/* اتجاه طبقة التظليل فوق الصورة يتبع اتجاه اللغة */
+html[dir='ltr'] {
+  --font-sans: var(--font-latin);
+  --scrim-angle: to right;
+}
+
+html[dir='rtl'] {
+  --font-sans: var(--font-arabic);
+  --scrim-angle: to left;
+}
+
+/* ============================================================
+   المظهر الفاتح (المطابق للريفيرنس)
+   ============================================================ */
+
+:root,
+html[data-theme='light'] {
+  color-scheme: light;
+
+  --bg-page: #f3f8fd;
+  --bg-elevated: #fefefe;
+  --bg-field: #fefefe;
+  --bg-subtle: #f7fafd;
+  --bg-hover: #eff5fb;
+
+  --text-heading: #050a20;
+  --text-body: #2b497e;
+  --text-subtle: #5a7396;
+  --text-muted: #7186a6;
+  --text-placeholder: #96a2b9;
+  --text-inverse: #ffffff;
+
+  --primary: #245493;
+  --primary-hover: #1d4576;
+  --primary-active: #163a64;
+  --primary-contrast: #ffffff;
+
+  --accent: #1671f5;
+  --accent-hover: #0f5bd0;
+
+  --border: #e7edf5;
+  --border-strong: #d5deeb;
+
+  /* أزرق عناصر لوحة العرض (المميزات) */
+  --panel-accent: #14489a;
+  --panel-accent-bg: #edf4fb;
+  --panel-tagline: #6480ac;
+  --panel-pill-text: #586b97;
+
+  --danger: #d92d20;
+  --danger-bg: #fef3f2;
+  --danger-border: #fda29b;
+
+  --focus-ring: rgba(22, 113, 245, 0.28);
+  --shadow-card: 0 18px 50px rgba(15, 40, 80, 0.08);
+  --shadow-soft: 0 2px 8px rgba(9, 30, 66, 0.06);
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --photo-scrim: rgba(255, 255, 255, 0.75);
+  --photo-scrim-mid: rgba(255, 255, 255, 0.3);
+  --photo-scrim-end: rgba(255, 255, 255, 0);
+}
+
+/* ============================================================
+   المظهر الغامق
+   ============================================================ */
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --logo-top: #4a8ce0;
+  --logo-left: #4fc9bd;
+  --logo-right: #2c66b4;
+
+  --bg-page: #0a1120;
+  --bg-elevated: #121b2e;
+  --bg-field: #0e1729;
+  --bg-subtle: #162034;
+  --bg-hover: #1b2740;
+
+  --text-heading: #f2f6fc;
+  --text-body: #b6c4d8;
+  --text-subtle: #9fb0c8;
+  --text-muted: #8296b1;
+  --text-placeholder: #6d809c;
+  --text-inverse: #0a1120;
+
+  --primary: #2f6fd0;
+  --primary-hover: #3b7de0;
+  --primary-active: #24589f;
+  --primary-contrast: #ffffff;
+
+  --accent: #5b9bff;
+  --accent-hover: #7cb0ff;
+
+  --border: #24314a;
+  --border-strong: #33445f;
+
+  --panel-accent: #8fc0ff;
+  --panel-accent-bg: rgba(143, 192, 255, 0.12);
+  --panel-tagline: #b9c7dc;
+  --panel-pill-text: #dbe6f5;
+
+  --danger: #f97066;
+  --danger-bg: rgba(217, 45, 32, 0.12);
+  --danger-border: rgba(249, 112, 102, 0.4);
+
+  --focus-ring: rgba(91, 155, 255, 0.4);
+  --shadow-card: 0 18px 50px rgba(0, 0, 0, 0.4);
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  --glass-bg: rgba(18, 27, 46, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --photo-scrim: rgba(10, 17, 32, 0.9);
+  --photo-scrim-mid: rgba(10, 17, 32, 0.6);
+  --photo-scrim-end: rgba(10, 17, 32, 0);
+}

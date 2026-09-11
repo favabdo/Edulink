@@ -1,0 +1,343 @@
+/* الكارت مقاس 544px بحشو 45px — مطابق لقياس الريفيرنس، وكل المقاسات تتقلّص مع --u
+   روح المشروع: كل الحقول والأزرار والصناديق بيضاوية. */
+.card {
+  display: flex;
+  flex-direction: column;
+  width: calc(544 * var(--u));
+  padding: calc(22 * var(--u)) calc(45 * var(--u)) calc(30 * var(--u));
+  border: 1px solid rgba(20, 45, 90, 0.04);
+  border-radius: calc(64 * var(--u));
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-card);
+}
+
+/* أزرار تبديل اللغة والمظهر داخل الكارت */
+.topRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-end: calc(12 * var(--u));
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  text-align: center;
+}
+
+.header > :first-child {
+  margin-block-end: calc(16 * var(--u));
+}
+
+.title {
+  font-size: calc(34 * var(--u));
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.022em;
+  color: var(--text-heading);
+}
+
+.subtitle {
+  font-size: calc(17 * var(--u));
+  line-height: 1.55;
+  color: var(--text-subtle);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  margin-block-start: calc(20 * var(--u));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--u));
+}
+
+.field + .field {
+  margin-block-start: calc(24 * var(--u));
+}
+
+.label {
+  font-size: calc(15 * var(--u));
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--text-heading);
+  padding-inline-start: calc(20 * var(--u));
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  padding-block: calc(13 * var(--u));
+  padding-inline: calc(50 * var(--u)) calc(22 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-field);
+  color: var(--text-heading);
+  font-size: calc(16 * var(--u));
+  line-height: 1.55;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 calc(4 * var(--u)) var(--focus-ring);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.inputWithAction {
+  padding-inline: calc(50 * var(--u)) calc(54 * var(--u));
+}
+
+.inputIcon {
+  position: absolute;
+  inset-inline-start: calc(21 * var(--u));
+  width: calc(18 * var(--u));
+  height: auto;
+  color: var(--text-placeholder);
+  pointer-events: none;
+}
+
+.inputAction {
+  position: absolute;
+  inset-inline-end: calc(7 * var(--u));
+  display: grid;
+  place-items: center;
+  width: calc(34 * var(--u));
+  height: calc(34 * var(--u));
+  border-radius: 50%;
+  color: var(--text-placeholder);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.inputAction svg {
+  width: calc(18 * var(--u));
+  height: auto;
+}
+
+.inputAction:hover {
+  background: var(--bg-hover);
+  color: var(--text-heading);
+}
+
+.error {
+  font-size: calc(13 * var(--u));
+  color: var(--danger);
+  padding-inline-start: calc(20 * var(--u));
+}
+
+.formError {
+  padding: calc(12 * var(--u)) calc(20 * var(--u));
+  margin-block-end: calc(16 * var(--u));
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-control);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: calc(13.5 * var(--u));
+}
+
+.optionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  margin-block-start: calc(20 * var(--u));
+  padding-inline: calc(14 * var(--u));
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(9 * var(--u));
+  font-size: calc(16 * var(--u));
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+/* مربع اختيار دائري مخصص ليطابق روح المشروع */
+.checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(21 * var(--u));
+  height: calc(21 * var(--u));
+  margin: 0;
+  border: calc(2 * var(--u)) solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--bg-field);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.checkbox input:checked {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.checkbox input:checked::after {
+  content: '';
+  width: calc(10 * var(--u));
+  height: calc(5 * var(--u));
+  border: solid var(--primary-contrast);
+  border-width: 0 0 calc(2 * var(--u)) calc(2 * var(--u));
+  transform: rotate(-45deg) translate(calc(1 * var(--u)), calc(-1 * var(--u)));
+}
+
+.checkbox input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.link {
+  font-size: calc(16 * var(--u));
+  font-weight: 600;
+  color: var(--accent);
+  transition: color var(--transition-fast);
+}
+
+.link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10 * var(--u));
+  width: 100%;
+  padding-block: calc(14 * var(--u));
+  margin-block-start: calc(20 * var(--u));
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: calc(17 * var(--u));
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.submit:active:not(:disabled) {
+  background: var(--primary-active);
+}
+
+.submit:disabled {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+.submitArrow {
+  width: calc(20 * var(--u));
+  height: auto;
+  transition: transform var(--transition-fast);
+}
+
+.submit:hover:not(:disabled) .submitArrow {
+  transform: translateX(3px);
+}
+
+:global(html[dir='rtl']) .submitArrow {
+  transform: scaleX(-1);
+}
+
+:global(html[dir='rtl']) .submit:hover:not(:disabled) .submitArrow {
+  transform: scaleX(-1) translateX(3px);
+}
+
+/* "or continue with" بخط على كل جانب — كما في الريفيرنس */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: calc(14 * var(--u));
+  margin-block-start: calc(20 * var(--u));
+  padding-inline: calc(14 * var(--u));
+  font-size: calc(15 * var(--u));
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1 1 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(10 * var(--u));
+  width: 100%;
+  padding-block: calc(14 * var(--u));
+  margin-block-start: calc(18 * var(--u));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg-field);
+  color: var(--text-heading);
+  font-size: calc(16 * var(--u));
+  font-weight: 600;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.google svg {
+  width: calc(20 * var(--u));
+  height: auto;
+}
+
+.google:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-strong);
+}
+
+.google:disabled {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+.footer {
+  margin-block-start: calc(28 * var(--u));
+  text-align: center;
+  font-size: calc(15 * var(--u));
+  color: var(--text-muted);
+}
+
+.copyright {
+  margin-block-start: calc(22 * var(--u));
+  text-align: center;
+  font-size: calc(13 * var(--u));
+  line-height: 1.4;
+  color: var(--text-muted);
+  opacity: 0.9;
+}

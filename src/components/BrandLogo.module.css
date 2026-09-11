@@ -1,0 +1,50 @@
+.logo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--u));
+}
+
+/* aspect-ratio محدد مقدمًا لمنع إزاحة التصميم قبل تحميل الصور (CLS) */
+.mark {
+  width: calc(var(--mark-w) * var(--u));
+  aspect-ratio: 220 / 185;
+  height: auto;
+}
+
+/* الاسم كخلفية: النسخة غير المستخدمة في الثيم الحالي لا تُنزَّل إطلاقًا */
+.wordmark {
+  width: calc(var(--wordmark-w) * var(--u));
+  aspect-ratio: 520 / 117;
+  background-image: url('../assets/logo-wordmark.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+:global(html[data-theme='dark']) .wordmark {
+  background-image: url('../assets/logo-wordmark-light.png');
+}
+
+.tagline {
+  font-size: calc(16 * var(--u));
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--panel-tagline);
+}
+
+.panel {
+  --mark-w: 60;
+  --wordmark-w: 144;
+  /* في لوحة العرض يبقى اللوجو في بداية اللوحة لا متوسّطًا */
+  align-self: flex-start;
+}
+
+.panel .tagline {
+  margin-block-start: calc(4 * var(--u));
+}
+
+.card {
+  --mark-w: 66;
+  --wordmark-w: 158;
+}

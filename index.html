@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f3f8fd" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a1120" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="description"
+      content="EduLink — منصة تعليمية متكاملة للمؤسسات التعليمية: حصص مباشرة، مدرسون خبراء، وإدارة كاملة للمواعيد."
+    />
+    <title>EduLink</title>
+
+    <script>
+      /*
+        يُنفَّذ قبل أول رسم:
+        1) يطبّق المظهر المحفوظ لمنع وميض الثيم.
+        2) يطبّق اللغة والاتجاه المحفوظين لمنع انقلاب RTL/LTR بعد التحميل.
+        3) يطلب تحميل ملف الخط المستخدم فعليًا (خطوط مستضافة محليًا، بلا طلبات خارجية).
+      */
+      ;(function () {
+        var root = document.documentElement
+        try {
+          var theme = localStorage.getItem('edulink.theme')
+          if (theme !== 'light' && theme !== 'dark') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          }
+          root.dataset.theme = theme
+
+          var lang = localStorage.getItem('edulink.language')
+          if (lang !== 'ar' && lang !== 'en') lang = 'ar'
+          root.lang = lang
+          root.dir = lang === 'ar' ? 'rtl' : 'ltr'
+
+          var font = document.createElement('link')
+          font.rel = 'preload'
+          font.as = 'font'
+          font.type = 'font/woff2'
+          font.crossOrigin = 'anonymous'
+          font.href = lang === 'en' ? '/fonts/inter-latin.woff2' : '/fonts/cairo-arabic.woff2'
+          document.head.appendChild(font)
+
+          /*
+            صورة اللوحة هي عنصر LCP على الشاشات الكبيرة. نطلبها مسبقًا لتبدأ
+            بالتنزيل بالتوازي مع الجافاسكربت بدل الانتظار حتى يرسم React.
+            وعلى الجوال اللوحة مخفية أصلًا فلا نطلبها.
+          */
+          if (window.innerWidth > 980) {
+            var hero = document.createElement('link')
+            hero.rel = 'preload'
+            hero.as = 'image'
+            hero.href = '/login-showcase.jpg'
+            hero.setAttribute('fetchpriority', 'high')
+            document.head.appendChild(hero)
+          }
+        } catch (error) {
+          /* المتصفح قد يمنع localStorage — نكمل بالقيم الافتراضية */
+        }
+      })()
+    </script>
+
+    <link rel="stylesheet" href="/fonts/fonts.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

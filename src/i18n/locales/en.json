@@ -1,0 +1,55 @@
+{
+  "common": {
+    "brand": "EduLink",
+    "tagline": "Learn • Teach • Grow",
+    "pageTitle": "Sign in — EduLink",
+    "language": "Language",
+    "switchToEnglish": "English",
+    "switchToArabic": "العربية",
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "switchToLight": "Switch to light theme",
+      "switchToDark": "Switch to dark theme"
+    }
+  },
+  "login": {
+    "showcase": {
+      "heading": "Bringing Students and Teachers Closer",
+      "subheading": "A complete online learning platform designed for educational institutions.",
+      "features": {
+        "liveClasses": "Live Classes",
+        "expertTeachers": "Expert Teachers",
+        "secure": "Secure & Reliable"
+      },
+      "socialProof": "Join thousands of students and institutions worldwide."
+    },
+    "form": {
+      "welcome": "Welcome Back",
+      "subtitle": "Sign in to your institution account",
+      "identifierLabel": "Email Address",
+      "identifierPlaceholder": "you@institution.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "submitting": "Signing in…",
+      "orContinueWith": "or continue with",
+      "continueWithGoogle": "Continue with Google",
+      "noAccount": "Don't have an account?",
+      "contactInstitution": "Contact your institution",
+      "copyright": "Copyright © Nile Techno by Abdullah Elsawy 2026",
+      "errors": {
+        "identifierRequired": "Please enter your email address or phone number.",
+        "identifierInvalid": "Enter a valid email address or phone number.",
+        "passwordRequired": "Please enter your password.",
+        "passwordTooShort": "Password must be at least 8 characters.",
+        "notConnected": "The sign-in service is not connected yet. It will be wired to the server in a later step."
+      }
+    }
+  }
+}
