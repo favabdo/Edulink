@@ -1,0 +1,70 @@
+{
+  "pageTitle": "Home — EduLink",
+  "nav": {
+    "home": "Home",
+    "schedule": "My Schedule",
+    "sessions": "My Sessions",
+    "students": "Students",
+    "reports": "Reports",
+    "messages": "Messages",
+    "settings": "Settings"
+  },
+  "topbar": {
+    "menu": "Menu",
+    "notifications": "Notifications",
+    "account": "Account",
+    "logout": "Sign out"
+  },
+  "greeting": "Welcome, {{name}} 👋",
+  "greetingSub": "Wishing you a successful and productive day",
+  "startSession": "Start your session",
+  "today": "Today",
+  "dailySchedule": "Today's schedule",
+  "viewAll": "View all",
+  "quickTools": "Quick tools",
+  "todaySummary": "Today's summary",
+  "upcomingSessions": "Upcoming sessions",
+  "recentActivity": "Recent activity",
+  "quote": "Education does not change the world… it changes the people who will change the world",
+  "demoNote": "Sample data — the sessions and students tables are not built yet",
+  "stats": {
+    "todaySessions": "Today's sessions",
+    "completed": "Completed",
+    "remaining": "Upcoming",
+    "nextWeek": "Next week"
+  },
+  "status": {
+    "completed": "Completed",
+    "live": "Live now",
+    "inHour": "In an hour",
+    "inHours": "In {{count}} hours"
+  },
+  "actions": {
+    "details": "View details",
+    "join": "Join session"
+  },
+  "tools": {
+    "schedule": { "title": "Manage schedule", "desc": "Organise your sessions and times" },
+    "students": { "title": "Manage students", "desc": "Follow up on student progress" },
+    "reports": { "title": "Reports", "desc": "Session statistics and performance" },
+    "messages": { "title": "Messages", "desc": "Talk to your students" }
+  },
+  "subjects": {
+    "math": "Mathematics",
+    "english": "English",
+    "physics": "Physics",
+    "chemistry": "Chemistry"
+  },
+  "activity": {
+    "sessionCompleted": "Mathematics session completed successfully",
+    "studentJoined": "Sara Mohamed joined the session",
+    "studentAdded": "New student added: Ali Hassan",
+    "scheduleUpdated": "Next week's schedule was updated"
+  },
+  "ago": {
+    "minutes30": "30 minutes ago",
+    "hour1": "an hour ago",
+    "hours2": "2 hours ago",
+    "hours3": "3 hours ago"
+  }
+}

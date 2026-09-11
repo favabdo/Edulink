@@ -1,0 +1,34 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 60vh;
+  padding: 40px 24px;
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+  text-align: center;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.desc {
+  font-size: 14.5px;
+  color: var(--dash-muted);
+}

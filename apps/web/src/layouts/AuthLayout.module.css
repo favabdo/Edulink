@@ -1,0 +1,69 @@
+/* صفحة بارتفاع الشاشة على الأقل، وتُمرَّر طبيعيًا لو زاد المحتوى */
+.page {
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg-page);
+}
+
+@supports (min-height: 100dvh) {
+  .page {
+    min-height: 100dvh;
+  }
+}
+
+.shell {
+  display: flex;
+  min-height: inherit;
+}
+
+/* الكارت يتوسّط رأسيًا في اللوحة */
+.formPane {
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 40px 24px;
+}
+
+/* على الشاشات الأقصر تُقلَّص حشوة اللوحة أولًا حتى يبقى الكارت داخل الشاشة */
+@media (max-height: 860px) {
+  .formPane {
+    padding-block: 28px;
+  }
+}
+
+@media (max-height: 800px) {
+  .formPane {
+    padding-block: 20px;
+  }
+}
+
+@media (max-height: 760px) {
+  .formPane {
+    padding-block: 14px;
+  }
+}
+
+@media (max-height: 720px) {
+  .formPane {
+    padding-block: 8px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .formPane {
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 980px) {
+  .formPane {
+    padding-inline: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .formPane {
+    padding-inline: 14px;
+  }
+}

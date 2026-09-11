@@ -1,0 +1,20 @@
+{
+  "brand": "EduLink",
+  "tagline": "تعلّم • علّم • تطور",
+  "pageTitle": "EduLink",
+  "language": "اللغة",
+  "switchToEnglish": "English",
+  "switchToArabic": "العربية",
+  "theme": {
+    "label": "المظهر",
+    "light": "فاتح",
+    "dark": "غامق",
+    "switchToLight": "التبديل إلى المظهر الفاتح",
+    "switchToDark": "التبديل إلى المظهر الغامق"
+  },
+  "loading": "جارٍ التحميل…",
+  "comingSoon": {
+    "title": "هذه الصفحة قيد البناء",
+    "desc": "سنبنيها في الخطوات القادمة."
+  }
+}

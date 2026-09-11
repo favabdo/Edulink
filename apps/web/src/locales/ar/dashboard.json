@@ -1,0 +1,70 @@
+{
+  "pageTitle": "الرئيسية — EduLink",
+  "nav": {
+    "home": "الرئيسية",
+    "schedule": "جدولي اليومي",
+    "sessions": "حصصي",
+    "students": "الطلاب",
+    "reports": "التقارير",
+    "messages": "الرسائل",
+    "settings": "الإعدادات"
+  },
+  "topbar": {
+    "menu": "القائمة",
+    "notifications": "الإشعارات",
+    "account": "الحساب",
+    "logout": "تسجيل الخروج"
+  },
+  "greeting": "مرحبًا {{name}} 👋",
+  "greetingSub": "نتمنى لك يومًا موفقًا مليئًا بالنجاح",
+  "startSession": "إبدأ حصتك الآن",
+  "today": "اليوم",
+  "dailySchedule": "جدول الحصص اليومي",
+  "viewAll": "عرض الكل",
+  "quickTools": "أدوات سريعة",
+  "todaySummary": "ملخص اليوم",
+  "upcomingSessions": "الحصص القادمة",
+  "recentActivity": "النشاط الأخير",
+  "quote": "التعليم لا يغير العالم… فقط، بل يغير الأشخاص الذين سيغيرون العالم",
+  "demoNote": "بيانات تجريبية — جداول الحصص والطلاب لم تُبنَ بعد",
+  "stats": {
+    "todaySessions": "حصص اليوم",
+    "completed": "حصة مكتملة",
+    "remaining": "حصص قادمة",
+    "nextWeek": "حصص الأسبوع القادم"
+  },
+  "status": {
+    "completed": "حصة مكتملة",
+    "live": "حصة جارية",
+    "inHour": "قادم خلال ساعة",
+    "inHours": "قادم خلال {{count}} ساعات"
+  },
+  "actions": {
+    "details": "عرض التفاصيل",
+    "join": "الانضمام للحصة"
+  },
+  "tools": {
+    "schedule": { "title": "إدارة الجدول", "desc": "تنظيم حصصك ومواعيدك" },
+    "students": { "title": "إدارة الطلاب", "desc": "متابعة تقدم الطلاب" },
+    "reports": { "title": "التقارير", "desc": "إحصائيات وأداء الحصص" },
+    "messages": { "title": "الرسائل", "desc": "التواصل مع الطلاب" }
+  },
+  "subjects": {
+    "math": "الرياضيات",
+    "english": "اللغة الإنجليزية",
+    "physics": "الفيزياء",
+    "chemistry": "الكيمياء"
+  },
+  "activity": {
+    "sessionCompleted": "تم إنهاء حصة الرياضيات بنجاح",
+    "studentJoined": "انضم الطالب سارة محمد للحصة",
+    "studentAdded": "تم إضافة طالب جديد: علي حسن",
+    "scheduleUpdated": "تم تحديث جدول الحصص الأسبوع القادم"
+  },
+  "ago": {
+    "minutes30": "منذ 30 دقيقة",
+    "hour1": "منذ ساعة",
+    "hours2": "منذ ساعتين",
+    "hours3": "منذ 3 ساعات"
+  }
+}

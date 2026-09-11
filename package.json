@@ -1,32 +1,16 @@
 {
-  "name": "eduspace-web",
+  "name": "eduspace",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "description": "EduLink — منصة تعليمية أونلاين (monorepo)",
+  "workspaces": ["apps/*", "packages/*"],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "i18next": "^26.4.2",
-    "lucide-react": "^1.45.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-i18next": "^17.0.13",
-    "react-router-dom": "^7.18.3"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "oxlint": "^1.81.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "dev": "npm run dev --workspace @eduspace/web",
+    "build": "npm run build --workspace @eduspace/web",
+    "lint": "npm run lint --workspace @eduspace/web",
+    "preview": "npm run preview --workspace @eduspace/web"
   }
 }

@@ -1,0 +1,40 @@
+{
+  "pageTitle": "تسجيل الدخول — EduLink",
+  "showcase": {
+    "heading": "نُقرّب الطلاب والمدرسين أكثر",
+    "subheading": "منصة تعليمية متكاملة مصمّمة للمؤسسات التعليمية.",
+    "features": {
+      "liveClasses": "حصص مباشرة",
+      "expertTeachers": "مدرسون خبراء",
+      "secure": "آمن وموثوق"
+    },
+    "socialProof": "انضم إلى آلاف الطلاب والمؤسسات حول العالم."
+  },
+  "form": {
+    "welcome": "أهلًا بعودتك",
+    "subtitle": "سجّل الدخول إلى حساب مؤسستك",
+    "identifierLabel": "البريد الإلكتروني",
+    "identifierPlaceholder": "you@institution.com",
+    "passwordLabel": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور",
+    "rememberMe": "تذكّرني",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "submit": "تسجيل الدخول",
+    "submitting": "جارٍ تسجيل الدخول…",
+    "orContinueWith": "أو تابع باستخدام",
+    "continueWithGoogle": "المتابعة بحساب Google",
+    "noAccount": "ليس لديك حساب؟",
+    "contactInstitution": "تواصل مع مؤسستك",
+    "copyright": "Copyright © Nile Techno by Abdullah Elsawy 2026",
+    "errors": {
+      "identifierRequired": "من فضلك أدخل البريد الإلكتروني أو رقم الهاتف.",
+      "identifierInvalid": "أدخل بريدًا إلكترونيًا أو رقم هاتف صحيحًا.",
+      "passwordRequired": "من فضلك أدخل كلمة المرور.",
+      "passwordTooShort": "كلمة المرور يجب ألا تقل عن 8 أحرف.",
+      "generic": "تعذّر تسجيل الدخول. حاول مرة أخرى.",
+      "googleUnavailable": "الدخول بحساب Google غير متاح بعد."
+    }
+  }
+}

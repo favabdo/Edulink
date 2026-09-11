@@ -1,0 +1,20 @@
+{
+  "brand": "EduLink",
+  "tagline": "Learn • Teach • Grow",
+  "pageTitle": "EduLink",
+  "language": "Language",
+  "switchToEnglish": "English",
+  "switchToArabic": "العربية",
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
+  },
+  "loading": "Loading…",
+  "comingSoon": {
+    "title": "This page is under construction",
+    "desc": "We will build it in the coming steps."
+  }
+}
