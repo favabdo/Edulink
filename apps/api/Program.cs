@@ -6,6 +6,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 
+// رسائل السجل مكتوبة بالعربية — نضبط ترميز الطرفية على UTF-8 حتى تظهر صحيحة
+// على Windows (بدون هذا تظهر ؟؟؟؟ في الطرفية).
+try
+{
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+}
+catch
+{
+    // بعض البيئات لا تملك طرفية — نتجاهل
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -57,7 +68,19 @@ var app = builder.Build();
 
 // التطوير المحلي فقط: إنشاء ملف SQLite من نموذج الكيانات.
 // على Supabase / SQL Server يتم تشغيل db/schema.sql يدويًا — ولا يُنشئ التطبيق شيئًا.
-if (app.Configuration.GetValue("Database:EnsureCreated", false))
+// ---------------------------------------------------------------------------
+// إنشاء الجداول من نموذج الكيانات — **للتطوير المحلي على SQLite فقط**.
+//
+// على Supabase (PostgreSQL) أو SQL Server لا يُنشئ التطبيق ولا يعدّل أي جدول
+// إطلاقًا: المخطط يأتي من `database/schema.sql` وحده. هذا الحاجز موضوع في الكود
+// نفسه حتى لا يحدث الإنشاء بالخطأ لو نُسي إعداد EnsureCreated.
+// ---------------------------------------------------------------------------
+var isLocalSqlite =
+    !provider.Equals("Postgres", StringComparison.OrdinalIgnoreCase) &&
+    !provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase) &&
+    !provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase);
+
+if (isLocalSqlite && app.Configuration.GetValue("Database:EnsureCreated", false))
 {
     using var scope = app.Services.CreateScope();
     var devDb = scope.ServiceProvider.GetRequiredService<EduDbContext>();
@@ -78,6 +101,42 @@ if (app.Configuration.GetValue("Database:EnsureCreated", false))
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+// ---------------------------------------------------------------------------
+// فحص قاعدة البيانات عند الإقلاع.
+// يطبع في الطرفية على أي محرّك يعمل الـ API وهل الاتصال ناجح فعلًا — بدل التخمين.
+// ولو فشل الاتصال يطبع سببًا واضحًا ويستمر في العمل، فتبقى /api/health/db قادرة
+// على إخبارك بالحالة.
+// ---------------------------------------------------------------------------
+if (app.Configuration.GetValue("Database:ProbeOnStartup", true))
+{
+    using var probeScope = app.Services.CreateScope();
+    var probeDb = probeScope.ServiceProvider.GetRequiredService<EduDbContext>();
+    var dbLogger = probeScope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Database");
+
+    try
+    {
+        if (await probeDb.Database.CanConnectAsync())
+        {
+            var usersCount = await probeDb.Users.CountAsync();
+            dbLogger.LogInformation(
+                "قاعدة البيانات: {Provider} — الاتصال ناجح ✓ — عدد المستخدمين: {Count}",
+                provider, usersCount);
+        }
+        else
+        {
+            dbLogger.LogError(
+                "قاعدة البيانات: {Provider} — تعذّر الاتصال ✗. راجع ConnectionStrings:{Provider} في appsettings.Development.json",
+                provider, provider);
+        }
+    }
+    catch (Exception ex)
+    {
+        dbLogger.LogError(ex,
+            "قاعدة البيانات: {Provider} — فشل الاتصال ✗. تأكد من صحة سلسلة الاتصال ومن تشغيل database/schema.sql",
+            provider);
+    }
 }
 
 app.UseCors();
