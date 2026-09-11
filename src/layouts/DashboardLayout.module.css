@@ -1,0 +1,307 @@
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--dash-bg);
+}
+
+/* ============================ الشريط العلوي ============================ */
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 72px;
+  padding-inline: 22px;
+  background: var(--dash-card);
+  border-block-end: 1px solid var(--dash-border);
+}
+
+.brandGroup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand {
+  transform: scale(0.86);
+  transform-origin: center;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--dash-muted);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.iconButton:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+.bell {
+  position: relative;
+}
+
+.badge {
+  position: absolute;
+  inset-block-start: 9px;
+  inset-inline-end: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid var(--dash-card);
+}
+
+.languageButton {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--dash-border);
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.languageButton:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+/* ============================ حساب المستخدم ============================ */
+.account {
+  position: relative;
+}
+
+.accountButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border-radius: var(--radius-pill);
+  color: var(--dash-heading);
+  transition: background-color var(--transition-fast);
+}
+
+:global(html[dir='rtl']) .accountButton {
+  padding: 6px 6px 6px 12px;
+}
+
+.accountButton:hover {
+  background: var(--dash-hover);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.accountText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+:global(html[dir='rtl']) .accountText {
+  align-items: flex-end;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.accountRole {
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+.menu {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-end: 0;
+  min-width: 180px;
+  padding: 6px;
+  border: 1px solid var(--dash-border);
+  border-radius: 14px;
+  background: var(--dash-card);
+  box-shadow: var(--shadow-card);
+  z-index: 30;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--dash-heading);
+  font-size: 14px;
+  transition: background-color var(--transition-fast);
+}
+
+.menuItem:hover {
+  background: var(--dash-hover);
+}
+
+/* ============================ الجسم ============================ */
+.body {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 22px;
+  max-width: 1680px;
+  margin-inline: auto;
+}
+
+/* ============================ الشريط الجانبي ============================ */
+.sidebar {
+  position: sticky;
+  inset-block-start: 94px;
+  flex: 0 0 232px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: calc(100vh - 116px);
+  padding: 16px 12px;
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--dash-muted);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.navItem:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+  text-decoration: none;
+}
+
+.navItemActive {
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+.quoteCard {
+  margin-block-start: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 16px;
+  border-radius: 18px;
+  background: var(--dash-active-bg);
+  text-align: center;
+}
+
+.quoteIcon {
+  margin-inline: auto;
+  color: var(--dash-active-fg);
+}
+
+.quoteCard p {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--dash-heading);
+  opacity: 0.85;
+}
+
+/* ============================ المحتوى ============================ */
+.content {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ============================ الشاشات الصغيرة ============================ */
+@media (max-width: 1100px) {
+  .sidebar {
+    position: fixed;
+    inset-block-start: 72px;
+    inset-inline-start: 0;
+    z-index: 25;
+    height: calc(100dvh - 72px);
+    min-height: 0;
+    border-radius: 0;
+    transform: translateX(-105%);
+    transition: transform var(--transition-base);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  :global(html[dir='rtl']) .sidebar {
+    transform: translateX(105%);
+  }
+
+  :global(html[dir='rtl']) .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding-inline: 12px;
+  }
+
+  .accountText,
+  .languageButton {
+    display: none;
+  }
+}

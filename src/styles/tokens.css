@@ -116,6 +116,28 @@ html[data-theme='light'] {
   --photo-scrim: rgba(255, 255, 255, 0.75);
   --photo-scrim-mid: rgba(255, 255, 255, 0.3);
   --photo-scrim-end: rgba(255, 255, 255, 0);
+
+  /* --- لوحة التحكم الداخلية --- */
+  --dash-bg: #f4f6fb;
+  --dash-card: #ffffff;
+  --dash-border: #e9edf5;
+  --dash-heading: #0f1b33;
+  --dash-muted: #7b8aa3;
+  --dash-hover: #f5f7fc;
+  --dash-active-bg: #eef2ff;
+  --dash-active-fg: #4f46e5;
+  --dash-shadow: 0 2px 12px rgba(15, 27, 51, 0.05);
+
+  /* تدرّجات بطاقات الإحصاء */
+  --dash-tint-blue: #eef4ff;
+  --dash-tint-green: #e9f9f0;
+  --dash-tint-purple: #f4f0ff;
+  --dash-tint-pink: #fff0f4;
+  --dash-icon-blue: #3b82f6;
+  --dash-icon-green: #16a34a;
+  --dash-icon-purple: #8b5cf6;
+  --dash-icon-pink: #ec4899;
+  --dash-hero: linear-gradient(120deg, #eaf1ff 0%, #dfe9ff 55%, #eef3ff 100%);
 }
 
 /* ============================================================
@@ -171,4 +193,25 @@ html[data-theme='dark'] {
   --photo-scrim: rgba(10, 17, 32, 0.9);
   --photo-scrim-mid: rgba(10, 17, 32, 0.6);
   --photo-scrim-end: rgba(10, 17, 32, 0);
+
+  /* --- لوحة التحكم الداخلية --- */
+  --dash-bg: #0a1120;
+  --dash-card: #121a2b;
+  --dash-border: #1f2a3d;
+  --dash-heading: #eef2f9;
+  --dash-muted: #8b9ab3;
+  --dash-hover: #182234;
+  --dash-active-bg: rgba(99, 102, 241, 0.18);
+  --dash-active-fg: #a5b4fc;
+  --dash-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+
+  --dash-tint-blue: rgba(59, 130, 246, 0.14);
+  --dash-tint-green: rgba(22, 163, 74, 0.14);
+  --dash-tint-purple: rgba(139, 92, 246, 0.14);
+  --dash-tint-pink: rgba(236, 72, 153, 0.14);
+  --dash-icon-blue: #60a5fa;
+  --dash-icon-green: #4ade80;
+  --dash-icon-purple: #a78bfa;
+  --dash-icon-pink: #f472b6;
+  --dash-hero: linear-gradient(120deg, #17233c 0%, #1b2a4a 55%, #16213a 100%);
 }

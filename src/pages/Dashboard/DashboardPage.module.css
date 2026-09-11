@@ -1,0 +1,523 @@
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 22px;
+  align-items: start;
+}
+
+.mainColumn,
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+/* ============================ البطاقة العامة ============================ */
+.card {
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-block-end: 18px;
+}
+
+.sectionTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.viewAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--dash-muted);
+  text-decoration: none;
+}
+
+.viewAll:hover {
+  color: var(--dash-active-fg);
+  text-decoration: none;
+}
+
+/* ============================ البانر الترحيبي ============================ */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  overflow: hidden;
+  padding: 30px 32px;
+  border-radius: 22px;
+  background: var(--dash-hero);
+}
+
+.heroText {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heroTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.heroSub {
+  font-size: 15.5px;
+  color: var(--dash-muted);
+}
+
+.heroButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-block-start: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 15px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.heroButton:hover {
+  background: var(--primary-hover);
+}
+
+.heroArt {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 140px;
+  height: 140px;
+  color: #ffffff;
+}
+
+.heroArtCircle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #4f8ef7, #6366f1);
+  opacity: 0.95;
+}
+
+.heroArt svg {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================ جدول الحصص ============================ */
+.sessionList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sessionRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: 16px;
+  background: var(--dash-card);
+  transition: background-color var(--transition-fast);
+}
+
+.sessionRow:hover {
+  background: var(--dash-hover);
+}
+
+.sessionTime {
+  flex: none;
+  min-width: 118px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--dash-muted);
+}
+
+.sessionSubject {
+  flex: none;
+  min-width: 96px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.sessionStudent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--dash-muted);
+}
+
+.subjectIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+/* ============================ شرائح الحالة ============================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chipCompleted {
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.chipLive {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.chipSoon {
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+/* ============================ أزرار الإجراء ============================ */
+.sessionAction {
+  flex: none;
+}
+
+.joinButton,
+.detailsButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.joinButton {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.joinButton:hover {
+  background: var(--primary-hover);
+}
+
+.detailsButton {
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+}
+
+.detailsButton:hover {
+  background: var(--dash-hover);
+}
+
+.demoNote {
+  margin-block-start: 14px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--dash-muted);
+  opacity: 0.8;
+}
+
+/* ============================ الأدوات السريعة ============================ */
+.toolsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.toolCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: 18px;
+  text-decoration: none;
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.toolCard:hover {
+  background: var(--dash-hover);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.toolIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+}
+
+.toolText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.toolTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.toolDesc {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.toolArrow {
+  flex: none;
+  color: var(--dash-muted);
+}
+
+/* ============================ ملخص اليوم ============================ */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--dash-card);
+  margin-block-end: 6px;
+}
+
+.statValue {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--dash-heading);
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--dash-muted);
+}
+
+/* ============================ الحصص القادمة ============================ */
+.upcomingList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upcomingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upcomingRow .subjectIcon {
+  width: 44px;
+  height: 44px;
+}
+
+.upcomingText {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.upcomingSubject {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.upcomingStudent {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.upcomingTime {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+/* ============================ النشاط الأخير ============================ */
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activityIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.activityText {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--dash-heading);
+}
+
+.activityTime {
+  flex: none;
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+/* ============================ ألوان البطاقات ============================ */
+.tint_blue {
+  background: var(--dash-tint-blue);
+}
+
+.tint_green {
+  background: var(--dash-tint-green);
+}
+
+.tint_purple {
+  background: var(--dash-tint-purple);
+}
+
+.tint_pink {
+  background: var(--dash-tint-pink);
+}
+
+.icon_blue {
+  color: var(--dash-icon-blue);
+}
+
+.icon_green {
+  color: var(--dash-icon-green);
+}
+
+.icon_purple {
+  color: var(--dash-icon-purple);
+}
+
+.icon_pink {
+  color: var(--dash-icon-pink);
+}
+
+.tint_blue .subjectIcon,
+.subjectIcon.tint_blue {
+  color: var(--dash-icon-blue);
+}
+
+.subjectIcon.tint_green {
+  color: var(--dash-icon-green);
+}
+
+.subjectIcon.tint_purple {
+  color: var(--dash-icon-purple);
+}
+
+.subjectIcon.tint_pink {
+  color: var(--dash-icon-pink);
+}
+
+/* ============================ التجاوب ============================ */
+@media (max-width: 1400px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  .toolsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .sessionRow {
+    flex-wrap: wrap;
+  }
+
+  .sessionTime {
+    min-width: 0;
+  }
+
+  .sessionAction {
+    margin-inline-start: auto;
+  }
+
+  .statsGrid,
+  .toolsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroArt {
+    display: none;
+  }
+}

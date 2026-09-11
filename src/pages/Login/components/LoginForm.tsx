@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { BrandLogo } from '../../../components/BrandLogo'
 import { PreferenceToggles } from '../../../components/PreferenceToggles'
 import { GoogleIcon } from '../../../components/icons/GoogleIcon'
-import { signIn, signInWithGoogle } from '../../../services/auth'
+import { ApiError } from '../../../api/client'
+import { useAuth } from '../../../auth/authContext'
 import { validateIdentifier, validatePassword, type ValidationCode } from '../validation'
 import styles from './LoginForm.module.css'
 
@@ -26,11 +27,12 @@ type FieldErrors = {
 }
 
 /**
- * كارت تسجيل الدخول.
- * أزرار "نسيت كلمة المرور" و"تواصل مع مؤسستك" بلا وظيفة بعد — تنتظر مساراتها في خطوة قادمة.
+ * كارت تسجيل الدخول — موصول الآن بالـ API الحقيقي.
+ * أزرار "نسيت كلمة المرور" و"تواصل مع مؤسستك" بلا وظيفة بعد — تنتظر مساراتها.
  */
 export function LoginForm() {
   const { t } = useTranslation()
+  const { signIn } = useAuth()
   const identifierId = useId()
   const passwordId = useId()
 
@@ -41,18 +43,6 @@ export function LoginForm() {
   const [errors, setErrors] = useState<FieldErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  async function runAuth(action: () => Promise<never>) {
-    setFormError(null)
-    setSubmitting(true)
-    try {
-      await action()
-    } catch {
-      setFormError(t('login.form.errors.notConnected'))
-    } finally {
-      setSubmitting(false)
-    }
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -67,7 +57,17 @@ export function LoginForm() {
     setErrors(nextErrors)
     if (nextErrors.identifier || nextErrors.password) return
 
-    await runAuth(() => signIn({ identifier: identifier.trim(), password, remember }))
+    setFormError(null)
+    setSubmitting(true)
+    try {
+      // البريد يُرسل بحروف صغيرة دائمًا — هكذا يُخزَّن في قاعدة البيانات
+      await signIn(identifier.trim().toLowerCase(), password)
+      // بعد النجاح يُعيد الموجّه المستخدم إلى الصفحة الرئيسية تلقائيًا
+    } catch (error) {
+      setFormError(error instanceof ApiError ? error.message : t('login.form.errors.generic'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const passwordToggleLabel = passwordVisible
@@ -183,7 +183,7 @@ export function LoginForm() {
       <button
         type="button"
         className={styles.google}
-        onClick={() => void runAuth(signInWithGoogle)}
+        onClick={() => setFormError(t('login.form.errors.googleUnavailable'))}
         disabled={submitting}
       >
         <GoogleIcon size={20} />

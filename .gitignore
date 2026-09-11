@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# .NET (مشروع الـ API)
+api/bin/
+api/obj/
+*.user
+
+# قاعدة بيانات التطوير المحلية (SQLite) — لا تُرفع
+*.db
+*.db-shm
+*.db-wal
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -20,5 +30,4 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
