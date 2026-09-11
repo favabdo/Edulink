@@ -33,16 +33,50 @@ curl -X POST http://localhost:5279/api/setup/owner \
 
 ## التحويل إلى Supabase (PostgreSQL)
 
-1. شغّل `../db/schema.sql` في **Supabase SQL Editor**.
-2. اضبط الإعدادات (في `appsettings.json` أو متغيّرات بيئة):
+### 1) أنشئ الجداول
+**Supabase → SQL Editor → New query**، والصق محتوى **`database/schema.sql`** كاملًا ثم **Run**.
+الملف قابل لإعادة التشغيل بأمان. (اختياري: `database/seed-test-users.sql` لإنشاء حسابات تجريبية.)
 
-```bash
-Database__Provider=Postgres
-ConnectionStrings__Postgres="Host=...;Port=5432;Database=postgres;Username=...;Password=...;SSL Mode=Require;Trust Server Certificate=true"
-Database__EnsureCreated=false
+### 2) هات سلسلة الاتصال
+**Supabase → Project Settings → Database → Connection string → URI**:
+
+```
+postgresql://postgres.<ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:6543/postgres
 ```
 
-`Database__EnsureCreated=false` مهم: التطبيق لا ينشئ ولا يعدّل أي جدول — المخطط يأتي من `schema.sql` فقط.
+### 3) اضبط الإعدادات
+أسهل طريقة للتطوير المحلي: ملف **`apps/api/appsettings.Development.json`** (مستثنى من Git):
+
+```json
+{
+  "Database": { "Provider": "Postgres", "EnsureCreated": false },
+  "ConnectionStrings": {
+    "Postgres": "Host=aws-0-<region>.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.<ref>;Password=<PASSWORD>;SSL Mode=Require;Trust Server Certificate=true"
+  }
+}
+```
+
+⚠️ **`EnsureCreated=false` مهم:** التطبيق لا ينشئ ولا يعدّل أي جدول — المخطط من `database/schema.sql` فقط.
+
+### 4) تأكّد أن الـ API يقرأ من Supabase فعلًا
+
+```bash
+curl http://localhost:5279/api/health/db
+```
+
+يجب أن يظهر `"provider":"Postgres"` و`"canConnect":true` مع `usersCount` بالعدد الحقيقي،
+وفي بيئة التطوير `serverVersion` بنسخة PostgreSQL — إثبات مباشر أن القراءة من القاعدة.
+
+### 5) اختبار كامل يثبت أن الـ API يقرأ من القاعدة
+
+1. أضف صفًّا **من SQL Editor مباشرة** (لا من الـ API):
+   ```sql
+   INSERT INTO "Edu_Users" (name, email, password, role, states, access)
+   VALUES ('مدرس تجريبي', 'from-sql@edulink.test', crypt('Teacher@12345', gen_salt('bf', 10)), 0, 1, 1);
+   ```
+2. `curl http://localhost:5279/api/health/db` → لاحظ أن `usersCount` زاد.
+3. سجّل الدخول بهذا الحساب ← نجاح الدخول يثبت أن الـ API قرأ الصف من القاعدة الحقيقية.
+4. غيّر `access` إلى `0` في Supabase وأعد المحاولة → يجب أن تُرفض بـ **403**.
 
 ---
 
