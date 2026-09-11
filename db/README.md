@@ -38,19 +38,25 @@ SELECT * FROM Edu_Users;     -- ❌ يبحث عن جدول باسم edu_users
 | `Edu_Users` | **موظفو المنصة**: المدرسون والمشرفون والمديرون والأونر — مع `role` والتفعيل والظهور والتوكن والصورة والإشعارات |
 | `Edu_Students` | **الطلاب** — نفس أعمدة الحساب بدون `role` |
 | `Edu_Parents` | **أولياء الأمور** — نفس أعمدة الطلاب تمامًا |
-| `Edu_StudentParents` | **جدول الربط** بين الطالب وولي الأمر (علاقة متعدد لمتعدد) |
+| `Edu_Relations` | **جدول الربط** بين الطالب وولي الأمر (علاقة متعدد لمتعدد) |
+
+**أعمدة الحساب الثلاثة** (`Edu_Users` / `Edu_Students` / `Edu_Parents`) — بنفس الترتيب:
+`id` · **`name`** · `email` · `password` · (`role` في Users فقط) · `token` · `states` ·
+`access` · `img_url` · `notifications` · `created_at` · `updated_at`
 
 خريطة `role` في `Edu_Users`: **0 = مدرس · 1 = مشرف · 2 = مدير · 3 = أونر**
 
 **معنى عمود `notifications`:** هل **إنشاء هذا السجل تحديدًا** أُرسل كإشعار للكل أم لا
 (`0` = لا · `1` = نعم). وهو **ليس** إشعارات موجّهة لصاحب الحساب.
 
+> ⚠️ جدول الربط `Edu_Relations` **ليس فيه عمود `name`** — فهو جدول ربط لا كيان له اسم.
+
 ## كيف يُربط الطالب بولي الأمر
 
-العلاقة **متعدد لمتعدد**، فلها جدول ربط مستقل `Edu_StudentParents`:
+العلاقة **متعدد لمتعدد**، فلها جدول ربط مستقل `Edu_Relations`:
 
 ```
-Edu_Students ──< Edu_StudentParents >── Edu_Parents
+Edu_Students ──< Edu_Relations >── Edu_Parents
 ```
 
 | عمود الربط | المعنى |
