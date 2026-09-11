@@ -290,6 +290,25 @@ ALTER TABLE "Edu_Users"    ADD COLUMN IF NOT EXISTS name VARCHAR(255);
 ALTER TABLE "Edu_Students" ADD COLUMN IF NOT EXISTS name VARCHAR(255);
 ALTER TABLE "Edu_Parents"  ADD COLUMN IF NOT EXISTS name VARCHAR(255);
 
+-- ----------------------------------------------------------------------------
+--  [2026-09-12] تفعيل Row Level Security على جداول المنصة — **إصلاح أمني مهم**
+--
+--  المنصة لا تستخدم Supabase Data API إطلاقًا: كل قراءة وكتابة تمرّ من الباك اند
+--  الذي يتصل بـ PostgreSQL مباشرة. ولذلك نُفعِّل RLS **بدون أي policy** فيصبح
+--  الوصول عبر الـ Data API ممنوعًا تمامًا، بينما يظل اتصال الباك اند يعمل
+--  كالمعتاد (مالك الجدول يتجاوز RLS تلقائيًا).
+--
+--  ⚠️ بدون هذه الأسطر: أي شخص يملك المفتاح العام (publishable key) — وهو مكشوف
+--     بطبيعته في أي تطبيق واجهة — يستطيع **قراءة كل الصفوف بما فيها هاشات كلمات
+--     المرور**، وقد يستطيع تعديلها أو حذفها.
+--
+--  تشغيل هذه الأسطر آمن ومتكرر بلا مشاكل (idempotent).
+-- ----------------------------------------------------------------------------
+ALTER TABLE "Edu_Users"     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Edu_Students"  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Edu_Parents"   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Edu_Relations" ENABLE ROW LEVEL SECURITY;
+
 -- ============================================================================
 
 
@@ -310,6 +329,10 @@ ALTER TABLE "Edu_Parents"  ADD COLUMN IF NOT EXISTS name VARCHAR(255);
 --     • حذف جدول         : IF OBJECT_ID(...) IS NOT NULL DROP TABLE بدل DROP TABLE IF EXISTS
 --     • تحديث updated_at : تريجر AFTER UPDATE لكل جدول بدل تريجر BEFORE UPDATE
 --          (وكل ما عدا ذلك — القيود والفهارس وأسماء الأعمدة — متطابق)
+--
+--  ملاحظة عن Row Level Security: تفعيلها أعلى الملف مطلوب **في Supabase فقط**،
+--  لأن Supabase تنشر الجداول عبر Data API عامة. أما SQL Server خلف الباك اند
+--  فليس معرّضًا للجمهور أصلًا، فلا حاجة لسياسة أمان صفوف فيه.
 -- ============================================================================
 -- ============================================================================
 
