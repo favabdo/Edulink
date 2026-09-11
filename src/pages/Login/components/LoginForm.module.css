@@ -1,10 +1,11 @@
-/* الكارت مقاس 544px بحشو 45px — مطابق لقياس الريفيرنس، وكل المقاسات تتقلّص مع --u
+/* الكارت مقاس 544px بحشو 40px — مطابق لعرض الريفيرنس.
+   الارتفاع مضغوط قليلًا عن الريفيرنس ليدخل في شاشات اللابتوب بلا تمرير.
    روح المشروع: كل الحقول والأزرار والصناديق بيضاوية. */
 .card {
   display: flex;
   flex-direction: column;
-  width: calc(544 * var(--u));
-  padding: calc(22 * var(--u)) calc(45 * var(--u)) calc(30 * var(--u));
+  width: min(calc(544 * var(--u)), 100%);
+  padding: calc(16 * var(--u)) calc(40 * var(--u)) calc(18 * var(--u));
   border: 1px solid rgba(20, 45, 90, 0.04);
   border-radius: calc(64 * var(--u));
   background: var(--bg-elevated);
@@ -15,23 +16,23 @@
 .topRow {
   display: flex;
   justify-content: flex-end;
-  margin-block-end: calc(12 * var(--u));
+  margin-block-end: calc(8 * var(--u));
 }
 
 .header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(12 * var(--u));
+  gap: calc(10 * var(--u));
   text-align: center;
 }
 
 .header > :first-child {
-  margin-block-end: calc(16 * var(--u));
+  margin-block-end: calc(12 * var(--u));
 }
 
 .title {
-  font-size: calc(34 * var(--u));
+  font-size: calc(30 * var(--u));
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.022em;
@@ -39,31 +40,31 @@
 }
 
 .subtitle {
-  font-size: calc(17 * var(--u));
-  line-height: 1.55;
+  font-size: calc(16 * var(--u));
+  line-height: 1.5;
   color: var(--text-subtle);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  margin-block-start: calc(20 * var(--u));
+  margin-block-start: calc(14 * var(--u));
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: calc(12 * var(--u));
+  gap: calc(10 * var(--u));
 }
 
 .field + .field {
-  margin-block-start: calc(24 * var(--u));
+  margin-block-start: calc(18 * var(--u));
 }
 
 .label {
-  font-size: calc(15 * var(--u));
+  font-size: calc(14 * var(--u));
   font-weight: 600;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--text-heading);
   padding-inline-start: calc(20 * var(--u));
 }
@@ -76,13 +77,14 @@
 
 .input {
   width: 100%;
-  padding-block: calc(13 * var(--u));
+  padding-block: calc(11 * var(--u));
   padding-inline: calc(50 * var(--u)) calc(22 * var(--u));
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--bg-field);
   color: var(--text-heading);
-  font-size: calc(16 * var(--u));
+  /* لا يقل عن 16px أبدًا: iOS يعمل زووم تلقائي عند تركيز حقل خطّه أصغر من ذلك */
+  font-size: max(16px, calc(16 * var(--u)));
   line-height: 1.55;
   transition:
     border-color var(--transition-fast),
@@ -147,8 +149,8 @@
 }
 
 .formError {
-  padding: calc(12 * var(--u)) calc(20 * var(--u));
-  margin-block-end: calc(16 * var(--u));
+  padding: calc(11 * var(--u)) calc(20 * var(--u));
+  margin-block-end: calc(14 * var(--u));
   border: 1px solid var(--danger-border);
   border-radius: var(--radius-control);
   background: var(--danger-bg);
@@ -162,7 +164,7 @@
   align-items: center;
   justify-content: space-between;
   gap: calc(12 * var(--u));
-  margin-block-start: calc(20 * var(--u));
+  margin-block-start: calc(15 * var(--u));
   padding-inline: calc(14 * var(--u));
 }
 
@@ -170,7 +172,7 @@
   display: inline-flex;
   align-items: center;
   gap: calc(9 * var(--u));
-  font-size: calc(16 * var(--u));
+  font-size: calc(15 * var(--u));
   color: var(--text-muted);
   cursor: pointer;
 }
@@ -182,8 +184,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: calc(21 * var(--u));
-  height: calc(21 * var(--u));
+  width: calc(20 * var(--u));
+  height: calc(20 * var(--u));
   margin: 0;
   border: calc(2 * var(--u)) solid var(--border-strong);
   border-radius: 50%;
@@ -214,7 +216,7 @@
 }
 
 .link {
-  font-size: calc(16 * var(--u));
+  font-size: calc(15 * var(--u));
   font-weight: 600;
   color: var(--accent);
   transition: color var(--transition-fast);
@@ -231,12 +233,12 @@
   justify-content: center;
   gap: calc(10 * var(--u));
   width: 100%;
-  padding-block: calc(14 * var(--u));
-  margin-block-start: calc(20 * var(--u));
+  padding-block: calc(12 * var(--u));
+  margin-block-start: calc(15 * var(--u));
   border-radius: var(--radius-control);
   background: var(--primary);
   color: var(--primary-contrast);
-  font-size: calc(17 * var(--u));
+  font-size: calc(16 * var(--u));
   font-weight: 700;
   transition: background-color var(--transition-fast);
 }
@@ -277,9 +279,9 @@
   display: flex;
   align-items: center;
   gap: calc(14 * var(--u));
-  margin-block-start: calc(20 * var(--u));
+  margin-block-start: calc(15 * var(--u));
   padding-inline: calc(14 * var(--u));
-  font-size: calc(15 * var(--u));
+  font-size: calc(14 * var(--u));
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -298,13 +300,13 @@
   justify-content: center;
   gap: calc(10 * var(--u));
   width: 100%;
-  padding-block: calc(14 * var(--u));
-  margin-block-start: calc(18 * var(--u));
+  padding-block: calc(12 * var(--u));
+  margin-block-start: calc(13 * var(--u));
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--bg-field);
   color: var(--text-heading);
-  font-size: calc(16 * var(--u));
+  font-size: calc(15 * var(--u));
   font-weight: 600;
   transition:
     background-color var(--transition-fast),
@@ -327,17 +329,24 @@
 }
 
 .footer {
-  margin-block-start: calc(28 * var(--u));
+  margin-block-start: calc(18 * var(--u));
   text-align: center;
-  font-size: calc(15 * var(--u));
+  font-size: calc(14 * var(--u));
   color: var(--text-muted);
 }
 
 .copyright {
-  margin-block-start: calc(22 * var(--u));
+  margin-block-start: calc(12 * var(--u));
   text-align: center;
-  font-size: calc(13 * var(--u));
+  font-size: calc(12 * var(--u));
   line-height: 1.4;
   color: var(--text-muted);
   opacity: 0.9;
+}
+
+@media (max-width: 520px) {
+  .card {
+    padding-inline: calc(22 * var(--u));
+    border-radius: calc(48 * var(--u));
+  }
 }

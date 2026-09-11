@@ -19,6 +19,9 @@ body {
   background: var(--bg-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* يمنع iOS من تكبير النص تلقائيًا */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   transition:
     background-color var(--transition-base),
     color var(--transition-base);
