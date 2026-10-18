@@ -119,7 +119,7 @@ ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://localhost:5279
 
 Database__Provider=SqlServer
-ConnectionStrings__SqlServer=Server=nile-server.com,1433;Database=nile-old;User ID=sa;Password=REPLACE_WITH_SA_PASSWORD;Encrypt=False;TrustServerCertificate=True;MultipleActiveResultSets=True
+ConnectionStrings__SqlServer=Server=nile-server.com,1433;Database=nile-old;User ID=sa;Password=REPLACE_WITH_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=True
 
 Network__UseForwardedHeaders=true
 Network__ForwardedHeadersLimit=1
@@ -130,7 +130,8 @@ Meeting__TurnTtlSeconds=86400
 
 - **`ASPNETCORE_URLS` إلزامي هنا:** بدونه لا يربط Kestrel على 5279 فتبدو كل نداءات `curl` فاشلة (`000`) كأن الـ API مات — وهو فخّ مقيس.
 - المنفذ بفاصلة `Server=...,1433` (لا نقطتان).
-- **`Encrypt=False` + `TrustServerCertificate=True`:** سيرفر **SQL Server 2014** لا يخدم TLS حديثًا فيرفضه السائق قبل إتمام المصافحة؛ هذان السطران يجعلانه يقبل. **الثمن أن مسار القاعدة غير مُشفَّر** — المقبول أن تكون القاعدة على نفس العربة أو على شبكة داخلية، وأن يُنهِي TLS الحركةَ العامة عند nginx أمام الـ API. لا يُرخَّص أي أمان آخر بصمت: الـ API لا يضيف أيًا منهما تلقائيًا، و`appsettings.json` يبقى بلا سرّ.
+- **التشفير — مقيس من هذا الجهاز على `nile-server.com,1433` (2026-10-18):** بـ **`Encrypt=True;TrustServerCertificate=True`** تمت مصافحة TLS بنجاح ووصل الـ API إلى التحقق من الدخول؛ الفشل الوحيد كان `Error 18456, State:1 — Login failed for user 'sa'` (كلمة السر). **فلا حاجة إلى إطفاء التشفير** مع هذا السيرفر. أما موثّق ما سبق («السائق يرفض المصافحة») فلم أُعِده اليوم ولا أعرف أي تركيبة أخرجته تحديدًا — والتركيبة التي تستخدم `Encrypt=True` **بلا** `TrustServerCertificate` على شهادة غير موثوقة **لم أختبرها**، فلا تُبنى عليها قرارات.
+  ⚠️ **ما لا يضمنه هذا:** `TrustServerCertificate=True` = تشفير **بلا تحقّق من هوية السيرفر**، فالمسار محمي من القراءة لا من الانتحال. واللوج يطبع `The negotiated TLS 1.0 is an insecure protocol` — أي أن السيرفر يخدم TLS 1.0؛ الصواب عند التسليم: تفعيل **TLS 1.2** على السيرفر + شهادة موثوقة، ثم `Encrypt=True;TrustServerCertificate=False`. الـ API لا يضيف أيًّا من العلمين تلقائيًا، و`appsettings.json` يبقى بلا سرّ.
 - لا يُنشئ الـ API أي جدول: المخطط من `schema.sql` وحده (`EnsureCreated` يعمل على SQLite المحلي فقط).
 
 ### 3) شغّل وتحقّق
