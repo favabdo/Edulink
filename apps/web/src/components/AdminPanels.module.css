@@ -1,0 +1,156 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: calc(14 * var(--u));
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  padding: calc(16 * var(--u));
+  border-radius: calc(18 * var(--u));
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.statIcon {
+  display: grid;
+  place-items: center;
+  width: calc(42 * var(--u));
+  height: calc(42 * var(--u));
+  border-radius: 12px;
+  flex: none;
+}
+
+.stat_blue .statIcon { color: #1d4ed8; background: #dbeafe; }
+.stat_purple .statIcon { color: #6d28d9; background: #ede9fe; }
+.stat_green .statIcon { color: #047857; background: #d1fae5; }
+.stat_pink .statIcon { color: #be185d; background: #fce7f3; }
+.stat_red .statIcon { color: #b91c1c; background: #fee2e2; }
+
+.statBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.statValue {
+  font-size: calc(22 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.statLabel {
+  font-size: calc(12.5 * var(--u));
+  color: var(--dash-muted);
+}
+
+.statHint {
+  margin-block-start: calc(2 * var(--u));
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  font-size: calc(11.5 * var(--u));
+  font-weight: 700;
+}
+
+.delta_up { color: #047857; }
+.delta_down { color: #b42318; }
+.delta_flat { color: var(--dash-muted); }
+
+.card {
+  padding: calc(20 * var(--u));
+  border-radius: calc(20 * var(--u));
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.cardTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  margin-block-end: calc(14 * var(--u));
+  font-size: calc(16 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.empty {
+  font-size: calc(13.5 * var(--u));
+  color: var(--dash-muted);
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: minmax(80px, 130px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  font-size: calc(13 * var(--u));
+}
+
+.barName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dash-heading);
+}
+
+.barTrack {
+  height: calc(10 * var(--u));
+  border-radius: 999px;
+  background: var(--dash-hover, #eef2ff);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand, #4f46e5);
+}
+
+.barValue {
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.alertList {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--u));
+}
+
+.alertGroup {
+  display: flex;
+  flex-direction: column;
+  gap: calc(4 * var(--u));
+}
+
+.alertHead {
+  font-size: calc(13.5 * var(--u));
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.alertNames {
+  font-size: calc(12.5 * var(--u));
+  color: var(--dash-muted);
+}
+
+.latency {
+  margin-block-start: calc(14 * var(--u));
+  font-size: calc(12.5 * var(--u));
+  color: var(--dash-muted);
+}

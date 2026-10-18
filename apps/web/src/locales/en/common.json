@@ -13,8 +13,35 @@
     "switchToDark": "Switch to dark theme"
   },
   "loading": "Loading…",
+  "saving": "Saving…",
+  "manage": {
+    "title": "Manage account",
+    "open": "Manage account",
+    "close": "Close",
+    "name": "Full name",
+    "email": "Email",
+    "password": "New password",
+    "passwordHint": "Leave it empty to keep the current password; type at least 8 characters to reset it.",
+    "activeLabel": "Account active",
+    "activeHint": "Pausing blocks sign-in immediately (access = 0) and keeps the student's data and session history.",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "errName": "Name must be at least 3 characters.",
+    "errPassword": "Password must be at least 8 characters.",
+    "failed": "Could not save the changes."
+  },
+  "roles": {
+    "owner": "Owner",
+    "manager": "Manager",
+    "supervisor": "Supervisor",
+    "teacher": "Teacher",
+    "student": "Student",
+    "parent": "Parent"
+  },
   "comingSoon": {
     "title": "This page is under construction",
     "desc": "We will build it in the coming steps."
-  }
+  },
+  "retry": "Retry",
+  "loadingFromServer": "Reading data from the server…"
 }

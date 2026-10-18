@@ -1,0 +1,93 @@
+{
+  "title": "Live Session",
+  "self": "You",
+  "observeBadge": "Viewer — no interaction",
+  "notFound": {
+    "title": "Session not found",
+    "back": "Back to sessions"
+  },
+  "noRecording": "No recording",
+  "noRecordingHint": "Session recording is prohibited by platform policy — only metadata is saved (duration and attendance)",
+  "status": {
+    "connecting": "Connecting…",
+    "connected": "Connected",
+    "reconnecting": "Reconnecting…",
+    "disconnected": "Disconnected",
+    "denied": "Connection failed"
+  },
+  "roles": {
+    "teacher": "Teacher",
+    "student": "Student",
+    "observer": "Supervisor"
+  },
+  "waiting": {
+    "title": "Waiting for the teacher",
+    "desc": "The session room is open — video starts as soon as the teacher joins"
+  },
+  "screen": {
+    "you": "You are sharing your screen",
+    "peer": "{{name}} is sharing their screen"
+  },
+  "tabs": {
+    "chat": "Chat",
+    "people": "Participants"
+  },
+  "chat": {
+    "empty": "No messages yet — start the conversation",
+    "placeholder": "Write a message…",
+    "send": "Send"
+  },
+  "board": {
+    "title": "Shared whiteboard",
+    "clear": "Clear",
+    "color": "Pen color"
+  },
+  "controls": {
+    "mic": "Mute",
+    "micOff": "Unmute",
+    "camera": "Camera on",
+    "cameraOff": "Stop camera",
+    "hand": "Raise hand",
+    "screen": "Share screen",
+    "board": "Whiteboard",
+    "boardClose": "Video",
+    "chat": "Chat",
+    "panelClose": "Close panel",
+    "leave": "Leave"
+  },
+  "leave": {
+    "title": "Leave the session?",
+    "descStudent": "You will leave while the teacher and other students continue.",
+    "descHost": "You can simply leave, or end the session for everyone and save its summary.",
+    "stay": "Stay",
+    "exitOnly": "Leave only",
+    "endSession": "End session for everyone"
+  },
+  "summary": {
+    "title": "Session ended",
+    "savedTitle": "Session summary saved",
+    "desc": "There is no video recording — this is the saved session metadata:",
+    "metadataOnly": "Metadata only — no recording",
+    "endedBy": "Ended by: {{name}}",
+    "code": "Session code",
+    "teacher": "Teacher",
+    "student": "Student",
+    "startedAt": "Started",
+    "endedAt": "Ended",
+    "duration": "Duration",
+    "attendance": "Student attendance",
+    "note": "Teacher notes",
+    "notePlaceholder": "What was covered in this session?",
+    "save": "Save summary",
+    "backToSessions": "Back to sessions"
+  },
+  "attendance": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent"
+  },
+  "notice": {
+    "iceFailed": "Could not load the connection settings from the server — the room is using public STUN only, so audio and video may fail on strict NAT networks.",
+    "iceEmpty": "The server returned an empty ICE server list — check the Meeting settings on the server."
+  }
+}

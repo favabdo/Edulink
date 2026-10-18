@@ -20,11 +20,8 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password",
     "rememberMe": "Remember me",
-    "forgotPassword": "Forgot password?",
     "submit": "Sign In",
     "submitting": "Signing in…",
-    "orContinueWith": "or continue with",
-    "continueWithGoogle": "Continue with Google",
     "noAccount": "Don't have an account?",
     "contactInstitution": "Contact your institution",
     "copyright": "Copyright © Nile Techno by Abdullah Elsawy 2026",
@@ -33,8 +30,7 @@
       "identifierInvalid": "Enter a valid email address or phone number.",
       "passwordRequired": "Please enter your password.",
       "passwordTooShort": "Password must be at least 8 characters.",
-      "generic": "Could not sign in. Please try again.",
-      "googleUnavailable": "Signing in with Google is not available yet."
+      "generic": "Could not sign in. Please try again."
     }
   }
 }

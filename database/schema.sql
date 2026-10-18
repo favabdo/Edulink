@@ -13,8 +13,9 @@
 --
 --   3) اسم كل جدول جديد يبدأ بـ **Edu_** ثم اسم الجدول.
 --
---   4) يعمل الآن على **Supabase (PostgreSQL)**، ونسخة **SQL Server** جاهزة في
---      آخر الملف (مُعلَّقة) للانتقال المستقبلي إلى سيرفر الشركة.
+--   4) قسم **SQL Server** جاهز ومُجرَّب فعليًا (شُغِّل والقاعدة تقرأ منه من الـ API).
+--      يبقى مُعلَّقًا بين /* و */ فقط حتى يُلصق الملف كاملًا على Supabase بلا خطأ —
+--      استخرجه وشغّله كما هو موضح في رأس ذلك القسم.
 --
 --
 --  طريقة التشغيل على Supabase:
@@ -253,261 +254,740 @@ CREATE TRIGGER "trg_Edu_Relations_updated_at"
 
 
 -- ============================================================================
---  5) إضافات جديدة (كل تعديل قادم يُضاف هنا بالترتيب)
--- ============================================================================
+--  [2026-09-28] (4) جداول الجلسات الحقيقية — Edu_Sessions + Edu_SessionAttendance
 --
---  اكتب الإضافة بنفس النمط:
---     ALTER TABLE "Edu_X" ADD COLUMN IF NOT EXISTS ... ;      -- عمود جديد
---     CREATE TABLE IF NOT EXISTS "Edu_X" ( ... );             -- جدول جديد
---     CREATE INDEX IF NOT EXISTS ... ;                        -- فهرس جديد
+--  هذه الجداول تحل محل البيانات التجريبية في `seed.ts` وتجعل المنصة
+--  تعمل بالبيانات الحقيقية من قاعدة البيانات.
 --
---  ولا تحذف أي شيء من الأعلى — الملف تراكمي.
---
--- ----------------------------------------------------------------------------
---  [2026-09-11] (1) إعادة تسمية جدول الربط: Edu_StudentParents → Edu_Relations
---
---  الجدول أعلاه مُعرَّف باسمه الجديد. والسطر التالي يحذف الاسم القديم إن كان
---  قد أُنشئ من تشغيل سابق للملف. (الجدول كان فارغًا — لا يوجد backend بعد.)
--- ----------------------------------------------------------------------------
-DROP TABLE IF EXISTS "Edu_StudentParents";
-
--- ----------------------------------------------------------------------------
---  [2026-09-11] (2) إضافة العمود img_url إلى Edu_Users
---
---  موجود بالفعل في تعريف الجدول أعلى الملف، والسطر التالي يضمن إضافته أيضًا
---  لقواعد بيانات أُنشئت قبل هذا التعديل.
--- ----------------------------------------------------------------------------
-ALTER TABLE "Edu_Users" ADD COLUMN IF NOT EXISTS img_url TEXT;
-
--- ----------------------------------------------------------------------------
---  [2026-09-11] (3) إضافة العمود name إلى جداول الحسابات الثلاثة
---
---  موجود بالفعل في تعريفات الجداول أعلى الملف، والسطورة التالية تضمن إضافته
---  لقواعد بيانات أُنشئت قبل التعديل.
---  ⚠️ جدول الربط "Edu_Relations" **مستثنى** — لا عمود name فيه.
--- ----------------------------------------------------------------------------
-ALTER TABLE "Edu_Users"    ADD COLUMN IF NOT EXISTS name VARCHAR(255);
-ALTER TABLE "Edu_Students" ADD COLUMN IF NOT EXISTS name VARCHAR(255);
-ALTER TABLE "Edu_Parents"  ADD COLUMN IF NOT EXISTS name VARCHAR(255);
-
--- ----------------------------------------------------------------------------
---  [2026-09-12] تفعيل Row Level Security على جداول المنصة — **إصلاح أمني مهم**
---
---  المنصة لا تستخدم Supabase Data API إطلاقًا: كل قراءة وكتابة تمرّ من الباك اند
---  الذي يتصل بـ PostgreSQL مباشرة. ولذلك نُفعِّل RLS **بدون أي policy** فيصبح
---  الوصول عبر الـ Data API ممنوعًا تمامًا، بينما يظل اتصال الباك اند يعمل
---  كالمعتاد (مالك الجدول يتجاوز RLS تلقائيًا).
---
---  ⚠️ بدون هذه الأسطر: أي شخص يملك المفتاح العام (publishable key) — وهو مكشوف
---     بطبيعته في أي تطبيق واجهة — يستطيع **قراءة كل الصفوف بما فيها هاشات كلمات
---     المرور**، وقد يستطيع تعديلها أو حذفها.
---
---  تشغيل هذه الأسطر آمن ومتكرر بلا مشاكل (idempotent).
--- ----------------------------------------------------------------------------
-ALTER TABLE "Edu_Users"     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "Edu_Students"  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "Edu_Parents"   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "Edu_Relations" ENABLE ROW LEVEL SECURITY;
-
+--  Edu_Sessions: كل صف = حصة مجدولة أو منفذة أو منتهية.
+--  Edu_SessionAttendance: سجل حضور كل طالب في كل حصة.
 -- ============================================================================
 
+-- ============================================================================
+--  5) Edu_Sessions — جداول الحصص الحقيقية
+-- ============================================================================
+--
+--  status   : scheduled (مجدولة) | live (جارية) | completed (منتهية) |
+--              cancelled (ملغاة) | no_show (غياب من الطالب)
+--  durationMin: مدة الحصة بالدقائق (30 / 45 / 60)
+--  teacherId / studentId: مرجع للحضور والمشاركة
+--  roomCode : كود الغرفة في LiveKit (EL-XXXX) — يُنشأ تلقائيًا
+--  joinedAt : وقت انضمام المدرس/الطالب للحصة (لحساب المدة الفعلية)
+--  endedAt  : وقت نهاية الحصة الفعلية (لحساب المدة)
+--  metadata : JSONB للمعلومات الإضافية (ملاحظات، ملخص، إحصائيات)
+--
+--  ⚠️ التسجيل مرفوض: هذا الجدول يحتفظ metadata فقط (المدة، الحضور)،
+--     ولا يُخزَّن تسجيل فيديو أو صوت.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "Edu_Sessions" (
+    id            BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    code          VARCHAR(16)  NOT NULL,
+    subject       VARCHAR(32)  NOT NULL,
+    teacherId     BIGINT       NOT NULL,
+    studentId     BIGINT       NOT NULL,
+    gradeKey      VARCHAR(4)   NOT NULL DEFAULT 'g7',
+    durationMin   SMALLINT     NOT NULL DEFAULT 45,
+    status        VARCHAR(16)  NOT NULL DEFAULT 'scheduled',
+    attendance    VARCHAR(16)  NULL,
+    roomCode      VARCHAR(32),
+    startsAt      TIMESTAMPTZ  NOT NULL,
+    endsAt        TIMESTAMPTZ  NULL,
+    joinedAt      TIMESTAMPTZ  NULL,
+    makeupOfId    BIGINT       NULL,
+    metadata      JSONB        NULL DEFAULT '{}',
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_sessions               PRIMARY KEY (id),
+    CONSTRAINT uq_edu_sessions_code          UNIQUE (code),
+    CONSTRAINT fk_edu_sessions_teacher       FOREIGN KEY (teacherId) REFERENCES "Edu_Users" (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_edu_sessions_student       FOREIGN KEY (studentId) REFERENCES "Edu_Students" (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_edu_sessions_makeup_of     FOREIGN KEY (makeupOfId) REFERENCES "Edu_Sessions" (id) ON DELETE SET NULL,
+    CONSTRAINT ck_edu_sessions_status        CHECK (status IN ('scheduled', 'live', 'completed', 'cancelled', 'no_show')),
+    CONSTRAINT ck_edu_sessions_attendance    CHECK (attendance IN ('present', 'late', 'absent', NULL)),
+    CONSTRAINT ck_edu_schedules_duration     CHECK (durationMin IN (30, 45, 60))
+);
+
+COMMENT ON TABLE  "Edu_Sessions"            IS 'جداول الحصص الحقيقية — المخطط الأسبوعي والسجل الفعلي';
+COMMENT ON COLUMN "Edu_Sessions".code          IS 'كود الحصة الفريد (EL-XXXX)';
+COMMENT ON COLUMN "Edu_Sessions".status        IS 'scheduled/live/completed/cancelled/no_show';
+COMMENT ON COLUMN "Edu_Sessions".roomCode      IS 'كود غرفة LiveKit — يُنشأ تلقائيًا';
+COMMENT ON COLUMN "Edu_Sessions".metadata      IS 'JSONB للمعلومات الإضافية (ملاحظات، ملخص)';
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_Sessions_teacher"  ON "Edu_Sessions" (teacherId);
+CREATE INDEX IF NOT EXISTS "ix_Edu_Sessions_student"  ON "Edu_Sessions" (studentId);
+CREATE INDEX IF NOT EXISTS "ix_Edu_Sessions_status"   ON "Edu_Sessions" (status);
+CREATE INDEX IF NOT EXISTS "ix_Edu_Sessions_startsAt" ON "Edu_Sessions" (startsAt);
+CREATE INDEX IF NOT EXISTS "ix_Edu_Sessions_roomCode" ON "Edu_Sessions" (roomCode);
+
+-- ============================================================================
+--  6) Edu_SessionAttendance — سجل حضور كل طالب في كل حصة
+-- ============================================================================
+--
+--  عند دخول الطالب للحصة يُسجَّل present/late، وعند الخروج تُحسب
+--  المدة الفعلية. الغياب (absent) يُسجَّل عند انتهاء الحصة بدون حضور.
+--  الالتزام (commitment) = نسبة الحضور الفعلية من الحصص المجدولة.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "Edu_SessionAttendance" (
+    id          BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    sessionId   BIGINT       NOT NULL,
+    studentId   BIGINT       NOT NULL,
+    mark        VARCHAR(16)  NOT NULL DEFAULT 'absent',
+    joinedAt    TIMESTAMPTZ  NULL,
+    leftAt      TIMESTAMPTZ  NULL,
+    durationMs  BIGINT       NULL DEFAULT 0,
+    note        TEXT         NULL,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_session_attendance       PRIMARY KEY (id),
+    CONSTRAINT uq_edu_session_attendance       UNIQUE (sessionId, studentId),
+    CONSTRAINT fk_edu_sa_session               FOREIGN KEY (sessionId) REFERENCES "Edu_Sessions" (id) ON DELETE CASCADE,
+    CONSTRAINT fk_edu_sa_student               FOREIGN KEY (studentId) REFERENCES "Edu_Students" (id) ON DELETE CASCADE,
+    CONSTRAINT ck_edu_sa_mark                  CHECK (mark IN ('present', 'late', 'absent'))
+);
+
+COMMENT ON TABLE  "Edu_SessionAttendance"   IS 'سجل حضور كل طالب في كل حصة';
+COMMENT ON COLUMN "Edu_SessionAttendance".mark   IS 'present/late/absent';
+COMMENT ON COLUMN "Edu_SessionAttendance".durationMs IS 'المدة الفعلية بالمللي ثانية';
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_SA_session"   ON "Edu_SessionAttendance" (sessionId);
+CREATE INDEX IF NOT EXISTS "ix_Edu_SA_student"   ON "Edu_SessionAttendance" (studentId);
+CREATE INDEX IF NOT EXISTS "ix_Edu_SA_mark"      ON "Edu_SessionAttendance" (mark);
 
 
 -- ============================================================================
--- ============================================================================
---  نسخة SQL Server — للانتقال المستقبلي إلى سيرفر الشركة
---  (مُعلَّقة بالكامل. لا تُشغَّل على Supabase.)
+--  [2026-09-29] (7) Edu_Tokens — جلسات دخول متعددة الأجهزة
 --
---  عند الانتقال: افتح الملف، انسخ قسم SQL Server في نافذة استعلام جديدة،
---  وأزل التعليق. الفروق بين المحرّكين محصورة في:
---     • المفتاح التلقائي : IDENTITY(1,1)        بدل  GENERATED BY DEFAULT AS IDENTITY
---     • نوع الوقت        : DATETIME2            بدل  TIMESTAMPTZ
---     • النص الطويل      : NVARCHAR(MAX)        بدل  TEXT
---     • القيم الافتراضية : CONSTRAINT ... DEFAULT بدل DEFAULT المضمّن
---     • حماية الإنشاء    : IF OBJECT_ID(...) IS NULL بدل CREATE TABLE IF NOT EXISTS
---     • إضافة عمود       : IF COL_LENGTH(...) IS NULL بدل ADD COLUMN IF NOT EXISTS
---     • حذف جدول         : IF OBJECT_ID(...) IS NOT NULL DROP TABLE بدل DROP TABLE IF EXISTS
---     • تحديث updated_at : تريجر AFTER UPDATE لكل جدول بدل تريجر BEFORE UPDATE
---          (وكل ما عدا ذلك — القيود والفهارس وأسماء الأعمدة — متطابق)
---
---  ملاحظة عن Row Level Security: تفعيلها أعلى الملف مطلوب **في Supabase فقط**،
---  لأن Supabase تنشر الجداول عبر Data API عامة. أما SQL Server خلف الباك اند
---  فليس معرّضًا للجمهور أصلًا، فلا حاجة لسياسة أمان صفوف فيه.
+--  المتطلبات تسمح بالدخول من أكثر من جهاز لنفس الحساب، وعمود token في
+--  جداول الحسابات جلسة واحدة فقط (تسجيل جديد يُلغي السابق). الجدول الجديد
+--  يجعل كل جهاز يحمل توكنه المستقل؛ المصادقة تبحث هنا أولًا، وعمود token
+--  يبقى آخر توكن منشأ للتوافق مع الاستعلامات القديمة.
+--  kind: staff | student | parent (نفس ترميز edu:aud)
 -- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "Edu_Tokens" (
+    id          BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    kind        VARCHAR(16)  NOT NULL,
+    accountId   BIGINT       NOT NULL,
+    token       TEXT         NOT NULL,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_tokens        PRIMARY KEY (id),
+    CONSTRAINT uq_edu_tokens_token  UNIQUE (token),
+    CONSTRAINT ck_edu_tokens_kind   CHECK (kind IN ('staff', 'student', 'parent'))
+);
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_Tokens_account" ON "Edu_Tokens" (kind, accountId);
+
+DROP TRIGGER IF EXISTS "trg_Edu_Tokens_updated_at" ON "Edu_Tokens";
+CREATE TRIGGER "trg_Edu_Tokens_updated_at"
+    BEFORE UPDATE ON "Edu_Tokens"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+-- ============================================================================
+--  دالة تحديث updated_at لـ Edu_Sessions (تُضاف للتريجر)
+-- ============================================================================
+
+DROP TRIGGER IF EXISTS "trg_Edu_Sessions_updated_at" ON "Edu_Sessions";
+CREATE TRIGGER "trg_Edu_Sessions_updated_at"
+    BEFORE UPDATE ON "Edu_Sessions"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+DROP TRIGGER IF EXISTS "trg_Edu_SessionAttendance_updated_at" ON "Edu_SessionAttendance";
+CREATE TRIGGER "trg_Edu_SessionAttendance_updated_at"
+    BEFORE UPDATE ON "Edu_SessionAttendance"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+
+-- ============================================================================
+--  [2026-09-29] (6) الإشعارات والرسائل الحقيقية — Edu_Notifications + Edu_Conversations*
+--
+--  recipientKind / senderKind / memberKind: 'staff' (Edu_Users) |
+--    'student' (Edu_Students) | 'parent' (Edu_Parents) — لأن الحسابات في ثلاثة جداول.
+--  لا حذف للفيزيائي للرسائل المرسلة؛ المحادثة وأعضاؤها يُنشأون عند أول رسالة.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS "Edu_Notifications" (
+    id            BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    recipientKind VARCHAR(16)  NOT NULL,
+    recipientId   BIGINT       NOT NULL,
+    kind          VARCHAR(32)  NOT NULL DEFAULT 'system',
+    title         VARCHAR(255) NOT NULL,
+    body          TEXT         NULL,
+    link          VARCHAR(255) NULL,
+    read_at       TIMESTAMPTZ  NULL,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_notifications       PRIMARY KEY (id),
+    CONSTRAINT ck_edu_notifications_kind  CHECK (recipientKind IN ('staff', 'student', 'parent'))
+);
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_Notif_recipient" ON "Edu_Notifications" (recipientKind, recipientId, read_at);
+
+COMMENT ON TABLE "Edu_Notifications" IS 'إشعارات موجّهة لمالك حساب في أي من الجداول الثلاثة';
+
+CREATE TABLE IF NOT EXISTS "Edu_Conversations" (
+    id            BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    subject       VARCHAR(255) NULL,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_conversations PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS "Edu_ConversationMembers" (
+    id             BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    conversationId BIGINT       NOT NULL,
+    memberKind     VARCHAR(16)  NOT NULL,
+    memberId       BIGINT       NOT NULL,
+    last_read_at   TIMESTAMPTZ  NULL,
+    states         SMALLINT     NOT NULL DEFAULT 1,
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_conv_members       PRIMARY KEY (id),
+    CONSTRAINT uq_edu_conv_member        UNIQUE (conversationId, memberKind, memberId),
+    CONSTRAINT fk_edu_conv_member_conv   FOREIGN KEY (conversationId) REFERENCES "Edu_Conversations" (id) ON DELETE CASCADE,
+    CONSTRAINT ck_edu_conv_member_kind   CHECK (memberKind IN ('staff', 'student', 'parent'))
+);
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_ConvMembers_lookup" ON "Edu_ConversationMembers" (memberKind, memberId);
+
+CREATE TABLE IF NOT EXISTS "Edu_Messages" (
+    id             BIGINT       GENERATED BY DEFAULT AS IDENTITY,
+    conversationId BIGINT       NOT NULL,
+    senderKind     VARCHAR(16)  NOT NULL,
+    senderId       BIGINT       NOT NULL,
+    body           TEXT         NOT NULL,
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+    CONSTRAINT pk_edu_messages        PRIMARY KEY (id),
+    CONSTRAINT fk_edu_messages_conv   FOREIGN KEY (conversationId) REFERENCES "Edu_Conversations" (id) ON DELETE CASCADE,
+    CONSTRAINT ck_edu_messages_sender CHECK (senderKind IN ('staff', 'student', 'parent'))
+);
+
+CREATE INDEX IF NOT EXISTS "ix_Edu_Messages_conversation" ON "Edu_Messages" (conversationId);
+
+DROP TRIGGER IF EXISTS "trg_Edu_Notifications_updated_at" ON "Edu_Notifications";
+CREATE TRIGGER "trg_Edu_Notifications_updated_at"
+    BEFORE UPDATE ON "Edu_Notifications"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+DROP TRIGGER IF EXISTS "trg_Edu_Conversations_updated_at" ON "Edu_Conversations";
+CREATE TRIGGER "trg_Edu_Conversations_updated_at"
+    BEFORE UPDATE ON "Edu_Conversations"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+DROP TRIGGER IF EXISTS "trg_Edu_ConversationMembers_updated_at" ON "Edu_ConversationMembers";
+CREATE TRIGGER "trg_Edu_ConversationMembers_updated_at"
+    BEFORE UPDATE ON "Edu_ConversationMembers"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+DROP TRIGGER IF EXISTS "trg_Edu_Messages_updated_at" ON "Edu_Messages";
+CREATE TRIGGER "trg_Edu_Messages_updated_at"
+    BEFORE UPDATE ON "Edu_Messages"
+    FOR EACH ROW EXECUTE FUNCTION "Edu_SetUpdatedAt"();
+
+
+-- ============================================================================
+--  [2026-09-30] (8) توسيع قيود الحصص — استعدادًا للتشغيل على SQL Server
+--
+--  ثلاث نقاط كانت ستنفجر أول ما تُشغَّل القاعدة على سيرفر حقيقي:
+--
+--   • subject كان VARCHAR(32): المادة نص حر تكتبه المؤسسة (قرار من قبل)،
+--     وأي اسم أطول من 32 حرفًا كان يرجّع خطأ من القاعدة. صار VARCHAR(120).
+--
+--   • durationMin كان CHECK (IN (30, 45, 60)) بينما الواجهة تعرض 90 دقيقة
+--     ونقطة التأجيل تقبل أي مدة > 0 — أي أن الحصة تُقبَل ثم تُرفض عند الحفظ.
+--     صار النطاق 15..240 دقيقة (المدة قرار مؤسسي، لا قائمة ثابتة).
+--
+--   • metadata كان JSONB: EF Core يرسله نصًّا ولا توجد إزاحة من text إلى
+--     jsonb في PostgreSQL، فالإدراج على عمود jsonb يفشل. لا أحد يستعلم داخل
+--     JSON، فصار TEXT (وقسيمه على SQL Server NVARCHAR(MAX)) — وهو أيضًا
+--     المطلوب بقاعدة التوافق بين المحرّكين.
+--
+--  كل العبارات محميّة، فالتشغيل المتكرر لا يغيّر شيئًا.
+-- ============================================================================
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'Edu_Sessions' AND column_name = 'subject'
+                  AND character_maximum_length IS NOT NULL
+                  AND character_maximum_length < 120) THEN
+        ALTER TABLE "Edu_Sessions" ALTER COLUMN subject TYPE VARCHAR(120);
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'Edu_Sessions' AND column_name = 'metadata'
+                  AND data_type <> 'text') THEN
+        ALTER TABLE "Edu_Sessions" ALTER COLUMN metadata TYPE TEXT USING metadata::text;
+    END IF;
+END$$;
+
+-- مدة الحصة: من قائمة ثابتة إلى نطاق معقول (المؤسسة تختار 30/45/60/90/120…)
+ALTER TABLE "Edu_Sessions" DROP CONSTRAINT IF EXISTS ck_edu_schedules_duration;
+ALTER TABLE "Edu_Sessions"
+    ADD CONSTRAINT ck_edu_schedules_duration CHECK (durationMin BETWEEN 15 AND 240);
+
+-- قيد attendance: صيغة NULL داخل IN() مُضلّلة (لا تطابق شيئًا)، فالأصحّ صريحًا
+ALTER TABLE "Edu_Sessions" DROP CONSTRAINT IF EXISTS ck_edu_sessions_attendance;
+ALTER TABLE "Edu_Sessions"
+    ADD CONSTRAINT ck_edu_sessions_attendance
+    CHECK (attendance IS NULL OR attendance IN ('present', 'late', 'absent'));
+
+
+-- ============================================================================
+-- >>> BEGIN SQL SERVER (T-SQL) — نسخة سيرفر الشركة
+-- ============================================================================
+--
+--  هذا القسم هو **نفس مخطط PostgreSQL أعلاه حرفيًا**: نفس أسماء الجداول
+--  (كلها تبدأ بـ Edu_)، نفس الأعمدة، نفس الفهارس والقيود وأسمائها. لا يوجد
+--  جدول أو عمود هنا ليس موجودًا هناك ولا العكس.
+--
+--  الفروق محصورة في كتابة كل محرّك:
+--     • المفتاح التلقائي : IDENTITY(1,1)              بدل GENERATED BY DEFAULT AS IDENTITY
+--     • النصوص           : NVARCHAR (عربي!)           بدل VARCHAR / TEXT
+--     • الوقت            : DATETIME2 / DATETIMEOFFSET بدل TIMESTAMPTZ
+--     • القيم الافتراضية : CONSTRAINT df_... DEFAULT  بدل DEFAULT المضمّن
+--     • حماية الإنشاء    : IF OBJECT_ID(...) IS NULL  بدل CREATE TABLE IF NOT EXISTS
+--     • الفهارس          : sys.indexes IS NULL        بدل CREATE INDEX IF NOT EXISTS
+--     • التريجر          : لا تريجرات updated_at هنا — يضبطها التطبيق  (الشرح أدناه)
+--     • منع الحذف       : ON DELETE NO ACTION        بدل ON DELETE RESTRICT
+--     • المفصولات        : GO                         (غير موجودة في PostgreSQL)
+--
+--  ⚠️ قرار مقصود — الأحجام بدل MAX:
+--     أعمدة `token` هي NVARCHAR(200) لا NVARCHAR(MAX)، لأن SQL Server **لا
+--     يستطيع بناء فهرس أو مفتاح فريد على عمود MAX** ولا على مفتاح يتجاوز
+--     900 بايت (والتوكن يُبحث عليه بالمساواة في كل طلب). في PostgreSQL العمود
+--     TEXT (لا حدّ هناك). التوكن الحقيقي 43 حرفًا، فالحدّ لا يقطع شيئًا.
+--
+--  ⚠️ قرار مقصود — أنواع الوقت:
+--     `Edu_Users.created_at/updated_at` = DATETIMEOFFSET لأن الكيان `EduUser`
+--     في الـ API يستخدم `DateTimeOffset`؛ وبقية الجداول DATETIME2 لأن كياناتها
+--     تستخدم `DateTime` بتوقيت UTC. هذا يطابق ما يفعله TIMESTAMPTZ في القسم
+--     الأول ويمنع تحويلًا ضمنيًا يغيّر التوقيت.
+--
+--  ───────────────────────── التشغيل ─────────────────────────
+--
+--  (1) SSMS: انسخ كل السطور بين «>>> BEGIN» و«<<< END» عدا سطري /* و */
+--      (أو شغّل ملف الاستخراج أدناه) → Execute. الملف قابل لإعادة التشغيل:
+--      مرة أو عشر مرات بنفس النتيجة.
+--
+--  (2) سطر أوامر (Git Bash من جذر المستودع) — يستخرج القسم وحده ويشغّله:
+--
+--        sed -n '/^-- >>> BEGIN SQL SERVER/,/^-- <<< END SQL SERVER/p' database/schema.sql \
+--          | grep -v '^/\*$' | grep -v '^\*/$' > /tmp/edulink-sqlserver.sql
+--
+--        sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d Edulink \
+--               -f 65001 -I -b -i /tmp/edulink-sqlserver.sql
+--
+--      الأعلام ضرورية وليست زينة:
+--        • `-f 65001`  يقرأ الملف UTF-8، وبعدها تحرف أسماء النصوص العربية.
+--        • `-I`        يفعّل QUOTED_IDENTIFIER — بدونه تُرفض الفهارس المفلترة (1934).
+--        • `-b`        يجعل الأمر يرجع بكود خطأ لو فشلت أي عبارة (وإلا يكمّل صامتًا).
+--
+--      وأنشئ القاعدة أول مرة بأمر واحد:
+--        sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -Q "CREATE DATABASE [Edulink]"
+--
+--      تحقّق بعد التشغيل — هذه أرقام قياس فعلي على نسخة نظيفة:
+--        tables=11 · triggers=0 · checks=21 · foreign_keys=9 · unique_keys=8 · defaults=43
+--        (عدد sys.indexes أعلى لأنه يعدّ فهارس المفاتيح الفريدة أيضًا)
+--        sqlcmd -S "SERVER,1433" -d Edulink -Q "SET NOCOUNT ON;
+--          SELECT tables=(SELECT COUNT(*) FROM sys.tables),
+--                 triggers=(SELECT COUNT(*) FROM sys.triggers),
+--                 checks=(SELECT COUNT(*) FROM sys.check_constraints),
+--                 fks=(SELECT COUNT(*) FROM sys.foreign_keys),
+--                 unique_keys=(SELECT COUNT(*) FROM sys.key_constraints WHERE type='UQ'),
+--                 defaults=(SELECT COUNT(*) FROM sys.default_constraints);"
+--
+--  (3) لا حاجة لـ Row Level Security هنا: هذا السيرفر خلف الـ API فقط، بخلاف
+--      Supabase الذي ينشر الجداول عبر Data API (لذلك تُفعَّل RLS في قسم PostgreSQL).
+--
+--  متطلب الحد الأدنى: SQL Server 2008 فصاعدًا — الفهارس المفلترة
+--  (ux_Edu_Relations_one_primary) وأنواع datetimeoffset/DATETIME2 كلها متوفرة
+--  هناك، ولا يعتمد القسم على أي شيء أحدث. لا تريجرات أصلًا (الشرح في الأسفل).
+--  كل الأوقات تُخزَّن UTC — والتوقيت المحلي حساب في الواجهة/التقارير.
+--  لا يُنشئ هذا السكربت أي بيانات: أول حساب مالك من
+--    POST /api/setup/owner   (وكلمات المرور تُجزَّأ bcrypt في التطبيق).
 -- ============================================================================
 
 /*
--- ---- Edu_Users ----
-IF OBJECT_ID('Edu_Users', 'U') IS NULL
-BEGIN
-    CREATE TABLE Edu_Users (
-        id            BIGINT        IDENTITY(1,1) NOT NULL,
-        name          NVARCHAR(255) NULL,
-        email         NVARCHAR(255) NOT NULL,
-        password      NVARCHAR(255) NOT NULL,
-        role          SMALLINT      NOT NULL CONSTRAINT df_edu_users_role          DEFAULT 0,
-        token         NVARCHAR(MAX) NULL,
-        states        SMALLINT      NOT NULL CONSTRAINT df_edu_users_states        DEFAULT 0,
-        access        SMALLINT      NOT NULL CONSTRAINT df_edu_users_access        DEFAULT 0,
-        img_url       NVARCHAR(MAX) NULL,
-        notifications SMALLINT      NOT NULL CONSTRAINT df_edu_users_notifications DEFAULT 0,
-        created_at    DATETIME2     NOT NULL CONSTRAINT df_edu_users_created_at    DEFAULT SYSUTCDATETIME(),
-        updated_at    DATETIME2     NOT NULL CONSTRAINT df_edu_users_updated_at    DEFAULT SYSUTCDATETIME(),
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+-- الفهارس المفلترة (ux_Edu_Relations_one_primary) تتطلب QUOTED_IDENTIFIER ON،
+-- وبعض عملاء SQL Server (مثل sqlcmd القديم) يتركونه مغلقًا.
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
 
-        CONSTRAINT pk_edu_users               PRIMARY KEY (id),
-        CONSTRAINT uq_edu_users_email         UNIQUE (email),
-        CONSTRAINT ck_edu_users_role          CHECK (role >= 0),
-        CONSTRAINT ck_edu_users_states        CHECK (states IN (0, 1)),
-        CONSTRAINT ck_edu_users_access        CHECK (access IN (0, 1)),
-        CONSTRAINT ck_edu_users_notifications CHECK (notifications IN (0, 1))
+-- ────────────────────────────────────────────────────────────────────────────
+--  1) Edu_Users — موظفو المنصة (مدرس 0 | مشرف 1 | مدير 2 | أونر 3)
+--     role: القيمة الأعلى = صلاحية أوسع. أوقات هذا الجدول DATETIMEOFFSET
+--     لأن كيان EduUser يستخدم DateTimeOffset في الـ API.
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Users]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_Users] (
+        [id]            BIGINT          IDENTITY(1,1) NOT NULL,
+        [name]          NVARCHAR(255)   NULL,
+        [email]         NVARCHAR(255)   NOT NULL,
+        [password]      NVARCHAR(255)   NOT NULL,   -- هاش bcrypt فقط
+        [role]          SMALLINT        NOT NULL CONSTRAINT [df_edu_users_role]          DEFAULT 0,
+        [token]         NVARCHAR(200)   NULL,       -- آخر توكن منشأ (الصلاحية من Edu_Tokens)
+        [states]        SMALLINT        NOT NULL CONSTRAINT [df_edu_users_states]        DEFAULT 0,
+        [access]        SMALLINT        NOT NULL CONSTRAINT [df_edu_users_access]         DEFAULT 0,
+        [img_url]       NVARCHAR(MAX)   NULL,
+        [notifications] SMALLINT        NOT NULL CONSTRAINT [df_edu_users_notifications]  DEFAULT 0,
+        [created_at]    DATETIMEOFFSET(3) NOT NULL CONSTRAINT [df_edu_users_created_at]   DEFAULT SYSUTCDATETIME(),
+        [updated_at]    DATETIMEOFFSET(3) NOT NULL CONSTRAINT [df_edu_users_updated_at]   DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_users]               PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_users_email]         UNIQUE ([email]),
+        CONSTRAINT [ck_edu_users_role]          CHECK ([role] >= 0),
+        CONSTRAINT [ck_edu_users_states]        CHECK ([states] IN (0, 1)),
+        CONSTRAINT [ck_edu_users_access]        CHECK ([access] IN (0, 1)),
+        CONSTRAINT [ck_edu_users_notifications] CHECK ([notifications] IN (0, 1))
     );
 END
 GO
 
--- ---- Edu_Students ----
-IF OBJECT_ID('Edu_Students', 'U') IS NULL
+-- ────────────────────────────────────────────────────────────────────────────
+--  2) Edu_Students — الطلاب (لا عمود role: كل صف هنا طالب)
+--     نفس أعمدة Edu_Users بدون role — والأوقات DATETIME2 (الكيان يستخدم DateTime UTC).
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Students]', N'U') IS NULL
 BEGIN
-    CREATE TABLE Edu_Students (
-        id            BIGINT        IDENTITY(1,1) NOT NULL,
-        name          NVARCHAR(255) NULL,
-        email         NVARCHAR(255) NOT NULL,
-        password      NVARCHAR(255) NOT NULL,
-        token         NVARCHAR(MAX) NULL,
-        states        SMALLINT      NOT NULL CONSTRAINT df_edu_students_states        DEFAULT 0,
-        access        SMALLINT      NOT NULL CONSTRAINT df_edu_students_access        DEFAULT 0,
-        img_url       NVARCHAR(MAX) NULL,
-        notifications SMALLINT      NOT NULL CONSTRAINT df_edu_students_notifications DEFAULT 0,
-        created_at    DATETIME2     NOT NULL CONSTRAINT df_edu_students_created_at    DEFAULT SYSUTCDATETIME(),
-        updated_at    DATETIME2     NOT NULL CONSTRAINT df_edu_students_updated_at    DEFAULT SYSUTCDATETIME(),
-
-        CONSTRAINT pk_edu_students               PRIMARY KEY (id),
-        CONSTRAINT uq_edu_students_email         UNIQUE (email),
-        CONSTRAINT ck_edu_students_states        CHECK (states IN (0, 1)),
-        CONSTRAINT ck_edu_students_access        CHECK (access IN (0, 1)),
-        CONSTRAINT ck_edu_students_notifications CHECK (notifications IN (0, 1))
+    CREATE TABLE [dbo].[Edu_Students] (
+        [id]            BIGINT        IDENTITY(1,1) NOT NULL,
+        [name]          NVARCHAR(255) NULL,
+        [email]         NVARCHAR(255) NOT NULL,
+        [password]      NVARCHAR(255) NOT NULL,
+        [token]         NVARCHAR(200) NULL,
+        [states]        SMALLINT      NOT NULL CONSTRAINT [df_edu_students_states]        DEFAULT 0,
+        [access]        SMALLINT      NOT NULL CONSTRAINT [df_edu_students_access]         DEFAULT 0,
+        [img_url]       NVARCHAR(MAX) NULL,
+        [notifications] SMALLINT      NOT NULL CONSTRAINT [df_edu_students_notifications]  DEFAULT 0,
+        [created_at]    DATETIME2     NOT NULL CONSTRAINT [df_edu_students_created_at]     DEFAULT SYSUTCDATETIME(),
+        [updated_at]    DATETIME2     NOT NULL CONSTRAINT [df_edu_students_updated_at]     DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_students]               PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_students_email]         UNIQUE ([email]),
+        CONSTRAINT [ck_edu_students_states]        CHECK ([states] IN (0, 1)),
+        CONSTRAINT [ck_edu_students_access]        CHECK ([access] IN (0, 1)),
+        CONSTRAINT [ck_edu_students_notifications] CHECK ([notifications] IN (0, 1))
     );
 END
 GO
 
--- ---- Edu_Parents ----
-IF OBJECT_ID('Edu_Parents', 'U') IS NULL
+-- ────────────────────────────────────────────────────────────────────────────
+--  3) Edu_Parents — أولياء الأمور (نفس بنية الطلاب)
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Parents]', N'U') IS NULL
 BEGIN
-    CREATE TABLE Edu_Parents (
-        id            BIGINT        IDENTITY(1,1) NOT NULL,
-        name          NVARCHAR(255) NULL,
-        email         NVARCHAR(255) NOT NULL,
-        password      NVARCHAR(255) NOT NULL,
-        token         NVARCHAR(MAX) NULL,
-        states        SMALLINT      NOT NULL CONSTRAINT df_edu_parents_states        DEFAULT 0,
-        access        SMALLINT      NOT NULL CONSTRAINT df_edu_parents_access        DEFAULT 0,
-        img_url       NVARCHAR(MAX) NULL,
-        notifications SMALLINT      NOT NULL CONSTRAINT df_edu_parents_notifications DEFAULT 0,
-        created_at    DATETIME2     NOT NULL CONSTRAINT df_edu_parents_created_at    DEFAULT SYSUTCDATETIME(),
-        updated_at    DATETIME2     NOT NULL CONSTRAINT df_edu_parents_updated_at    DEFAULT SYSUTCDATETIME(),
-
-        CONSTRAINT pk_edu_parents               PRIMARY KEY (id),
-        CONSTRAINT uq_edu_parents_email         UNIQUE (email),
-        CONSTRAINT ck_edu_parents_states        CHECK (states IN (0, 1)),
-        CONSTRAINT ck_edu_parents_access        CHECK (access IN (0, 1)),
-        CONSTRAINT ck_edu_parents_notifications CHECK (notifications IN (0, 1))
+    CREATE TABLE [dbo].[Edu_Parents] (
+        [id]            BIGINT        IDENTITY(1,1) NOT NULL,
+        [name]          NVARCHAR(255) NULL,
+        [email]         NVARCHAR(255) NOT NULL,
+        [password]      NVARCHAR(255) NOT NULL,
+        [token]         NVARCHAR(200) NULL,
+        [states]        SMALLINT      NOT NULL CONSTRAINT [df_edu_parents_states]        DEFAULT 0,
+        [access]        SMALLINT      NOT NULL CONSTRAINT [df_edu_parents_access]         DEFAULT 0,
+        [img_url]       NVARCHAR(MAX) NULL,
+        [notifications] SMALLINT      NOT NULL CONSTRAINT [df_edu_parents_notifications]  DEFAULT 0,
+        [created_at]    DATETIME2     NOT NULL CONSTRAINT [df_edu_parents_created_at]     DEFAULT SYSUTCDATETIME(),
+        [updated_at]    DATETIME2     NOT NULL CONSTRAINT [df_edu_parents_updated_at]     DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_parents]               PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_parents_email]         UNIQUE ([email]),
+        CONSTRAINT [ck_edu_parents_states]        CHECK ([states] IN (0, 1)),
+        CONSTRAINT [ck_edu_parents_access]        CHECK ([access] IN (0, 1)),
+        CONSTRAINT [ck_edu_parents_notifications] CHECK ([notifications] IN (0, 1))
     );
 END
 GO
 
--- ---- Edu_Relations ----
-IF OBJECT_ID('Edu_Relations', 'U') IS NULL
+-- ────────────────────────────────────────────────────────────────────────────
+--  4) Edu_Relations — ربط الطالب بولي الأمر (متعدد لمتعدد)
+--     relation: 0=أب | 1=أم | 2=وصي | 3=أخرى   |   is_primary: واحد فقط لكل طالب
+--     ملاحظة: أسماء الأعمدة هنا snake_case (student_id/parent_id/is_primary)
+--     لأنها كذلك في PostgreSQL وفي ربط EF — لا تُوحّد مع بقية الجداول.
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Relations]', N'U') IS NULL
 BEGIN
-    CREATE TABLE Edu_Relations (
-        id         BIGINT      IDENTITY(1,1) NOT NULL,
-        student_id BIGINT      NOT NULL,
-        parent_id  BIGINT      NOT NULL,
-        relation   SMALLINT    NOT NULL CONSTRAINT df_edu_relations_relation   DEFAULT 0,
-        is_primary SMALLINT    NOT NULL CONSTRAINT df_edu_relations_is_primary DEFAULT 0,
-        states     SMALLINT    NOT NULL CONSTRAINT df_edu_relations_states     DEFAULT 1,
-        created_at DATETIME2   NOT NULL CONSTRAINT df_edu_relations_created_at DEFAULT SYSUTCDATETIME(),
-        updated_at DATETIME2   NOT NULL CONSTRAINT df_edu_relations_updated_at DEFAULT SYSUTCDATETIME(),
-
-        CONSTRAINT pk_edu_relations          PRIMARY KEY (id),
-        CONSTRAINT fk_edu_relations_student  FOREIGN KEY (student_id) REFERENCES Edu_Students (id) ON DELETE CASCADE,
-        CONSTRAINT fk_edu_relations_parent   FOREIGN KEY (parent_id)  REFERENCES Edu_Parents (id)  ON DELETE CASCADE,
-        CONSTRAINT uq_edu_relations_pair     UNIQUE (student_id, parent_id),
-        CONSTRAINT ck_edu_relations_relation CHECK (relation IN (0, 1, 2, 3)),
-        CONSTRAINT ck_edu_relations_primary  CHECK (is_primary IN (0, 1)),
-        CONSTRAINT ck_edu_relations_states   CHECK (states IN (0, 1))
+    CREATE TABLE [dbo].[Edu_Relations] (
+        [id]         BIGINT      IDENTITY(1,1) NOT NULL,
+        [student_id] BIGINT      NOT NULL,
+        [parent_id]  BIGINT      NOT NULL,
+        [relation]   SMALLINT    NOT NULL CONSTRAINT [df_edu_relations_relation]    DEFAULT 0,
+        [is_primary] SMALLINT    NOT NULL CONSTRAINT [df_edu_relations_is_primary]  DEFAULT 0,
+        [states]     SMALLINT    NOT NULL CONSTRAINT [df_edu_relations_states]      DEFAULT 1,
+        [created_at] DATETIME2   NOT NULL CONSTRAINT [df_edu_relations_created_at]  DEFAULT SYSUTCDATETIME(),
+        [updated_at] DATETIME2   NOT NULL CONSTRAINT [df_edu_relations_updated_at]  DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_relations]          PRIMARY KEY ([id]),
+        CONSTRAINT [fk_edu_relations_student]  FOREIGN KEY ([student_id]) REFERENCES [dbo].[Edu_Students] ([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_edu_relations_parent]   FOREIGN KEY ([parent_id])  REFERENCES [dbo].[Edu_Parents] ([id])  ON DELETE CASCADE,
+        CONSTRAINT [uq_edu_relations_pair]     UNIQUE ([student_id], [parent_id]),
+        CONSTRAINT [ck_edu_relations_relation] CHECK ([relation] IN (0, 1, 2, 3)),
+        CONSTRAINT [ck_edu_relations_primary]  CHECK ([is_primary] IN (0, 1)),
+        CONSTRAINT [ck_edu_relations_states]   CHECK ([states] IN (0, 1))
     );
 END
 GO
 
--- ---- الفهارس ----
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Users_token' AND object_id = OBJECT_ID('Edu_Users'))
-    CREATE INDEX ix_Edu_Users_token ON Edu_Users (token);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Users_role' AND object_id = OBJECT_ID('Edu_Users'))
-    CREATE INDEX ix_Edu_Users_role ON Edu_Users (role);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Students_token' AND object_id = OBJECT_ID('Edu_Students'))
-    CREATE INDEX ix_Edu_Students_token ON Edu_Students (token);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Parents_token' AND object_id = OBJECT_ID('Edu_Parents'))
-    CREATE INDEX ix_Edu_Parents_token ON Edu_Parents (token);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Relations_student' AND object_id = OBJECT_ID('Edu_Relations'))
-    CREATE INDEX ix_Edu_Relations_student ON Edu_Relations (student_id);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ix_Edu_Relations_parent' AND object_id = OBJECT_ID('Edu_Relations'))
-    CREATE INDEX ix_Edu_Relations_parent ON Edu_Relations (parent_id);
-GO
-IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'ux_Edu_Relations_one_primary' AND object_id = OBJECT_ID('Edu_Relations'))
-    CREATE UNIQUE INDEX ux_Edu_Relations_one_primary ON Edu_Relations (student_id) WHERE is_primary = 1;
-GO
-
--- ---- إضافات جديدة (نفس ترتيب قسم الإضافات في نسخة PostgreSQL) ----
-IF OBJECT_ID('Edu_StudentParents', 'U') IS NOT NULL DROP TABLE Edu_StudentParents;
-GO
-IF COL_LENGTH('Edu_Users', 'img_url') IS NULL    ALTER TABLE Edu_Users    ADD img_url NVARCHAR(MAX) NULL;
-IF COL_LENGTH('Edu_Users', 'name') IS NULL       ALTER TABLE Edu_Users    ADD name    NVARCHAR(255) NULL;
-IF COL_LENGTH('Edu_Students', 'name') IS NULL    ALTER TABLE Edu_Students ADD name    NVARCHAR(255) NULL;
-IF COL_LENGTH('Edu_Parents', 'name') IS NULL     ALTER TABLE Edu_Parents  ADD name    NVARCHAR(255) NULL;
-GO
-
--- ---- تريجرات updated_at (في SQL Server تريجر AFTER UPDATE لكل جدول) ----
-IF OBJECT_ID('trg_Edu_Users_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Users_updated_at;
-GO
-CREATE TRIGGER trg_Edu_Users_updated_at ON Edu_Users AFTER UPDATE AS
+-- ────────────────────────────────────────────────────────────────────────────
+--  5) Edu_Sessions — الحصص (المخطط الأسبوعي والسجل الفعلي)
+--     status: scheduled | live | completed | cancelled | no_show
+--     durationMin: 15..240 (المؤسسة تختار — الواجهة تعرض 45/60/90)
+--     subject: نص حر بطول 120 كما تكتبه المؤسسة (لا قائمة مواد مغلقة)
+--     metadata: NVARCHAR(MAX) يحمل JSON نصًا — لا يستعلم داخله أحد
+--     ⚠️ لا تسجيل فيديو/صوت: هذا الجدول يحفظ الوصف فقط (قرار المنتج).
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Sessions]', N'U') IS NULL
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE u SET u.updated_at = SYSUTCDATETIME()
-      FROM Edu_Users AS u INNER JOIN inserted AS i ON i.id = u.id;
+    CREATE TABLE [dbo].[Edu_Sessions] (
+        [id]          BIGINT        IDENTITY(1,1) NOT NULL,
+        [code]        NVARCHAR(16)  NOT NULL,                       -- EL-XXXX
+        [subject]     NVARCHAR(120) NOT NULL,
+        [teacherId]   BIGINT        NOT NULL,
+        [studentId]   BIGINT        NOT NULL,
+        [gradeKey]    NVARCHAR(4)   NOT NULL CONSTRAINT [df_edu_sessions_gradeKey]     DEFAULT N'g7',
+        [durationMin] SMALLINT      NOT NULL CONSTRAINT [df_edu_sessions_durationMin]  DEFAULT 45,
+        [status]      NVARCHAR(16)  NOT NULL CONSTRAINT [df_edu_sessions_status]       DEFAULT N'scheduled',
+        [attendance]  NVARCHAR(16)  NULL,
+        [roomCode]    NVARCHAR(32)  NULL,
+        [startsAt]    DATETIME2     NOT NULL,
+        [endsAt]      DATETIME2     NULL,
+        [joinedAt]    DATETIME2     NULL,
+        [makeupOfId]  BIGINT        NULL,
+        [metadata]    NVARCHAR(MAX) NULL CONSTRAINT [df_edu_sessions_metadata] DEFAULT N'{}',
+        [created_at]  DATETIME2     NOT NULL CONSTRAINT [df_edu_sessions_created_at]   DEFAULT SYSUTCDATETIME(),
+        [updated_at]  DATETIME2     NOT NULL CONSTRAINT [df_edu_sessions_updated_at]   DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_sessions]           PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_sessions_code]      UNIQUE ([code]),
+        CONSTRAINT [fk_edu_sessions_teacher]   FOREIGN KEY ([teacherId]) REFERENCES [dbo].[Edu_Users] ([id])   ON DELETE NO ACTION,
+        CONSTRAINT [fk_edu_sessions_student]   FOREIGN KEY ([studentId]) REFERENCES [dbo].[Edu_Students] ([id]) ON DELETE NO ACTION,
+        -- ⚠️ فرق محرّك مُلْزِم: في PostgreSQL القيد ON DELETE SET NULL، لكن SQL Server
+        --    يرفض مرجع الجدول لنفسه مع أي مسار حذف متسلسل آخر (رسالة 1785).
+        --    الفرق غير ملموس: المنصة لا تحذف الحصص إطلاقًا (الإلغاء حالة، لا حذف صف).
+        CONSTRAINT [fk_edu_sessions_makeup_of] FOREIGN KEY ([makeupOfId]) REFERENCES [dbo].[Edu_Sessions] ([id]) ON DELETE NO ACTION,
+        CONSTRAINT [ck_edu_sessions_status]    CHECK ([status] IN (N'scheduled', N'live', N'completed', N'cancelled', N'no_show')),
+        CONSTRAINT [ck_edu_sessions_attendance] CHECK ([attendance] IS NULL OR [attendance] IN (N'present', N'late', N'absent')),
+        CONSTRAINT [ck_edu_schedules_duration] CHECK ([durationMin] BETWEEN 15 AND 240)
+    );
 END
 GO
 
-IF OBJECT_ID('trg_Edu_Students_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Students_updated_at;
-GO
-CREATE TRIGGER trg_Edu_Students_updated_at ON Edu_Students AFTER UPDATE AS
+-- ────────────────────────────────────────────────────────────────────────────
+--  6) Edu_SessionAttendance — حضور كل طالب في كل حصة
+--     mark: present | late | absent — والغياب يُسجَّل عند إنهاء الحصة بلا حضور
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_SessionAttendance]', N'U') IS NULL
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE s SET s.updated_at = SYSUTCDATETIME()
-      FROM Edu_Students AS s INNER JOIN inserted AS i ON i.id = s.id;
+    CREATE TABLE [dbo].[Edu_SessionAttendance] (
+        [id]         BIGINT        IDENTITY(1,1) NOT NULL,
+        [sessionId]  BIGINT        NOT NULL,
+        [studentId]  BIGINT        NOT NULL,
+        [mark]       NVARCHAR(16)  NOT NULL CONSTRAINT [df_edu_sa_mark]       DEFAULT N'absent',
+        [joinedAt]   DATETIME2     NULL,
+        [leftAt]     DATETIME2     NULL,
+        [durationMs] BIGINT        NULL CONSTRAINT [df_edu_sa_durationMs]     DEFAULT 0,
+        [note]       NVARCHAR(MAX) NULL,
+        [created_at] DATETIME2     NOT NULL CONSTRAINT [df_edu_sa_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at] DATETIME2     NOT NULL CONSTRAINT [df_edu_sa_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_session_attendance] PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_session_attendance] UNIQUE ([sessionId], [studentId]),
+        CONSTRAINT [fk_edu_sa_session]         FOREIGN KEY ([sessionId]) REFERENCES [dbo].[Edu_Sessions] ([id])  ON DELETE CASCADE,
+        CONSTRAINT [fk_edu_sa_student]         FOREIGN KEY ([studentId]) REFERENCES [dbo].[Edu_Students] ([id]) ON DELETE CASCADE,
+        CONSTRAINT [ck_edu_sa_mark]            CHECK ([mark] IN (N'present', N'late', N'absent'))
+    );
 END
 GO
 
-IF OBJECT_ID('trg_Edu_Parents_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Parents_updated_at;
-GO
-CREATE TRIGGER trg_Edu_Parents_updated_at ON Edu_Parents AFTER UPDATE AS
+-- ────────────────────────────────────────────────────────────────────────────
+--  7) Edu_Notifications — إشعارات موجّهة لمالك حساب في أي من الجداول الثلاثة
+--     recipientKind: staff (Edu_Users) | student (Edu_Students) | parent (Edu_Parents)
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Notifications]', N'U') IS NULL
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE p SET p.updated_at = SYSUTCDATETIME()
-      FROM Edu_Parents AS p INNER JOIN inserted AS i ON i.id = p.id;
+    CREATE TABLE [dbo].[Edu_Notifications] (
+        [id]            BIGINT        IDENTITY(1,1) NOT NULL,
+        [recipientKind] NVARCHAR(16)  NOT NULL,
+        [recipientId]   BIGINT        NOT NULL,
+        [kind]          NVARCHAR(32)  NOT NULL CONSTRAINT [df_edu_notifications_kind] DEFAULT N'system',
+        [title]         NVARCHAR(255) NOT NULL,
+        [body]          NVARCHAR(MAX) NULL,
+        [link]          NVARCHAR(255) NULL,
+        [read_at]       DATETIME2     NULL,
+        [created_at]    DATETIME2     NOT NULL CONSTRAINT [df_edu_notifications_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at]    DATETIME2     NOT NULL CONSTRAINT [df_edu_notifications_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_notifications]      PRIMARY KEY ([id]),
+        CONSTRAINT [ck_edu_notifications_kind] CHECK ([recipientKind] IN (N'staff', N'student', N'parent'))
+    );
 END
 GO
 
-IF OBJECT_ID('trg_Edu_Relations_updated_at', 'TR') IS NOT NULL DROP TRIGGER trg_Edu_Relations_updated_at;
-GO
-CREATE TRIGGER trg_Edu_Relations_updated_at ON Edu_Relations AFTER UPDATE AS
+-- ────────────────────────────────────────────────────────────────────────────
+--  8) Edu_Conversations — خيط المراسلة (لا حذف فيزيائي للرسائل المرسلة)
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Conversations]', N'U') IS NULL
 BEGIN
-    SET NOCOUNT ON;
-    UPDATE r SET r.updated_at = SYSUTCDATETIME()
-      FROM Edu_Relations AS r INNER JOIN inserted AS i ON i.id = r.id;
+    CREATE TABLE [dbo].[Edu_Conversations] (
+        [id]         BIGINT        IDENTITY(1,1) NOT NULL,
+        [subject]    NVARCHAR(255) NULL,
+        [created_at] DATETIME2     NOT NULL CONSTRAINT [df_edu_conversations_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at] DATETIME2     NOT NULL CONSTRAINT [df_edu_conversations_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_conversations] PRIMARY KEY ([id])
+    );
 END
 GO
+
+-- ────────────────────────────────────────────────────────────────────────────
+--  9) Edu_ConversationMembers — أطراف الخيط (نفس ترميز kind في الثلاثة جداول)
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_ConversationMembers]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_ConversationMembers] (
+        [id]             BIGINT       IDENTITY(1,1) NOT NULL,
+        [conversationId] BIGINT       NOT NULL,
+        [memberKind]     NVARCHAR(16) NOT NULL,
+        [memberId]       BIGINT       NOT NULL,
+        [last_read_at]   DATETIME2    NULL,
+        [states]         SMALLINT     NOT NULL CONSTRAINT [df_edu_conv_members_states] DEFAULT 1,
+        [created_at]     DATETIME2    NOT NULL CONSTRAINT [df_edu_conv_members_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at]     DATETIME2    NOT NULL CONSTRAINT [df_edu_conv_members_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_conv_members]     PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_conv_member]      UNIQUE ([conversationId], [memberKind], [memberId]),
+        CONSTRAINT [fk_edu_conv_member_conv] FOREIGN KEY ([conversationId]) REFERENCES [dbo].[Edu_Conversations] ([id]) ON DELETE CASCADE,
+        CONSTRAINT [ck_edu_conv_member_kind] CHECK ([memberKind] IN (N'staff', N'student', N'parent'))
+    );
+END
+GO
+
+-- ────────────────────────────────────────────────────────────────────────────
+--  10) Edu_Messages — نص الرسائل
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Messages]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_Messages] (
+        [id]             BIGINT   IDENTITY(1,1) NOT NULL,
+        [conversationId] BIGINT   NOT NULL,
+        [senderKind]     NVARCHAR(16) NOT NULL,
+        [senderId]       BIGINT   NOT NULL,
+        [body]           NVARCHAR(MAX) NOT NULL,
+        [created_at]     DATETIME2 NOT NULL CONSTRAINT [df_edu_messages_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at]     DATETIME2 NOT NULL CONSTRAINT [df_edu_messages_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_messages]       PRIMARY KEY ([id]),
+        CONSTRAINT [fk_edu_messages_conv]  FOREIGN KEY ([conversationId]) REFERENCES [dbo].[Edu_Conversations] ([id]) ON DELETE CASCADE,
+        CONSTRAINT [ck_edu_messages_sender] CHECK ([senderKind] IN (N'staff', N'student', N'parent'))
+    );
+END
+GO
+
+-- ────────────────────────────────────────────────────────────────────────────
+--  11) Edu_Tokens — جلسة لكل جهاز (الحد 10 يُفرَض في التطبيق)
+--      kind: staff | student | parent — نفس ترميز claim edu:aud
+--      المصادقة تبحث هنا أولًا؛ عمود token في جداول الحسابات للعرض/التوافق فقط.
+-- ────────────────────────────────────────────────────────────────────────────
+IF OBJECT_ID(N'[dbo].[Edu_Tokens]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_Tokens] (
+        [id]         BIGINT       IDENTITY(1,1) NOT NULL,
+        [kind]       NVARCHAR(16) NOT NULL,
+        [accountId]  BIGINT       NOT NULL,
+        [token]      NVARCHAR(200) NOT NULL,
+        [created_at] DATETIME2    NOT NULL CONSTRAINT [df_edu_tokens_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at] DATETIME2    NOT NULL CONSTRAINT [df_edu_tokens_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_tokens]       PRIMARY KEY ([id]),
+        CONSTRAINT [uq_edu_tokens_token] UNIQUE ([token]),
+        CONSTRAINT [ck_edu_tokens_kind]  CHECK ([kind] IN (N'staff', N'student', N'parent'))
+    );
+END
+GO
+
+-- ============================================================================
+--  الفهارس — بنفس أسماء فهارس PostgreSQL (EF يربط بها صراحةً)
+--  كل فهرس محمي بسؤال sys.indexes فيُعاد تشغيل السكربت بلا خطأ.
+-- ============================================================================
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Users_token' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    CREATE INDEX [ix_Edu_Users_token] ON [dbo].[Edu_Users] ([token]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Users_role' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    CREATE INDEX [ix_Edu_Users_role] ON [dbo].[Edu_Users] ([role]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Students_token' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    CREATE INDEX [ix_Edu_Students_token] ON [dbo].[Edu_Students] ([token]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Parents_token' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    CREATE INDEX [ix_Edu_Parents_token] ON [dbo].[Edu_Parents] ([token]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Relations_student' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Relations]'))
+    CREATE INDEX [ix_Edu_Relations_student] ON [dbo].[Edu_Relations] ([student_id]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Relations_parent' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Relations]'))
+    CREATE INDEX [ix_Edu_Relations_parent] ON [dbo].[Edu_Relations] ([parent_id]);
+GO
+
+-- ولي أمر أساسي واحد فقط لكل طالب — الفهرس المفلترة يقابل CREATE UNIQUE INDEX ... WHERE
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ux_Edu_Relations_one_primary' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Relations]'))
+    CREATE UNIQUE INDEX [ux_Edu_Relations_one_primary] ON [dbo].[Edu_Relations] ([student_id]) WHERE [is_primary] = 1;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Sessions_teacher' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    CREATE INDEX [ix_Edu_Sessions_teacher] ON [dbo].[Edu_Sessions] ([teacherId]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Sessions_student' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    CREATE INDEX [ix_Edu_Sessions_student] ON [dbo].[Edu_Sessions] ([studentId]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Sessions_status' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    CREATE INDEX [ix_Edu_Sessions_status] ON [dbo].[Edu_Sessions] ([status]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Sessions_startsAt' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    CREATE INDEX [ix_Edu_Sessions_startsAt] ON [dbo].[Edu_Sessions] ([startsAt]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Sessions_roomCode' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    CREATE INDEX [ix_Edu_Sessions_roomCode] ON [dbo].[Edu_Sessions] ([roomCode]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_SA_session' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_SessionAttendance]'))
+    CREATE INDEX [ix_Edu_SA_session] ON [dbo].[Edu_SessionAttendance] ([sessionId]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_SA_student' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_SessionAttendance]'))
+    CREATE INDEX [ix_Edu_SA_student] ON [dbo].[Edu_SessionAttendance] ([studentId]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_SA_mark' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_SessionAttendance]'))
+    CREATE INDEX [ix_Edu_SA_mark] ON [dbo].[Edu_SessionAttendance] ([mark]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Notif_recipient' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Notifications]'))
+    CREATE INDEX [ix_Edu_Notif_recipient] ON [dbo].[Edu_Notifications] ([recipientKind], [recipientId], [read_at]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_ConvMembers_lookup' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_ConversationMembers]'))
+    CREATE INDEX [ix_Edu_ConvMembers_lookup] ON [dbo].[Edu_ConversationMembers] ([memberKind], [memberId]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Messages_conversation' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Messages]'))
+    CREATE INDEX [ix_Edu_Messages_conversation] ON [dbo].[Edu_Messages] ([conversationId]);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Tokens_account' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Tokens]'))
+    CREATE INDEX [ix_Edu_Tokens_account] ON [dbo].[Edu_Tokens] ([kind], [accountId]);
+GO
+
+-- ============================================================================
+--  updated_at على SQL Server — فرق محرّك موثَّق (بلا تريجرات هنا)
+--
+--  في PostgreSQL التريجر BEFORE UPDATE يحدّث updated_at داخل القاعدة. على
+--  SQL Server هذا غير ممكن مع EF Core: الحفظ يُرسل «INSERT ... OUTPUT
+--  INSERTED.id» ليقرأ المعرّف المُولَّد، والمحرّك يرفض أي OUTPUT بلا INTO على
+--  جدول له محفِّز مُفعَّل (الرسالة 334) فتفشل كل كتابة من أول نداء حفظ —
+--  وهذا ما كشفه التشغيل الفعلي على SQL Server، لا مراجعة الكود.
+--
+--  السلوك محفوظ بلا تريجر: EduDbContext.SaveChangesAsync يضبط created_at
+--  وupdated_at في كل إضافة وتعديل لكل الكيانات، وDEFAULT SYSUTCDATETIME()
+--  يغطي الإدراج المباشر. الفرق الوحيد: تعديل يدوي في SSMS لن يُحدِّث
+--  updated_at وحده — يُضبط في العبارة نفسها عند الحاجة.
+-- ============================================================================
+
 */
+
+-- <<< END SQL SERVER =========================================================

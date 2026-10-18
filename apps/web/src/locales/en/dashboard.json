@@ -5,6 +5,11 @@
     "schedule": "My Schedule",
     "sessions": "My Sessions",
     "students": "Students",
+    "teachers": "Teachers",
+    "parents": "Parents",
+    "mySchedule": "My Schedule",
+    "mySessions": "My Sessions",
+    "myChildren": "My Children",
     "reports": "Reports",
     "messages": "Messages",
     "settings": "Settings"
@@ -14,6 +19,12 @@
     "notifications": "Notifications",
     "account": "Account",
     "logout": "Sign out"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAll": "Mark all as read",
+    "loading": "Loading notifications…",
+    "empty": "No notifications"
   },
   "greeting": "Welcome, {{name}} 👋",
   "greetingSub": "Wishing you a successful and productive day",
@@ -26,7 +37,12 @@
   "upcomingSessions": "Upcoming sessions",
   "recentActivity": "Recent activity",
   "quote": "Education does not change the world… it changes the people who will change the world",
-  "demoNote": "Sample data — the sessions and students tables are not built yet",
+  "emptyToday": "No sessions today",
+  "emptyUpcoming": "No upcoming sessions",
+  "emptyActivity": "No activity recorded yet",
+  "loadError": "Could not load data from the server — please refresh.",
+  "actLive": "{{subject}} session is live now with {{name}}",
+  "actCompleted": "{{subject}} session ended with {{name}}",
   "stats": {
     "todaySessions": "Today's sessions",
     "completed": "Completed",
@@ -44,27 +60,90 @@
     "join": "Join session"
   },
   "tools": {
-    "schedule": { "title": "Manage schedule", "desc": "Organise your sessions and times" },
-    "students": { "title": "Manage students", "desc": "Follow up on student progress" },
-    "reports": { "title": "Reports", "desc": "Session statistics and performance" },
-    "messages": { "title": "Messages", "desc": "Talk to your students" }
+    "schedule": {
+      "title": "Manage schedule",
+      "desc": "Organise your sessions and times"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "desc": "Live and scheduled sessions"
+    },
+    "students": {
+      "title": "Manage students",
+      "desc": "Follow up on student progress"
+    },
+    "reports": {
+      "title": "Reports",
+      "desc": "Session statistics and performance"
+    },
+    "messages": {
+      "title": "Messages",
+      "desc": "Talk to your students"
+    },
+    "messagesFamily": {
+      "title": "Messages",
+      "desc": "Talk to your teachers"
+    }
   },
   "subjects": {
     "math": "Mathematics",
     "english": "English",
     "physics": "Physics",
-    "chemistry": "Chemistry"
+    "chemistry": "Chemistry",
+    "biology": "Biology",
+    "other": "Other"
   },
-  "activity": {
-    "sessionCompleted": "Mathematics session completed successfully",
-    "studentJoined": "Sara Mohamed joined the session",
-    "studentAdded": "New student added: Ali Hassan",
-    "scheduleUpdated": "Next week's schedule was updated"
-  },
-  "ago": {
-    "minutes30": "30 minutes ago",
-    "hour1": "an hour ago",
-    "hours2": "2 hours ago",
-    "hours3": "3 hours ago"
+  "console": {
+    "title": "Admin console — {{name}}",
+    "sub": "Every number in the platform: teachers, students, sessions, attendance and commitment — filterable per teacher or student.",
+    "periodLabel": "Period",
+    "periodWeek": "Last 7 days",
+    "periodMonth": "Last 30 days",
+    "periodQuarter": "Last 90 days",
+    "bookSession": "Book a session",
+    "kpis": "Key metrics",
+    "kpiSessions": "Sessions in period",
+    "kpiHours": "Hours delivered",
+    "kpiAttendance": "Attendance rate",
+    "kpiCommitment": "Commitment rate",
+    "kpiCancelled": "Cancelled / no-show",
+    "kpiActiveTeachers": "Teachers with sessions in period",
+    "kpiStudents": "Students with sessions in period",
+    "kpiUpcoming": "Upcoming sessions",
+    "leaderboard": "Top teachers by hours",
+    "colTeacher": "Teacher",
+    "colHours": "Hours",
+    "colSessions": "Sessions",
+    "colAttendance": "Attendance",
+    "colCommitment": "Commitment",
+    "weekly": "Delivered hours per week (12 weeks)",
+    "subjects": "Sessions by subject",
+    "alerts": "Operational alerts",
+    "alertsClean": "No alerts — schedule and attendance are under control.",
+    "alertUnmarked_one": "{{count}} session today with no attendance recorded",
+    "alertUnmarked_other": "{{count}} sessions today with no attendance recorded",
+    "alertIdle_one": "{{count}} teacher with no upcoming session",
+    "alertIdle_other": "{{count}} teachers with no upcoming session",
+    "alertStudentsIdle_one": "{{count}} student with no upcoming session",
+    "alertStudentsIdle_other": "{{count}} students with no upcoming session",
+    "alertLowAttendance": "Teachers below 70% attendance",
+    "alertCancellers": "Teachers above 20% cancellations",
+    "avgLatency": "Average session start delay: {{minutes}} min",
+    "vsPrevious": "Compared with the previous equal period",
+    "noData": "No sessions in this period",
+    "quick": "Quick actions",
+    "addStudent": "Add student",
+    "addTeacher": "Add teacher",
+    "addParent": "Add parent",
+    "openSchedule": "Open full schedule",
+    "kpiOnTime": "On-time starts",
+    "kpiLate": "Late arrivals",
+    "kpiCompleted": "Sessions delivered",
+    "scheduledHours": "Scheduled hours",
+    "studentsBoard": "Students — most attended",
+    "grades": "Sessions by grade",
+    "colStudent": "Student",
+    "colGrade": "Grade",
+    "colStudents": "Students"
   }
 }

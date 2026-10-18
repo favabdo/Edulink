@@ -1,0 +1,52 @@
+{
+  "title": "EduLink",
+  "heading": "Messages",
+  "subtitle": "Your conversations with teachers, students, parents and administration inside the platform.",
+  "subtitleShort": "In-platform conversation",
+  "newMessage": "New message",
+  "listLabel": "Conversation list",
+  "threadLabel": "Message thread",
+  "conversations": "{{value}} conversations",
+  "unread": "{{value}} new messages",
+  "youPrefix": "You: ",
+  "others": "(+{{value}})",
+  "back": "Back to conversations",
+  "loading": "Loading…",
+  "kinds": {
+    "staff": "Staff",
+    "student": "Student",
+    "parent": "Parent"
+  },
+  "time": {
+    "now": "now",
+    "minutes": "{{value}} min ago",
+    "hours": "{{value}} h ago",
+    "days": "{{value}} d ago"
+  },
+  "day": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "empty": {
+    "thread": "Pick a conversation from the list to read the messages.",
+    "list": "No conversations yet.",
+    "noMessages": "No messages yet"
+  },
+  "composer": {
+    "placeholder": "Write your message…",
+    "send": "Send",
+    "attach": "Attach a file",
+    "soon": "Coming soon"
+  },
+  "dialog": {
+    "title": "New message",
+    "close": "Close",
+    "recipient": "Recipient",
+    "body": "Message",
+    "bodyPlaceholder": "Write your message here…",
+    "noContacts": "There are no accounts your account can message.",
+    "cancel": "Cancel",
+    "create": "Start conversation",
+    "sending": "Sending…"
+  }
+}

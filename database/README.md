@@ -27,9 +27,45 @@ SELECT * FROM "Edu_Users";   -- ✅ صحيح
 SELECT * FROM Edu_Users;     -- ❌ يبحث عن جدول باسم edu_users
 ```
 
-## الانتقال إلى SQL Server (مستقبلاً)
+## التشغيل على SQL Server (مُجرَّب — 2026-09-30)
 
-أسفل `schema.sql` يوجد **قسم SQL Server كامل مُعلَّق** بنفس المخطط. عند الانتقال إلى سيرفر الشركة: أزل التعليق وشغّله — الفروق بين المحرّكين محصورة في المفتاح التلقائي ونوع الوقت وحماية الإنشاء (موضّحة في تعليق القسم).
+قسم SQL Server كامل في آخر `schema.sql` بين علامتي `>>> BEGIN SQL SERVER` و`<<< END SQL SERVER`، **مُعلَّق بين `/*` و`*/`** حتى يُلصق الملف كله على Supabase بلا خطأ. للاستخراج والتشغيل من جذر المستودع:
+
+```bash
+sed -n '/^-- >>> BEGIN SQL SERVER/,/^-- <<< END SQL SERVER/p' database/schema.sql \
+  | grep -v '^/\*$' | grep -v '^\*/$' > edulink-sqlserver.sql
+
+sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -Q "CREATE DATABASE [Edulink]"
+sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d Edulink -f 65001 -I -b -i edulink-sqlserver.sql
+```
+
+| العلم | لزم لأنه |
+|---|---|
+| `-f 65001` | يقرأ الملف UTF-8؛ بدونه تتحوَّل النصوص العربية إلى `?` عند الإدراج |
+| `-I` | يفعّل `QUOTED_IDENTIFIER` — بدونه تُرفض الفهارس المفلترة (خطأ 1934) |
+| `-b` | يُرجع كود خطأ عند فشل أي عبارة؛ بدونه يكمّل بصمت وتُبنى قاعدة ناقصة |
+
+أو من **SSMS**: انسخ السطور بين `>>> BEGIN` و`<<< END` (عدا سطري `/*` و`*/`) → Execute.
+
+**الملف تراكمي:** شغّلته مرتين على نفس القاعدة ⇒ صفر أخطاء في المرتين.
+
+## النسخ الاحتياطي واختبار الاستعادة
+
+الملفان في `deploy/`: **`backup.sql`** (نسخة كاملة + `CHECKSUM` + بصمة المخطط داخل وصف
+النسخة) و**`restore-drill.sql`** (يستعيد لأحدث نسخة في قاعدة ظل ويقارن البصمة).
+**النسخ وحده ليس دليلًا:** الدليل أن يخرج الـ drill بصفر — ومع `StrictLive=1` يثبت أن
+النسخة تكفي لإعادة مخطط اليوم. الجدولة بمهمة SQL Agent، أو Task Scheduler على Express
+(بلا Agent). التفاصيل والأرقام المقيسة: `docs/11-production-deployment.md` §9.
+
+**بصمة التحقق بعد التشغيل** (قياس فعلي على قاعدة نظيفة):
+
+```
+tables=11 · triggers=0 · checks=21 · foreign_keys=9 · unique_keys=8 · defaults=43
+```
+
+ولا تُنشئ أي بيانات: أول حساب مالك من `POST /api/setup/owner` (وكلمات المرور تُجزَّأ bcrypt في التطبيق).
+
+> الفروق المقصودة بين المحرّكين (بلا تريجرات، `token` بحجم 200 لا `MAX`، مسار حذف واحد لـ `makeupOfId`) مشروحة في `docs/07-database.md` §2-ب.
 
 ## جداول موجودة
 
@@ -39,6 +75,13 @@ SELECT * FROM Edu_Users;     -- ❌ يبحث عن جدول باسم edu_users
 | `Edu_Students` | **الطلاب** — نفس أعمدة الحساب بدون `role` |
 | `Edu_Parents` | **أولياء الأمور** — نفس أعمدة الطلاب تمامًا |
 | `Edu_Relations` | **جدول الربط** بين الطالب وولي الأمر (علاقة متعدد لمتعدد) |
+| `Edu_Sessions` | **الحصص** — كود الغرفة `code`، المادة نص حر، الحالة والحضور والأوقات (UTC) |
+| `Edu_SessionAttendance` | **حضور فعلي لكل طالب في حصة** — انضمام الغرفة يسجّله آليًا (`joinedAt`/`leftAt`/`durationMs`) |
+| `Edu_Notifications` | **إشعار موجّه** لحساب: `recipientKind` (staff/student/parent) + `recipientId` + `read_at` |
+| `Edu_Conversations` | **رأس خيط مراسلة** (`subject` + التوقيتات) |
+| `Edu_ConversationMembers` | **أعضاء الخيط** + `last_read_at` لحساب غير المقروء |
+| `Edu_Messages` | **الرسائل** داخل الخيط (مرسِل ونص ووقت) |
+| `Edu_Tokens` | **جلسات الدخول** — صف لكل جهاز (`kind` + `accountId` + `token`)، الحد 10 لكل حساب |
 
 **أعمدة الحساب الثلاثة** (`Edu_Users` / `Edu_Students` / `Edu_Parents`) — بنفس الترتيب:
 `id` · **`name`** · `email` · `password` · (`role` في Users فقط) · `token` · `states` ·

@@ -1,0 +1,856 @@
+/* ============================================================
+   صفحة التقارير — كل الألوان والقياس من tokens.css
+   (الرسوم تستخدم var(--dash-icon-*) فقط، والثيم الغامق يعمل تلقائيًا)
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ============================ رأس الصفحة ============================ */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pageHeading {
+  min-width: 0;
+}
+
+.pageTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.pageSub {
+  margin-block-start: 6px;
+  font-size: 14.5px;
+  color: var(--dash-muted);
+}
+
+.scopeBadge {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ============================ بطاقة عامة ============================ */
+.card {
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.cardHeader {
+  margin-block-end: 16px;
+}
+
+.cardTitle {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.cardSub {
+  margin-block-start: 4px;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+/* ============================ شريط الفترة ============================ */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.toolbarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.presetGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--dash-hover);
+}
+
+.preset,
+.presetActive {
+  padding: 9px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--dash-muted);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.preset:hover {
+  color: var(--dash-heading);
+}
+
+.presetActive {
+  background: var(--dash-card);
+  color: var(--dash-active-fg);
+  box-shadow: var(--dash-shadow);
+}
+
+.dateFields {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-muted);
+}
+
+.fieldLabel {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.dateInput {
+  padding: 8px 12px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-md);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font-size: 13.5px;
+}
+
+.dateInput:hover {
+  border-color: var(--border-strong);
+}
+
+.toolbarBottom {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.rangeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.sessionsLabel {
+  font-size: 13px;
+  color: var(--dash-muted);
+}
+
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.exportButton:hover {
+  background: var(--primary-hover);
+}
+
+/* ============================ بطاقات المؤشرات ============================ */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.kpiCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.kpiIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin-block-end: 6px;
+  border-radius: 50%;
+  background: var(--dash-card);
+}
+
+.kpiValue {
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--dash-heading);
+}
+
+.kpiLabel {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+/* ============================ شبكة الرسوم ============================ */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+/* ============================ أعمدة الساعات الأسبوعية ============================ */
+.weeklySvg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gridLine {
+  stroke: var(--dash-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
+}
+
+.baseline {
+  stroke: var(--dash-border);
+  stroke-width: 1.5;
+}
+
+.weekBar {
+  fill: var(--dash-icon-blue);
+}
+
+.weekBar:hover {
+  fill: var(--accent);
+}
+
+.barValue {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--dash-muted);
+}
+
+.axisText {
+  font-size: 12px;
+  fill: var(--dash-muted);
+}
+
+/* ============================ حلقة الحالات ============================ */
+.donutBody {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.donutWrap {
+  position: relative;
+  flex: none;
+  width: 168px;
+  height: 168px;
+}
+
+.donutSvg {
+  display: block;
+  width: 168px;
+  height: 168px;
+}
+
+.donutTrack {
+  stroke: var(--dash-hover);
+}
+
+.donutSegment {
+  stroke-linecap: butt;
+}
+
+.legend {
+  display: flex;
+  flex: 1 1 190px;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.legendRow {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto 54px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.legendLabel {
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.legendValue {
+  color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.legendPercent {
+  text-align: end;
+  color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.donutValue {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--dash-heading);
+}
+
+.donutCaption {
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+/* ============================ أشرطة المواد ============================ */
+.subjectList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.subjectRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subjectName {
+  flex: none;
+  width: 126px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.subjectTrack {
+  flex: 1 1 auto;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--dash-hover);
+  overflow: hidden;
+}
+
+.subjectFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width var(--transition-base);
+}
+
+.subjectValue {
+  flex: none;
+  min-width: 38px;
+  text-align: end;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.emptyHint {
+  font-size: 13.5px;
+  color: var(--dash-muted);
+}
+
+/* ============================ جدول الساعات ============================ */
+.tableCard {
+  padding-block-end: 12px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table thead tr {
+  background: var(--dash-hover);
+}
+
+.table tbody tr {
+  border-block-end: 1px solid var(--dash-border);
+}
+
+.table tbody tr:hover {
+  background: var(--dash-hover);
+}
+
+.tableRow:last-child {
+  border-block-end: 0;
+}
+
+.thName {
+  min-width: 190px;
+}
+
+.thNum {
+  text-align: end;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dash-muted);
+  transition: color var(--transition-fast);
+}
+
+.sortButton:hover {
+  color: var(--dash-active-fg);
+}
+
+.thNum .sortButton {
+  justify-content: flex-end;
+}
+
+.nameCell {
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.nameText {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.nameSub {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dash-muted);
+}
+
+.cellNum {
+  text-align: end;
+  color: var(--dash-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.rateCell {
+  display: inline-grid;
+  gap: 6px;
+  justify-items: end;
+  min-width: 96px;
+}
+
+.rateValue {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.rateTrack {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--dash-active-bg);
+  overflow: hidden;
+}
+
+.rateFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width var(--transition-base);
+}
+
+.rateGood {
+  background: var(--dash-icon-green);
+}
+
+.rateMid {
+  background: var(--dash-icon-purple);
+}
+
+.rateLow {
+  background: var(--dash-icon-pink);
+}
+
+.totalsRow {
+  border-block-start: 2px solid var(--dash-border);
+  background: var(--dash-hover);
+}
+
+.totalsRow th,
+.totalsRow td {
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+/* ============================ فلاتر كونسول الإدارة ============================ */
+.filtersCard {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.filtersTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-end: auto;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.filterField {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+}
+
+.filterSelect {
+  padding: 9px 12px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-md);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.filterSelect:hover,
+.filterSelect:focus-visible {
+  border-color: var(--border-strong);
+}
+
+.clearFilters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.clearFilters:hover {
+  color: var(--dash-heading);
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dash-active-fg);
+  text-decoration: none;
+}
+
+.notice {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+  font-size: 13.5px;
+}
+
+.upcomingList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block-start: 14px;
+}
+
+.upcomingRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding-block-end: 10px;
+  border-block-end: 1px solid var(--dash-border);
+  font-size: 13.5px;
+}
+
+.upcomingRow:last-child {
+  border-block-end: 0;
+}
+
+.upcomingSubject {
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.upcomingWhen {
+  color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.upcomingStudent {
+  text-align: end;
+  color: var(--dash-heading);
+}
+
+/* ============================ الفراغ والملاحظة ============================ */
+.emptyCard {
+  padding: 44px 22px;
+  text-align: center;
+}
+
+.emptyText {
+  font-size: 14.5px;
+  color: var(--dash-muted);
+}
+
+.demoNote {
+  font-size: 12px;
+  text-align: center;
+  color: var(--dash-muted);
+  opacity: 0.85;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================ درجات الرسوم (SVG + نقاط الوسيلة) ============================ */
+.seg_completed {
+  stroke: var(--dash-icon-green);
+  background-color: var(--dash-icon-green);
+}
+
+.seg_cancelled {
+  stroke: var(--dash-icon-purple);
+  background-color: var(--dash-icon-purple);
+}
+
+.seg_no_show {
+  stroke: var(--dash-icon-pink);
+  background-color: var(--dash-icon-pink);
+}
+
+.seg_scheduled {
+  stroke: var(--dash-icon-blue);
+  background-color: var(--dash-icon-blue);
+}
+
+/* ============================ تدرجات البطاقات ============================ */
+.tint_blue {
+  background: var(--dash-tint-blue);
+}
+
+.tint_green {
+  background: var(--dash-tint-green);
+}
+
+.tint_purple {
+  background: var(--dash-tint-purple);
+}
+
+.tint_pink {
+  background: var(--dash-tint-pink);
+}
+
+.icon_blue {
+  color: var(--dash-icon-blue);
+}
+
+.icon_green {
+  color: var(--dash-icon-green);
+}
+
+.icon_purple {
+  color: var(--dash-icon-purple);
+}
+
+.icon_pink {
+  color: var(--dash-icon-pink);
+}
+
+/* الأشرطة تستخدم اللون القوي لا خلفية البطاقة الفاتحة */
+.subjectFill.tint_blue {
+  background: var(--dash-icon-blue);
+}
+
+.subjectFill.tint_green {
+  background: var(--dash-icon-green);
+}
+
+.subjectFill.tint_purple {
+  background: var(--dash-icon-purple);
+}
+
+.subjectFill.tint_pink {
+  background: var(--dash-icon-pink);
+}
+
+/* ============================ التجاوب ============================ */
+@media (max-width: 1400px) {
+  .kpiGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .chartsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exportButton {
+    margin-inline-start: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .subjectName {
+    width: 96px;
+  }
+
+  .donutBody {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .kpiGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .toolbarTop,
+  .toolbarBottom {
+    align-items: stretch;
+  }
+
+  .dateFields {
+    width: 100%;
+  }
+
+  .field {
+    flex: 1 1 120px;
+  }
+
+  .dateInput {
+    width: 100%;
+  }
+}
+
+/* ============================ الطباعة ============================ */
+@media print {
+  .toolbar {
+    display: none;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid var(--dash-border);
+    break-inside: avoid;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tableScroll {
+    overflow: visible;
+  }
+
+  .exportButton {
+    display: none;
+  }
+}

@@ -45,3 +45,18 @@ desktop.ini
 
 # إعدادات التطوير المحلية (تحتوي أسرار الاتصال بقاعدة البيانات)
 appsettings.Development.json
+
+# مخرجات أدوات التحقق من الإنتاج (قابلة لإعادة التوليد: tools/verify-*.py)
+tools/out-*.txt
+
+# ملف Mخطط SQL Server المؤقت الذي يستخرجه deploy/run.sh من schema.sql
+deploy/.sqlserver-schema.sql
+# جسم أول حساب مالك الذي يرسله run.sh (يحتوي كلمة السر — لا يُCommit أبدًا)
+deploy/.owner.json
+
+# مخلفات أدوات محلية (لا تُCommit)
+__pycache__/
+*.pyc
+.zcode/
+.zcodeignore
+.qoder/

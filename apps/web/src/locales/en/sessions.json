@@ -1,0 +1,107 @@
+{
+  "title": "Sessions",
+  "scope": {
+    "teacher": "All of your sessions as a teacher",
+    "student": "Your sessions — student view",
+    "parent": "Your children's sessions",
+    "supervisor": "All sessions — supervisor view, filterable by teacher",
+    "manager": "All sessions — manager view, filterable by teacher",
+    "owner": "All sessions — owner view, filterable by teacher"
+  },
+  "filters": {
+    "teacher": "Teacher",
+    "allTeachers": "All teachers"
+  },
+  "statsAria": "Session statistics",
+  "stats": {
+    "today": "Sessions today",
+    "weekCompleted": "Completed this week",
+    "monthHours": "Hours this month"
+  },
+  "hoursValue": "{{hours}} h",
+  "tabsAria": "Filter sessions by status",
+  "tabs": {
+    "upcoming": "Upcoming",
+    "live": "Live",
+    "past": "Past",
+    "cancelled": "Cancelled"
+  },
+  "duration": "{{minutes}} min",
+  "minutesToStart": "Starts in {{mins}} min",
+  "notRecorded": "Not recorded",
+  "metadataNote": "No session is ever recorded — only duration and attendance metadata are stored.",
+  "empty": "No sessions in this tab yet.",
+  "status": {
+    "scheduled": "Scheduled",
+    "live": "Live",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "no_show": "No-show"
+  },
+  "attendance": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent"
+  },
+  "subjects": {
+    "math": "Mathematics",
+    "english": "English",
+    "physics": "Physics",
+    "chemistry": "Chemistry",
+    "biology": "Biology",
+    "other": "Other"
+  },
+  "grades": {
+    "g7": "Grade 7",
+    "g8": "Grade 8",
+    "g9": "Grade 9",
+    "g10": "Grade 10",
+    "g11": "Grade 11",
+    "g12": "Grade 12"
+  },
+  "actions": {
+    "join": "Join",
+    "joinHint": "Open the preview screen then enter the session",
+    "joinLocked": "Joining is available during the session or within 60 minutes before it starts",
+    "observe": "Observe",
+    "observeHint": "Enter the session as an observer without participating",
+    "details": "Details",
+    "hideDetails": "Hide details"
+  },
+  "fields": {
+    "code": "Session code",
+    "student": "Student",
+    "teacher": "Teacher",
+    "subject": "Subject",
+    "grade": "Grade",
+    "when": "Schedule",
+    "endsAt": "Ends at",
+    "attendance": "Attendance",
+    "countdown": "Countdown",
+    "makeupOf": "Makeup for"
+  },
+  "prejoin": {
+    "title": "Join the session",
+    "subtitle": "Check your camera and microphone before entering",
+    "previewNote": "Demo preview — no real media is played",
+    "micOn": "Microphone on",
+    "micOff": "Microphone off",
+    "cameraOn": "Camera on",
+    "cameraOff": "Camera off",
+    "cameraLabel": "Camera",
+    "micLabel": "Microphone",
+    "speakerLabel": "Speaker",
+    "devices": {
+      "cameraDevice": "Device camera",
+      "cameraExternal": "External USB camera",
+      "micDevice": "Device microphone",
+      "micHeadset": "Headset microphone",
+      "speakerDefault": "Device default output",
+      "speakerHeadset": "Bluetooth headset"
+    },
+    "cancel": "Back",
+    "join": "Enter session",
+    "permissionDenied": "Camera/microphone access was not granted — you can join in view-only mode",
+    "observerNote": "You will join as a viewer: watch and listen without camera or microphone"
+  }
+}

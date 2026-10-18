@@ -161,17 +161,17 @@ git push origin main
    ```
    VITE_API_BASE_URL = https://api.edulink.example
    ```
-   الواجهة تقرأه في `src/api/client.ts` وتضيفه قبل كل نداء. **بدونه تستخدم مسارًا نسبيًا `/api`** (وهذا يعمل في التطوير عبر بروكسي Vite فقط).
+   الواجهة تقرأه في `src/lib/constants.ts`: `API_BASE_URL` لكل نداءات `/api`، و**`HUB_BASE_URL` يشتق منه أصل اتصال الغرفة** (`https:` ← `wss:`). **بدونه** تستخدم مسارات نسبية `/api` و`/hubs` — وهذا يعمل في التطوير عبر بروكسي Vite أو خلف nginx بنفس الدومين فقط؛ ولو خُدمت الواجهة من دومين مختلف بلا المتغيّر فإن **الحصص الحيّة تفشل** (الـ Hub لا يصل للسيرفر) حتى لو عمل بقية الموقع.
 3. اضبط في الـ API:
    ```
-   Database__Provider=Postgres
+   Database__Provider=SqlServer        # أو Postgres على Supabase
    Database__EnsureCreated=false
-   ConnectionStrings__Postgres=<Supabase connection string>
+   ConnectionStrings__SqlServer=Server=...,1433;Database=Edulink;User ID=...;Password=...
    Cors__Origins__0=https://edulink.vercel.app
    Cors__Origins__1=https://<الدومين النهائي>
    ```
    ⚠️ لا تنسَ إضافة دومين الواجهة إلى `Cors__Origins` وإلا رفض المتصفح النداءات.
-4. **لا تُشغّل EF Migrations** على قاعدة الإنتاج — المخطط من `db/schema.sql` فقط.
+4. **لا تُشغّل EF Migrations** على قاعدة الإنتاج — المخطط من `database/schema.sql` فقط.
 
 ## التحقق بعد النشر
 

@@ -1,0 +1,35 @@
+# سياق البناء هو **جذر المستودع**:  docker build -f apps/api/Dockerfile .
+# الصورة للـ API وحده (لا مراجع مشاريع في EduspaceApi.csproj)، فكل ما عدا apps/api
+# يستثناه هذا الملف — وإلا نسخ node_modules وحده يرفع حجم السياق مئات الميغابايت
+# ويُبطئ كل بناء (وقد يُدخل الأسرار في الطبقة الوسيطة).
+
+# مجلدات البناء والاعتماديات — تُعاد توليدها داخل الصورة
+**/node_modules
+**/bin
+**/obj
+**/dist
+
+# لا تُرفع الأسرار إلى الصورة إطلاقًا (apps/api/.env فيه سلسلة اتصال حقيقية)
+.env
+**/.env
+*.env.local
+
+# خارج صورة الـ API
+.git
+.gitignore
+docs
+tmp
+tools
+database
+deploy
+apps/web
+eduspace-web
+packages
+.vercel
+*.md
+package.json
+package-lock.json
+vercel.json
+.qoder
+.zcode
+.zcodeignore

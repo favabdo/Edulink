@@ -1,0 +1,71 @@
+# ============================================================
+#  EduLink — نشر الإنتاج على سيرفر واحد (Docker Compose)
+#
+#  الخدمات:
+#    api     → ASP.NET Core (REST + SignalR) خلف nginx
+#    nginx   → TLS (Let's Encrypt/certbot)، يوزّع /api و/hubs على الحاوية
+#              وملفات الواجهة المبنية (dist) ثابتة
+#    coturn  → خادم TURN لـ WebRTC (إجباري: شبكات NAT الصارمة)
+#
+#  قبل التشغيل:
+#    1) القاعدة (SQL Server — المسار المعتمد): شغّل قسم T-SQL من database/schema.sql
+#       (أمر الاستخراج والتشغيل بالأعلام المطلوبة في database/README.md).
+#       وعلى Supabase بدل ذلك: الصق الملف كاملًا في SQL Editor.
+#    2) انسخ ../apps/api/.env.example إلى .env واملأ الأسرار:
+#       Database__Provider + ConnectionStrings__SqlServer (أو Postgres)،
+#       Meeting__TurnSecret، و**Network__UseForwardedHeaders=true** مع
+#       Network__TrustAllProxies=true (الـ API بلا منفذ مكشوف هنا) —
+#       وبدونها تُحسب المؤسسة كلها IPًا واحدًا عند تحديد المعدل. اضبط أيضًا
+#       RateLimit__LoginPermitPerMinute / ApiPermitPerMinute / HubPermitPerMinute.
+#       واترك **Network__ForwardedHeadersLimit=1** (افتراضي) ما دام وسيط واحد: هو ما يجعل
+#       تزوير العميل لـ X-Forwarded-For بلا أثر على حدّ الدخول — واجعله 2 فقط لو أضفت CDN أمام nginx.
+#    3) ضع الشهادة في ./certs/fullchain.pem و./certs/privkey.pem
+#       أو استخدم certbot مع مجلدات certs-shared.
+#    4) نفس قيمة Meeting__TurnSecret يجب أن تكون في turnserver.conf (use-auth-secret).
+#
+#  التشغيل:  docker compose up -d --build
+#  الاستهلاك عند 1000 حصة متزامنة (2000 اتصال): انظر docs/11-production-deployment.md §5-أ
+# ============================================================
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # الاتصال بـ Supabase من خارج الشبكة المحلية قد يحتاج IPv4 — انظر README الخاص بالسيرفر
+    networks: [edulink]
+    # لا منفذ **عام**: nginx هو المدخل الوحيد للجمهور. المنفذ على 127.0.0.1 فقط مطلوب
+    # لأداة `tools/verify-rate-limits.py` لأنها تموّه X-Forwarded-For لعناوين كثيرة
+    # وتحسب حزنة كل عنوان على حدة — وهذا لا يعمل عبر nginx (المفتاح هناك عنوان الوسيط).
+    ports:
+      - "127.0.0.1:5279:80"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+      # ملفات الواجهة بعد npm run build — تُنسخ إلى dist في السيرفر
+      - ../apps/web/dist:/usr/share/nginx/html:ro
+    networks: [edulink]
+    depends_on: [api]
+
+  coturn:
+    image: coturn/coturn:4.7
+    restart: unless-stopped
+    network_mode: host   # TURN يحتاج نطاقات منافذ وسائط مباشرة (3478 + 49160-49200)
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    # نطاق الوسائط في turnserver.conf يجب أن يكون مفتوحًا في جدار النار أيضًا
+
+networks:
+  edulink:
+    driver: bridge

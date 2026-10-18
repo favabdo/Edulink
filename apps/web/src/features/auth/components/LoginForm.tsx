@@ -3,7 +3,6 @@ import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { BrandLogo } from '../../../components/BrandLogo'
 import { PreferenceToggles } from '../../../components/PreferenceToggles'
-import { GoogleIcon } from '../../../components/icons/GoogleIcon'
 import { ApiError } from '../../../lib/apiClient'
 import { useAuth } from '../authContext'
 import { validateIdentifier, validatePassword, type ValidationCode } from '../validation'
@@ -167,9 +166,6 @@ export function LoginForm() {
             />
             <span>{t('login:form.rememberMe')}</span>
           </label>
-          <button type="button" className={styles.link}>
-            {t('login:form.forgotPassword')}
-          </button>
         </div>
 
         <button className={styles.submit} type="submit" disabled={submitting}>
@@ -178,23 +174,9 @@ export function LoginForm() {
         </button>
       </form>
 
-      <p className={styles.divider}>{t('login:form.orContinueWith')}</p>
-
-      <button
-        type="button"
-        className={styles.google}
-        onClick={() => setFormError(t('login:form.errors.googleUnavailable'))}
-        disabled={submitting}
-      >
-        <GoogleIcon size={20} />
-        <span>{t('login:form.continueWithGoogle')}</span>
-      </button>
-
       <p className={styles.footer}>
         {t('login:form.noAccount')}{' '}
-        <button type="button" className={styles.link}>
-          {t('login:form.contactInstitution')}
-        </button>
+        <span className={styles.link}>{t('login:form.contactInstitution')}</span>
       </p>
 
       <p className={styles.copyright}>{t('login:form.copyright')}</p>

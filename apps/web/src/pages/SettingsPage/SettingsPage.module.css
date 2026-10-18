@@ -1,0 +1,764 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ============================ الهيدر ============================ */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.subtitle {
+  margin-block-start: 4px;
+  font-size: 14px;
+  color: var(--dash-muted);
+}
+
+.headerChip {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-control);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* ============================ الهيكل ============================ */
+.layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.tabs {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--dash-border);
+  border-radius: 20px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--dash-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: start;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.tab:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+.tabActive {
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* ============================ الأقسام ============================ */
+.section {
+  padding: 22px;
+  border: 1px solid var(--dash-border);
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.sectionHeader {
+  margin-block-end: 16px;
+}
+
+.sectionTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.sectionDesc {
+  margin-block-start: 4px;
+  font-size: 13px;
+  color: var(--dash-muted);
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ============================ النماذج ============================ */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+.control {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--bg-field);
+  color: var(--dash-heading);
+  font-size: 14px;
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.control::placeholder {
+  color: var(--text-placeholder);
+}
+
+.control:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.control:disabled {
+  opacity: 0.7;
+}
+
+.controlInvalid {
+  border-color: var(--danger-border);
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ghostButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.ghostButton:hover:not(:disabled) {
+  background: var(--dash-hover);
+}
+
+.ghostButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 9px 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-control);
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.dangerButton:hover {
+  background: var(--danger-border);
+  color: var(--text-inverse);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+/* ============================ الرسائل داخل اللوحة ============================ */
+.feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.feedbackSuccess {
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.feedbackError {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* ============================ الملف الشخصي ============================ */
+.profileHead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-block-end: 16px;
+  border-block-end: 1px solid var(--dash-border);
+}
+
+.bigAvatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.profileHeadText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profileName {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.profileMeta {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.avatarButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-block-start: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.avatarButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================ قوة كلمة المرور ============================ */
+.strengthBar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--dash-hover);
+}
+
+.strengthFill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: var(--radius-control);
+  background: var(--danger);
+  transition: width var(--transition-base);
+}
+
+.strengthFill[data-score='1'] {
+  width: 25%;
+}
+
+.strengthFill[data-score='2'] {
+  width: 50%;
+  background: var(--dash-icon-pink);
+}
+
+.strengthFill[data-score='3'] {
+  width: 75%;
+  background: var(--accent);
+}
+
+.strengthFill[data-score='4'] {
+  width: 100%;
+  background: var(--dash-icon-green);
+}
+
+.rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.rulePassed {
+  color: var(--dash-icon-green);
+  font-weight: 700;
+}
+
+/* ============================ الأجهزة ============================ */
+.deviceList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deviceRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: 18px;
+}
+
+.deviceIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-control);
+  background: var(--dash-tint-blue);
+  color: var(--dash-icon-blue);
+}
+
+.deviceText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.deviceName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.deviceCurrent {
+  padding: 3px 9px;
+  border-radius: var(--radius-control);
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.deviceMeta {
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+/* ============================ مجموعات الخيارات ============================ */
+.optionGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.optionCard {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.optionCard:hover {
+  background: var(--dash-hover);
+}
+
+.optionCardActive {
+  border-color: var(--primary);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+.optionCardDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.optionCard:has(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.radioInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.optionLabel {
+  white-space: nowrap;
+}
+
+/* ============================ مفاتيح الإشعارات ============================ */
+.toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: 18px;
+}
+
+.toggleText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.toggleLabel {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.toggleHint {
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: var(--radius-control);
+  background: var(--dash-hover);
+  border: 1px solid var(--dash-border);
+  transition: background-color var(--transition-fast);
+}
+
+.switchOn {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.switchThumb {
+  position: absolute;
+  inset-block-start: 3px;
+  inset-inline-start: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--dash-card);
+  box-shadow: var(--shadow-soft);
+  transition: transform var(--transition-fast);
+}
+
+.switchOn .switchThumb {
+  transform: translateX(20px);
+}
+
+/* في RTL ينقلب اتجاه الحركة تلقائيًا مع خاصية منطقية واحدة */
+html[dir='rtl'] .switchOn .switchThumb {
+  transform: translateX(-20px);
+}
+
+/* ============================ هوية المؤسسة ============================ */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.swatch:hover {
+  background: var(--dash-hover);
+}
+
+.swatchActive {
+  border-color: var(--dash-heading);
+  color: var(--dash-heading);
+}
+
+.swatch:has(:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.swatchColor {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.swatchLabel {
+  white-space: nowrap;
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.uploadHint {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.previewCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 2px solid var(--primary);
+  border-radius: 20px;
+  background: var(--dash-hover);
+}
+
+.previewMark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.previewText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.previewName {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.previewEmail {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.previewTagline {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dash-active-fg);
+}
+
+/* ============================ صندوق التنبيه ============================ */
+.infoBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--dash-tint-blue);
+  color: var(--dash-heading);
+  font-size: 13px;
+}
+
+.infoBox p {
+  line-height: 1.6;
+}
+
+.statusChip {
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: var(--radius-control);
+  background: var(--dash-tint-pink);
+  color: var(--dash-icon-pink);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* ============================ التجاوب ============================ */
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tabs {
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .tab {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 21px;
+  }
+
+  .rules {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profileHead {
+    flex-wrap: wrap;
+  }
+
+  .deviceRow {
+    flex-wrap: wrap;
+  }
+
+  .header {
+    flex-wrap: wrap;
+  }
+}

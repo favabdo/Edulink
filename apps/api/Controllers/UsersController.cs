@@ -21,10 +21,13 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
     private short CurrentRole =>
         short.TryParse(User.FindFirstValue(ClaimTypes.Role), out var role) ? role : (short)-1;
 
+    private long CurrentUserId =>
+        long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0L;
+
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] short? role, [FromQuery] string? search)
     {
-        if (CurrentRole < UserRoles.Manager) return Forbid();
+        if (CurrentRole < UserRoles.Supervisor) return Forbid();
 
         var query = db.Users.AsNoTracking().AsQueryable();
 
@@ -45,7 +48,8 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
     {
-        if (CurrentRole < UserRoles.Manager) return Forbid();
+        // المشرف يضيف مدرسين فقط (الحارس أدناه يمنع إنشاء دور >= دوره)
+        if (CurrentRole < UserRoles.Supervisor) return Forbid();
 
         // لا يجوز إنشاء دور مساوٍ لدورك أو أعلى منه
         if (request.Role >= CurrentRole)
@@ -77,4 +81,54 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
 
         return CreatedAtAction(nameof(List), new { id = user.Id }, user.ToDto());
     }
+
+    /// <summary>
+    /// تعديل حساب موظف: الاسم/الدور/الحالة/الصلاحية، وتصفير كلمة المرور إذا أُرسلت.
+    /// المشرف يدير المدرسين فقط؛ المدير فأعلى يدير من هم أدنى منه؛ لا أحد يرفع نفسه ولا يعبث بحسابه الدورِيًا.
+    /// </summary>
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateUserRequest request)
+    {
+        if (CurrentRole < UserRoles.Supervisor) return Forbid();
+
+        var user = await db.Users.FindAsync(id);
+        if (user is null) return NotFound(new { message = "الحساب غير موجود." });
+
+        // المشرف (1) لا يمس غير المدرسين (0)؛ المدير فأعلى لا يمس من يساويه أو يعلوه
+        if (CurrentRole == UserRoles.Supervisor && user.Role != UserRoles.Teacher)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "المشرف يدير حسابات المدرسين فقط." });
+        if (CurrentRole > UserRoles.Supervisor && user.Role >= CurrentRole && user.Id != CurrentUserId)
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = "لا يمكنك تعديل حساب بدور مساوٍ لدورك أو أعلى." });
+        if (user.Id == CurrentUserId && request.Role is not null && request.Role != user.Role)
+            return BadRequest(new { message = "لا يمكنك تغيير دور حسابك." });
+
+        if (!string.IsNullOrWhiteSpace(request.Name)) user.Name = request.Name!.Trim();
+
+        if (request.Role is not null)
+        {
+            if (request.Role >= CurrentRole)
+                return BadRequest(new { message = "لا يمكنك تعيين دور مساوٍ لدورك أو أعلى." });
+            user.Role = request.Role.Value;
+        }
+
+        if (request.States is not null) user.States = request.States.Value;
+        if (request.Access is not null) user.Access = request.Access.Value;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            if (request.Password.Length < 8)
+                return BadRequest(new { message = "كلمة المرور يجب ألا تقل عن 8 أحرف." });
+            user.Password = passwords.Hash(request.Password);
+        }
+
+        await db.SaveChangesAsync();
+        return Ok(user.ToDto());
+    }
 }
+
+public record UpdateUserRequest(
+    string? Name,
+    short? Role,
+    short? States,
+    short? Access,
+    string? Password);

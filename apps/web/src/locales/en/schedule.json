@@ -1,0 +1,147 @@
+{
+  "title": "EduLink",
+  "pageTitle": "Session schedule",
+  "pageSubtitle": "Browse every teacher's timetable by week or day, and create, cancel or reschedule any session here.",
+  "scope": {
+    "all": "You see every teacher's schedule — supervisory access",
+    "teacher": "You see only your own sessions",
+    "student": "These are your sessions",
+    "parent": "Your children's sessions"
+  },
+  "view": {
+    "week": "Weekly",
+    "day": "Daily",
+    "group": "View mode"
+  },
+  "nav": {
+    "prev": "Previous",
+    "next": "Next",
+    "today": "Today"
+  },
+  "add": "Add session",
+  "filters": {
+    "teacher": "Teacher",
+    "allTeachers": "All teachers",
+    "showSaturday": "Show Saturday"
+  },
+  "stats": {
+    "today": "Sessions today",
+    "week": "Sessions this week",
+    "cancelled": "Cancelled",
+    "completed": "Completed"
+  },
+  "days": {
+    "sun": "Sunday",
+    "mon": "Monday",
+    "tue": "Tuesday",
+    "wed": "Wednesday",
+    "thu": "Thursday",
+    "fri": "Friday",
+    "sat": "Saturday"
+  },
+  "status": {
+    "completed": "Completed",
+    "live": "Live now",
+    "scheduled": "Scheduled",
+    "cancelled": "Cancelled",
+    "no_show": "No show"
+  },
+  "subjects": {
+    "biology": "Biology",
+    "other": "Other"
+  },
+  "grades": {
+    "g7": "Grade 1 — preparatory",
+    "g8": "Grade 2 — preparatory",
+    "g9": "Grade 3 — preparatory",
+    "g10": "Grade 1 — secondary",
+    "g11": "Grade 2 — secondary",
+    "g12": "Grade 3 — secondary"
+  },
+  "labels": {
+    "student": "Student",
+    "teacher": "Teacher",
+    "subject": "Subject",
+    "grade": "Grade",
+    "date": "Date",
+    "time": "Time",
+    "duration": "Duration",
+    "status": "Status",
+    "code": "Session code",
+    "reason": "Cancellation reason (optional)",
+    "today": "Today",
+    "pickTime": "Choose a time"
+  },
+  "statsTitle": "Session summary",
+  "timeRange": "{{from}} – {{to}}",
+  "durationMinutes": "{{n}} min",
+  "makeupOf": "Makeup for {{code}}",
+  "cancelReason": "Cancellation reason: {{reason}}",
+  "localBadge": "Local change",
+  "details": {
+    "title": "Session details"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "reschedule": "Reschedule",
+    "finish": "End session",
+    "close": "Close",
+    "back": "Back",
+    "confirmCancel": "Confirm cancellation",
+    "confirmReschedule": "Save new time",
+    "create": "Add session"
+  },
+  "results": {
+    "cancelled": "Session {{code}} was cancelled (locally).",
+    "finished": "Session {{code}} was marked as completed (locally).",
+    "rescheduled": "Session {{code}} moved to {{when}}.",
+    "created": "Session {{code}} was added to the schedule."
+  },
+  "empty": {
+    "week": "No sessions in this week.",
+    "day": "No sessions on this day.",
+    "none": "No sessions in your current scope.",
+    "noStudents": "This teacher has no active students yet."
+  },
+  "emptyHint": {
+    "week": "Use the navigation buttons to see another week.",
+    "day": "Try another day or switch to the weekly view."
+  },
+  "cancelDialog": {
+    "title": "Cancel session",
+    "hint": "The session stays in the grid marked as cancelled until it is rescheduled.",
+    "reasonPlaceholder": "For example: the student apologised or the teacher had an emergency"
+  },
+  "rescheduleDialog": {
+    "title": "Reschedule session",
+    "hint": "Pick the new day and time — the duration stays the same.",
+    "current": "Current time: {{when}}"
+  },
+  "createDialog": {
+    "title": "Add a new session",
+    "hint": "The subject follows the teacher, and the student list is filtered by teacher.",
+    "teacherPlaceholder": "Choose a teacher",
+    "studentPlaceholder": "Choose a student",
+    "subjectPlaceholder": "Type the subject name"
+  },
+  "errors": {
+    "teacherRequired": "Choose a teacher first.",
+    "studentRequired": "Choose a student.",
+    "dateRequired": "Choose a date.",
+    "timeRequired": "Choose a time.",
+    "pastSlot": "The time is already in the past.",
+    "endsLate": "The session would end after 8:00 PM.",
+    "teacherBusy": "This teacher already has a session then.",
+    "studentBusy": "This student already has another session then.",
+    "subjectRequired": "Subject name is required."
+  },
+  "aria": {
+    "nav": "Week navigation",
+    "weekGrid": "Weekly session grid",
+    "block": "{{student}} session — {{day}} at {{time}} — {{status}}",
+    "dayList": "Day-by-day session list"
+  },
+  "actionFailed": "The action could not be completed.",
+  "pageSubtitleFamily": "Browse your sessions weekly or daily — any change is made by the admins.",
+  "pageSubtitleTeacher": "Your timetable as the admins set it: you run the session, take attendance and end it. Creating, cancelling and rescheduling belong to supervisors and up."
+}

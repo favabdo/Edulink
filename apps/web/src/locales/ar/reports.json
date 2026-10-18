@@ -1,0 +1,106 @@
+{
+  "title": "التقارير والإحصائيات",
+  "subtitle": "ساعات المدرسين وحضور الطلاب والتزامهم — لا توجد أي بيانات مالية داخل المنصة",
+  "scope": {
+    "teacher": "ساعاتك أنت فقط",
+    "staff": "مقارنة المدرسين + إجمالي المؤسسة",
+    "student": "حضورك أنت فقط",
+    "parent": "حضور الأبناء فقط"
+  },
+  "admin": {
+    "subtitle": "أداء كل المدرسين والطلاب خلال الفترة — قابلة للتخصيص بمدرس أو طالب أو صف أو مادة",
+    "filtersTitle": "تخصيص التقارير",
+    "allTeachers": "كل المدرسين",
+    "allStudents": "كل الطلاب",
+    "allGrades": "كل الصفوف",
+    "allSubjects": "كل المواد",
+    "gradeLabel": "الصف",
+    "subjectLabel": "المادة",
+    "clear": "مسح التخصيص",
+    "active": "حساب نشط",
+    "suspended": "حساب موقوف",
+    "upcomingTitle": "الحصص القادمة",
+    "openSchedule": "فتح الجدولة",
+    "noUpcoming": "لا توجد حصص قادمة مجدولة لهذا المدرس",
+    "withStudent": "مع {{name}}",
+    "gradesTitle": "الحصص حسب الصف",
+    "peakHoursTitle": "أكثر ساعات اليوم نشاطًا"
+  },
+  "empty": "لا توجد حصص في هذه الفترة — اختر فترة أوسع أو الوضع المخصص",
+  "format": {
+    "percent": "{{value}}٪"
+  },
+  "range": {
+    "label": "فترة التقارير",
+    "presetsLabel": "اختصارات الفترة",
+    "presets": {
+      "week": "هذا الأسبوع",
+      "month": "هذا الشهر",
+      "quarter": "آخر 3 أشهر",
+      "custom": "مخصص"
+    },
+    "from": "من",
+    "to": "إلى",
+    "sessionsCount": "{{value}} حصة داخل الفترة"
+  },
+  "kpis": {
+    "completedHours": "إجمالي الساعات المكتملة",
+    "completed": "الحصص المنفذة",
+    "attendanceRate": "نسبة الحضور",
+    "commitmentRate": "نسبة الالتزام",
+    "cancelled": "الحصص الملغاة",
+    "noShow": "بدون حضور"
+  },
+  "chart": {
+    "weeklyTitle": "الساعات المكتملة أسبوعيًا",
+    "weeklySub": "عمود لكل أسبوع — عدد الساعات المكتملة فيه فعليًا",
+    "weeklyAria": "رسم أعمدة للساعات المكتملة أسبوعًا بأسبوع",
+    "weekTooltip": "أسبوع {{week}}: {{hours}} ساعة",
+    "donutTitle": "حالات الحصص",
+    "donutSub": "الإجمالي {{total}} حصة في الفترة",
+    "donutAria": "رسم دائري لتوزيع الحصص حسب الحالة",
+    "segmentTooltip": "{{status}}: {{value}} حصة ({{percent}})",
+    "centerTotal": "حصة",
+    "subjectsTitle": "المواد الدراسية",
+    "subjectsSub": "عدد الحصص المكتملة لكل مادة",
+    "subjectTooltip": "{{subject}}: {{value}} حصة مكتملة",
+    "noSubjects": "لا حصص مكتملة في هذه الفترة"
+  },
+  "status": {
+    "completed": "مكتملة",
+    "cancelled": "ملغاة",
+    "no_show": "بدون حضور",
+    "scheduled": "قادمة"
+  },
+  "subjects": {
+    "math": "الرياضيات",
+    "english": "اللغة الإنجليزية",
+    "physics": "الفيزياء",
+    "chemistry": "الكيمياء",
+    "biology": "الأحياء",
+    "other": "أخرى"
+  },
+  "table": {
+    "teacherTitle": "ساعات المدرسين",
+    "selfTitle": "ملخص ساعاتك",
+    "familyTitle": "ملخص حضور الأبناء",
+    "allTeachersTitle": "أداء كل المدرسين في المؤسسة",
+    "teacherStudentsTitle": "طلاب هذا المدرس",
+    "studentTeachersTitle": "مدرسو هذا الطالب",
+    "hint": "اضغط على رأس أي عمود للترتيب تصاعديًا أو تنازليًا",
+    "caption": "جدول الساعات والحضور داخل الفترة المختارة",
+    "totals": "الإجمالي",
+    "columns": {
+      "teacher": "المدرس",
+      "student": "الطالب",
+      "sessions": "عدد الحصص",
+      "completedHours": "الساعات المكتملة",
+      "attendanceRate": "نسبة الحضور",
+      "commitmentRate": "نسبة الالتزام"
+    }
+  },
+  "export": {
+    "button": "تصدير CSV",
+    "fileName": "edulink-reports"
+  }
+}

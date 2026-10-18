@@ -1,0 +1,689 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ============================ الهيدر ============================ */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.subtitle {
+  margin-block-start: 4px;
+  font-size: 14px;
+  color: var(--dash-muted);
+}
+
+.composeButton,
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 14px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.composeButton:hover,
+.primaryButton:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.primaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================ الهيكل ============================ */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--dash-border);
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+  min-height: 540px;
+  max-height: calc(100vh - 210px);
+}
+
+.listPane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-inline-end: 1px solid var(--dash-border);
+}
+
+.threadPane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ============================ قائمة المحادثات ============================ */
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-block-end: 1px solid var(--dash-border);
+}
+
+.listCount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.listUnread {
+  padding: 4px 10px;
+  border-radius: var(--radius-control);
+  background: var(--dash-tint-pink);
+  color: var(--dash-icon-pink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.listScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-block-end: 1px solid var(--dash-border);
+  background: transparent;
+  text-align: start;
+  transition: background-color var(--transition-fast);
+}
+
+.item:hover {
+  background: var(--dash-hover);
+}
+
+.itemSelected {
+  background: var(--dash-active-bg);
+}
+
+.itemMain {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.itemNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.itemName {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--dash-heading);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.itemPreview {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--dash-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.itemSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: none;
+}
+
+.itemTime {
+  font-size: 11.5px;
+  color: var(--dash-muted);
+  white-space: nowrap;
+}
+
+.unreadBadge {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 6px;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.listEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 260px;
+  color: var(--dash-muted);
+  font-size: 13.5px;
+}
+
+/* ============================ الأفاتار وشرائح الدور ============================ */
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.avatarSmall {
+  width: 38px;
+  height: 38px;
+  font-size: 13.5px;
+}
+
+.avatar_teacher {
+  background: var(--dash-tint-blue);
+  color: var(--dash-icon-blue);
+}
+
+.avatar_student {
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.avatar_parent {
+  background: var(--dash-tint-purple);
+  color: var(--dash-icon-purple);
+}
+
+.avatar_supervisor {
+  background: var(--dash-tint-pink);
+  color: var(--dash-icon-pink);
+}
+
+.avatar_manager,
+.avatar_owner {
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+.roleChip {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: var(--radius-control);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip_teacher {
+  background: var(--dash-tint-blue);
+  color: var(--dash-icon-blue);
+}
+
+.chip_student {
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.chip_parent {
+  background: var(--dash-tint-purple);
+  color: var(--dash-icon-purple);
+}
+
+.chip_supervisor {
+  background: var(--dash-tint-pink);
+  color: var(--dash-icon-pink);
+}
+
+.chip_manager,
+.chip_owner {
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+/* ============================ نص المحادثة ============================ */
+.threadHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-block-end: 1px solid var(--dash-border);
+}
+
+.threadIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.threadNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.threadName {
+  overflow: hidden;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--dash-heading);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.threadSubject {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.backButton {
+  display: none;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+}
+
+.backButton:hover {
+  background: var(--dash-hover);
+}
+
+.threadScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+  background: var(--dash-bg);
+}
+
+.threadEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 24px;
+  color: var(--dash-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block-end: 14px;
+}
+
+.daySeparator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-block: 6px;
+}
+
+.daySeparator span {
+  padding: 5px 14px;
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.dayItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bubbleRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* المحاذاة على الطرف المقابل للسطر — تنعكس تلقائيًا في RTL */
+.bubbleRowMine {
+  justify-content: flex-end;
+}
+
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: min(72%, 520px);
+  padding: 11px 15px;
+  border-radius: 18px;
+}
+
+.bubbleOther {
+  border-start-start-radius: 6px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.bubbleMine {
+  border-start-end-radius: 6px;
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.bubbleText {
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.bubbleOther .bubbleText {
+  color: var(--dash-heading);
+}
+
+.bubbleTime {
+  align-self: flex-end;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.typing {
+  margin-block-start: 6px;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+/* ============================ صندوق الكتابة ============================ */
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-block-start: 1px solid var(--dash-border);
+  background: var(--dash-card);
+}
+
+.composerField {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.composerField input {
+  width: 100%;
+  padding: 12px 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--bg-field);
+  color: var(--dash-heading);
+  font-size: 14px;
+  transition: border-color var(--transition-fast);
+}
+
+.composerField input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.composerField input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.attachButton,
+.iconButton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  transition: background-color var(--transition-fast);
+}
+
+.attachButton:hover:not(:disabled),
+.iconButton:hover {
+  background: var(--dash-hover);
+}
+
+.attachButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 11px 18px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.sendButton:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================ نافذة الرسالة الجديدة ============================ */
+.dialogOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(9, 20, 40, 0.45);
+}
+
+.dialog {
+  width: min(520px, 100%);
+  max-height: min(90vh, 640px);
+  overflow-y: auto;
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--shadow-card);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 10px;
+}
+
+.dialogTitle {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 20px 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.control {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-field);
+  color: var(--dash-heading);
+  font-size: 14px;
+}
+
+.control:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 110px;
+  font-family: inherit;
+}
+
+.dialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-block-start: 4px;
+}
+
+.ghostButton {
+  padding: 11px 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font-size: 13.5px;
+  font-weight: 700;
+  transition: background-color var(--transition-fast);
+}
+
+.ghostButton:hover {
+  background: var(--dash-hover);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ============================ التجاوب ============================ */
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  }
+
+  .bubble {
+    max-width: 88%;
+  }
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 480px;
+    max-height: none;
+  }
+
+  /* على الشاشات الضيقة: عمود واحد فقط — القائمة أو المحادثة */
+  .layout[data-mobile='thread'] .listPane {
+    display: none;
+  }
+
+  .layout[data-mobile='list'] .threadPane {
+    display: none;
+  }
+
+  .listPane {
+    border-inline-end: none;
+  }
+
+  .backButton {
+    display: grid;
+  }
+
+  .header {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 21px;
+  }
+
+  .threadScroll {
+    padding: 14px 12px;
+  }
+
+  .composer {
+    padding: 12px;
+  }
+
+  .sendButton span {
+    display: none;
+  }
+
+  .bubble {
+    max-width: 92%;
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "title": "Reports & Statistics",
+  "subtitle": "Teacher hours plus student attendance and commitment — the platform holds no financial data",
+  "scope": {
+    "teacher": "Your hours only",
+    "staff": "Teacher comparison + institution totals",
+    "student": "Your attendance only",
+    "parent": "Your children's attendance only"
+  },
+  "admin": {
+    "subtitle": "How every teacher and student performed in the period — drillable by teacher, student, grade or subject",
+    "filtersTitle": "Customize report",
+    "allTeachers": "All teachers",
+    "allStudents": "All students",
+    "allGrades": "All grades",
+    "allSubjects": "All subjects",
+    "gradeLabel": "Grade",
+    "subjectLabel": "Subject",
+    "clear": "Clear filters",
+    "active": "Active account",
+    "suspended": "Suspended account",
+    "upcomingTitle": "Upcoming sessions",
+    "openSchedule": "Open scheduling",
+    "noUpcoming": "This teacher has no scheduled upcoming sessions",
+    "withStudent": "with {{name}}",
+    "gradesTitle": "Sessions by grade",
+    "peakHoursTitle": "Busiest hours of the day"
+  },
+  "empty": "No sessions in this period — pick a wider range or use custom dates",
+  "format": {
+    "percent": "{{value}}%"
+  },
+  "range": {
+    "label": "Report period",
+    "presetsLabel": "Period shortcuts",
+    "presets": {
+      "week": "This week",
+      "month": "This month",
+      "quarter": "Last 3 months",
+      "custom": "Custom"
+    },
+    "from": "From",
+    "to": "To",
+    "sessionsCount": "{{value}} sessions in range"
+  },
+  "kpis": {
+    "completedHours": "Total completed hours",
+    "completed": "Sessions delivered",
+    "attendanceRate": "Attendance rate",
+    "commitmentRate": "Commitment rate",
+    "cancelled": "Cancelled sessions",
+    "noShow": "No-show"
+  },
+  "chart": {
+    "weeklyTitle": "Completed hours per week",
+    "weeklySub": "One bar per week — actual delivered hours",
+    "weeklyAria": "Bar chart of completed hours week by week",
+    "weekTooltip": "Week of {{week}}: {{hours}} hours",
+    "donutTitle": "Session statuses",
+    "donutSub": "{{total}} sessions in total",
+    "donutAria": "Donut chart of sessions by status",
+    "segmentTooltip": "{{status}}: {{value}} sessions ({{percent}})",
+    "centerTotal": "sessions",
+    "subjectsTitle": "Subjects",
+    "subjectsSub": "Completed sessions per subject",
+    "subjectTooltip": "{{subject}}: {{value}} completed sessions",
+    "noSubjects": "No completed sessions in this period"
+  },
+  "status": {
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "no_show": "No-show",
+    "scheduled": "Upcoming"
+  },
+  "subjects": {
+    "math": "Mathematics",
+    "english": "English",
+    "physics": "Physics",
+    "chemistry": "Chemistry",
+    "biology": "Biology",
+    "other": "Other"
+  },
+  "table": {
+    "teacherTitle": "Teacher hours",
+    "selfTitle": "Your hours summary",
+    "familyTitle": "Children attendance summary",
+    "allTeachersTitle": "All teachers — institution performance",
+    "teacherStudentsTitle": "This teacher's students",
+    "studentTeachersTitle": "This student's teachers",
+    "hint": "Click any column header to sort ascending or descending",
+    "caption": "Hours and attendance table for the selected period",
+    "totals": "Total",
+    "columns": {
+      "teacher": "Teacher",
+      "student": "Student",
+      "sessions": "Sessions",
+      "completedHours": "Completed hours",
+      "attendanceRate": "Attendance %",
+      "commitmentRate": "Commitment %"
+    }
+  },
+  "export": {
+    "button": "Export CSV",
+    "fileName": "edulink-reports"
+  }
+}

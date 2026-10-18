@@ -11,6 +11,7 @@
     "dev": "npm run dev --workspace @eduspace/web",
     "build": "npm run build --workspace @eduspace/web",
     "lint": "npm run lint --workspace @eduspace/web",
+    "check:i18n": "node tools/check-i18n-keys.mjs",
     "preview": "npm run preview --workspace @eduspace/web"
   }
 }

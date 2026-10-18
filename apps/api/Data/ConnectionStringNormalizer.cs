@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Npgsql;
 
 namespace EduspaceApi.Data;
@@ -48,15 +49,64 @@ public static class ConnectionStringNormalizer
             Password = password,
             Database = database,
             SslMode = sslMode,
-            // Supabase تستخدم شهادة وسيطة موقّعة — التحقق الكامل منها يفشل،
-            // والتشفير نفسه يبقى مطلوبًا عبر SslMode.
-            TrustServerCertificate = sslMode != SslMode.Disable,
+            // TrustServerCertificate أصبح بلا أثر في إصدارات Npgsql الحديثة —
+            // التشفير نفسه يظل مطلوبًا عبر SslMode.
             Timeout = 15,
             CommandTimeout = 30,
         };
 
         return normalized.ConnectionString;
     }
+
+    /// <summary>
+    /// سلسلة اتصال SQL Server: تُترك كما كُتبت، ولا يُضبط تلقائيًا إلا ما يُحسّن
+    /// الاستقرار ولم يذكره صاحب المشروع صراحةً:
+    ///   • Connect Timeout = 20 ثانية (الافتراضي 15 يتعب مع سيرفر بعيد)
+    ///   • MultipleActiveResultSets = true (EF يفتح قارئًا متزامنًا في استعلامات Include)
+    /// سيرفرات الاستضافة المشتركة كثيرة تكون بشهادة ذاتية التوقيع — تُضاف
+    /// <c>TrustServerCertificate=True</c> يدويًا في هذه الحالة (لا نضبطها صمتًا).
+    /// </summary>
+    public static string ForSqlServer(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+        var value = raw.Trim();
+        SqlConnectionStringBuilder builder;
+        try
+        {
+            builder = new SqlConnectionStringBuilder(value);
+        }
+        catch
+        {
+            // سلسلة غير مفهومة — تُمرَّر كما هي ليُرجع الـ provider رسالته الأصلية
+            return value;
+        }
+
+        if (!HasKeyword(value, "Connect Timeout") && !HasKeyword(value, "Connection Timeout"))
+            builder.ConnectTimeout = 20;
+        if (!HasKeyword(value, "MultipleActiveResultSets"))
+            builder.MultipleActiveResultSets = true;
+
+        return builder.ConnectionString;
+    }
+
+    /// <summary>وصف مختصر لسلسلة SQL Server — بلا كلمة المرور إطلاقًا (للسجل).</summary>
+    public static string DescribeSqlServer(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "(فارغة)";
+        try
+        {
+            var parsed = new SqlConnectionStringBuilder(raw.Trim());
+            return $"{parsed.DataSource} | القاعدة: {parsed.InitialCatalog} | المستخدم: {parsed.UserID}";
+        }
+        catch
+        {
+            return "(تعذّر قراءة السلسلة)";
+        }
+    }
+
+    private static bool HasKeyword(string value, string keyword) =>
+        value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>وصف مختصر للجهة المتصل بها — بلا كلمة المرور إطلاقًا (للسجل).</summary>
     public static string Describe(string? raw)

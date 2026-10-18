@@ -1,0 +1,884 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ============================ الرأس ============================ */
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.titleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--dash-muted);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+/* ============================ الأدوات ============================ */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.search {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: 8px;
+  min-inline-size: 210px;
+  padding: 10px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+}
+
+.searchInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--dash-heading);
+  font-size: 14px;
+}
+
+.searchInput::placeholder {
+  color: var(--text-placeholder);
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.clearButton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: 50%;
+  color: var(--dash-muted);
+  background: var(--dash-card);
+}
+
+.clearButton:hover {
+  color: var(--dash-heading);
+}
+
+.select,
+.input,
+.textarea {
+  inline-size: auto;
+  padding: 10px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+  font-size: 14px;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.textarea {
+  border-radius: 18px;
+  min-block-size: 96px;
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.select:hover,
+.input:hover,
+.textarea:hover {
+  border-color: var(--border-strong);
+}
+
+.select:focus,
+.input:focus,
+.textarea:focus {
+  border-color: var(--accent);
+  background: var(--dash-card);
+}
+
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-hover);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-control);
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.segmentActive {
+  background: var(--dash-card);
+  color: var(--primary);
+  box-shadow: var(--dash-shadow);
+}
+
+.toolbarFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: 16px;
+  padding-block-start: 14px;
+  border-block-start: 1px solid var(--dash-border);
+}
+
+.count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.scopeHint {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.footSpacer {
+  flex: 1 1 auto;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.toggleTrack {
+  position: relative;
+  inline-size: 34px;
+  block-size: 18px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--dash-border);
+  transition: background-color var(--transition-fast);
+}
+
+.toggleThumb {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 2px;
+  inline-size: 14px;
+  block-size: 14px;
+  border-radius: 50%;
+  background: var(--dash-card);
+  transition: transform var(--transition-fast);
+}
+
+.toggleOn {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.toggleOn .toggleTrack {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(16px);
+}
+
+:global(html[dir='rtl']) .toggleOn .toggleThumb {
+  transform: translateX(-16px);
+}
+
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.resetButton:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+/* ============================ الأزرار ============================ */
+.primaryButton,
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--radius-control);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.primaryButton {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.primaryButton:hover {
+  background: var(--primary-hover);
+  color: var(--primary-contrast);
+  text-decoration: none;
+}
+
+.secondaryButton {
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+}
+
+.secondaryButton:hover {
+  background: var(--dash-hover);
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 50%;
+  color: var(--dash-muted);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.iconButton:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+/* ============================ التنبيه ============================ */
+.flash {
+  padding: 13px 18px;
+  border: 1px solid var(--dash-tint-green);
+  border-radius: 16px;
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* ============================ الجدول ============================ */
+.tableWrap {
+  margin-block-start: 16px;
+  max-block-size: min(68vh, 720px);
+  overflow: auto;
+  border: 1px solid var(--dash-border);
+  border-radius: 18px;
+}
+
+.table {
+  inline-size: 100%;
+  min-inline-size: 1080px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.table thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  padding: 12px 16px;
+  border-block-end: 1px solid var(--dash-border);
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.table tbody td {
+  padding: 12px 16px;
+  border-block-end: 1px solid var(--dash-border);
+  color: var(--dash-heading);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-block-end: none;
+}
+
+.table tbody tr:hover {
+  background: var(--dash-hover);
+}
+
+.cellNum {
+  text-align: end;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cellAction {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.studentCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-inline-size: 220px;
+  color: var(--dash-heading);
+  text-decoration: none;
+}
+
+.studentCell:hover {
+  text-decoration: none;
+}
+
+.studentText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.studentName {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.studentEmail {
+  font-size: 12px;
+  color: var(--dash-muted);
+}
+
+.detailsLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  color: var(--dash-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.detailsLink:hover {
+  background: var(--dash-card);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.rateHigh {
+  color: var(--dash-icon-green);
+  font-weight: 800;
+}
+
+.rateMid {
+  color: var(--dash-icon-blue);
+  font-weight: 800;
+}
+
+.rateLow {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+/* ============================ البطاقات ============================ */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+  gap: 16px;
+  margin-block-start: 16px;
+}
+
+.studentCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--dash-border);
+  border-radius: 22px;
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cardIdentity {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.metaIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 22px;
+  block-size: 22px;
+  border-radius: 50%;
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+.metaLabel {
+  color: var(--dash-muted);
+}
+
+.metaValue {
+  margin-inline-start: auto;
+  color: var(--dash-heading);
+  font-weight: 700;
+  text-align: end;
+}
+
+.cardStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding-block-start: 12px;
+  border-block-start: 1px dashed var(--dash-border);
+}
+
+.cardStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+
+.cardStatValue {
+  font-weight: 800;
+  color: var(--dash-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardStatLabel {
+  font-weight: 600;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manageButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  color: var(--dash-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.manageButton:hover {
+  background: var(--dash-card);
+  color: var(--primary);
+}
+
+.cardAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color var(--transition-fast);
+}
+
+.cardAction:hover {
+  background: var(--dash-hover);
+  text-decoration: none;
+}
+
+/* ============================ الشرائط والصورة الرمزية ============================ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pillGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pillActive {
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.pillInactive {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.pillNeutral {
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 50%;
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.avatarLg {
+  inline-size: 48px;
+  block-size: 48px;
+  font-size: 16px;
+}
+
+.avatarXl {
+  inline-size: 72px;
+  block-size: 72px;
+  font-size: 26px;
+}
+
+/* ============================ الحالات ============================ */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  margin-block-end: 6px;
+  border-radius: 50%;
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.emptyDesc {
+  max-inline-size: 380px;
+  font-size: 13.5px;
+  color: var(--dash-muted);
+}
+
+.empty .secondaryButton {
+  margin-block-start: 10px;
+}
+
+.selfCard {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.selfText {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.demoNote {
+  margin-block-start: 14px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--dash-muted);
+  opacity: 0.8;
+}
+
+/* ============================ النافذة ============================ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 10, 32, 0.55);
+  animation: fadeIn var(--transition-fast);
+}
+
+.modal {
+  inline-size: min(600px, 100%);
+  max-block-size: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 24px;
+  border: 1px solid var(--dash-border);
+  border-radius: 24px;
+  background: var(--dash-card);
+  box-shadow: var(--shadow-card);
+  animation: rise var(--transition-base);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modalTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.modalSub {
+  margin-block: 8px 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--dash-muted);
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dash-muted);
+}
+
+.error {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-block-start: 6px;
+}
+
+/* ============================ أدوات مساعدة ============================ */
+.visuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+/* ============================ التجاوب ============================ */
+@media (max-width: 900px) {
+  .segmented {
+    order: -1;
+    inline-size: 100%;
+  }
+
+  .segment {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .select {
+    flex: 1 1 160px;
+  }
+}
+
+@media (max-width: 620px) {
+  .header {
+    align-items: flex-start;
+  }
+
+  .primaryButton {
+    inline-size: 100%;
+  }
+
+  .search {
+    flex: 1 1 100%;
+  }
+
+  .fieldRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .footSpacer {
+    display: none;
+  }
+
+  .cardsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .modal {
+    padding: 18px;
+    border-radius: 20px;
+  }
+}

@@ -20,11 +20,8 @@
     "showPassword": "إظهار كلمة المرور",
     "hidePassword": "إخفاء كلمة المرور",
     "rememberMe": "تذكّرني",
-    "forgotPassword": "نسيت كلمة المرور؟",
     "submit": "تسجيل الدخول",
     "submitting": "جارٍ تسجيل الدخول…",
-    "orContinueWith": "أو تابع باستخدام",
-    "continueWithGoogle": "المتابعة بحساب Google",
     "noAccount": "ليس لديك حساب؟",
     "contactInstitution": "تواصل مع مؤسستك",
     "copyright": "Copyright © Nile Techno by Abdullah Elsawy 2026",
@@ -33,8 +30,7 @@
       "identifierInvalid": "أدخل بريدًا إلكترونيًا أو رقم هاتف صحيحًا.",
       "passwordRequired": "من فضلك أدخل كلمة المرور.",
       "passwordTooShort": "كلمة المرور يجب ألا تقل عن 8 أحرف.",
-      "generic": "تعذّر تسجيل الدخول. حاول مرة أخرى.",
-      "googleUnavailable": "الدخول بحساب Google غير متاح بعد."
+      "generic": "تعذّر تسجيل الدخول. حاول مرة أخرى."
     }
   }
 }

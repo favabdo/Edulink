@@ -1,0 +1,52 @@
+{
+  "title": "EduLink",
+  "heading": "الرسائل",
+  "subtitle": "تواصلك مع المدرسين والطلاب وأولياء أمر والإدارة داخل المنصة.",
+  "subtitleShort": "محادثة داخل المنصة",
+  "newMessage": "رسالة جديدة",
+  "listLabel": "قائمة المحادثات",
+  "threadLabel": "نص المحادثة",
+  "conversations": "{{value}} محادثة",
+  "unread": "{{value}} رسالة جديدة",
+  "youPrefix": "أنت: ",
+  "others": "(+{{value}})",
+  "back": "رجوع إلى المحادثات",
+  "loading": "جارٍ التحميل…",
+  "kinds": {
+    "staff": "فريق العمل",
+    "student": "طالب",
+    "parent": "ولي أمر"
+  },
+  "time": {
+    "now": "الآن",
+    "minutes": "منذ {{value}} دقيقة",
+    "hours": "منذ {{value}} ساعة",
+    "days": "منذ {{value}} يوم"
+  },
+  "day": {
+    "today": "اليوم",
+    "yesterday": "أمس"
+  },
+  "empty": {
+    "thread": "اختر محادثة من القائمة لعرض الرسائل.",
+    "list": "لا توجد محادثات بعد.",
+    "noMessages": "لا توجد رسائل بعد"
+  },
+  "composer": {
+    "placeholder": "اكتب رسالتك…",
+    "send": "إرسال",
+    "attach": "إرفاق ملف",
+    "soon": "قريبًا"
+  },
+  "dialog": {
+    "title": "رسالة جديدة",
+    "close": "إغلاق",
+    "recipient": "المستلم",
+    "body": "نص الرسالة",
+    "bodyPlaceholder": "اكتب رسالتك هنا…",
+    "noContacts": "لا توجد حسابات يمكن مراسلتها من حسابك.",
+    "cancel": "إلغاء",
+    "create": "بدء المحادثة",
+    "sending": "جارٍ الإرسال…"
+  }
+}

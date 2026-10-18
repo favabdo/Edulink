@@ -24,11 +24,14 @@ export const USER_ROLES = {
 export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES]
 
 // ============================ المستخدم ============================
+/** أرقام أدوار الموظفين — و-1 طالب (Edu_Students) و-2 ولي أمر (Edu_Parents) */
+export type AuthRoleNumber = UserRole | -1 | -2
+
 export type AuthUser = {
   id: number
   name: string | null
   email: string
-  role: UserRole
+  role: AuthRoleNumber
   /** الاسم العربي للدور كما يرجّعه الخادم */
   roleName: string
   /** 0 = غير ظاهر للناس، 1 = ظاهر */
@@ -37,6 +40,8 @@ export type AuthUser = {
   access: number
   imgUrl: string | null
   createdAt: string
+  /** staff = موظفون (Edu_Users) — student = طالب (Edu_Students) — parent = ولي أمر (Edu_Parents). غيابها يُفسَّر staff */
+  aud?: 'staff' | 'student' | 'parent'
 }
 
 // ============================ طلبات المصادقة ============================
@@ -50,14 +55,68 @@ export type LoginResponse = {
   user: AuthUser
 }
 
-// ============================ طلبات المستخدمين ============================
-export type CreateUserRequest = {
-  name?: string | null
-  email: string
-  password: string
-  role: UserRole
-  access?: number
-  states?: number
+// ============================ الجلسات ============================
+export type SessionStatus = 'scheduled' | 'live' | 'completed' | 'cancelled' | 'no_show'
+
+export type Session = {
+  id: number
+  code: string
+  subject: string
+  teacherId: number
+  studentId: number
+  gradeKey: string
+  durationMin: number
+  status: SessionStatus
+  attendance: string | null
+  roomCode: string | null
+  startsAt: string
+  endsAt: string | null
+  joinedAt: string | null
+  makeupOfId: number | null
+  metadata: string
+  createdAt: string
+  teacherName: string | null
+  studentName: string | null
+}
+
+export type SessionAttendance = {
+  id: number
+  sessionId: number
+  studentId: number
+  mark: 'present' | 'late' | 'absent'
+  joinedAt: string | null
+  leftAt: string | null
+  durationMs: number
+  note: string | null
+}
+
+export type SessionStats = {
+  TotalSessions: number
+  Present: number
+  Cancelled: number
+  NoShow: number
+  CommitmentPercent: number
+}
+
+export type CreateSessionRequest = {
+  code?: string
+  subject: string
+  teacherId: number
+  studentId: number
+  gradeKey?: string
+  durationMin: number
+  metadata?: string
+  startsAt: string
+}
+
+export type UpdateSessionRequest = {
+  status: SessionStatus
+  roomCode?: string
+}
+
+export type MarkAttendanceRequest = {
+  studentId: number
+  mark?: 'present' | 'late' | 'absent'
 }
 
 // ============================ الأخطاء ============================

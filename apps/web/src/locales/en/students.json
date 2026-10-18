@@ -1,0 +1,167 @@
+{
+  "title": "EduLink",
+  "subjects": {
+    "biology": "Biology"
+  },
+  "grades": {
+    "none": "No session booked yet",
+    "g7": "Grade 7",
+    "g8": "Grade 8",
+    "g9": "Grade 9",
+    "g10": "Grade 10",
+    "g11": "Grade 11",
+    "g12": "Grade 12"
+  },
+  "pageTitle": "Students",
+  "pageSubtitle": "Track students, their hours and attendance in one place",
+  "childrenTitle": "My children",
+  "childrenSubtitle": "Students registered under this parent account",
+  "myProfileTitle": "My profile",
+  "myProfileText": "You are a student — your profile lives here, and your full sessions in the “My sessions” page.",
+  "openMyProfile": "Open my profile",
+  "tableCaption": "Students list with their statistics",
+  "cardsCaption": "Student cards",
+  "scope": {
+    "all": "All students",
+    "hint": "Showing the students of {{teacher}}",
+    "allHint": "Showing every student in the institution"
+  },
+  "view": {
+    "label": "View mode",
+    "table": "Table",
+    "cards": "Cards"
+  },
+  "filters": {
+    "search": "Search by student name",
+    "searchAria": "Search by student name",
+    "clear": "Clear search",
+    "allTeachers": "All teachers",
+    "teacherAria": "Filter by teacher",
+    "allSubjects": "All subjects",
+    "subjectAria": "Filter by subject",
+    "allStatuses": "All statuses",
+    "statusAria": "Filter by status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "sortAria": "Sort by",
+    "sortNewest": "Newest first",
+    "sortName": "Name",
+    "sortHours": "Most hours",
+    "reset": "Reset filters"
+  },
+  "resultCount": "Results: {{n}}",
+  "addStudent": "Add student",
+  "columns": {
+    "student": "Student",
+    "grade": "Grade",
+    "subject": "Subject",
+    "teacher": "Teacher",
+    "parent": "Parent",
+    "hours": "Hours",
+    "attendance": "Attendance",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Just added"
+  },
+  "actions": {
+    "details": "Details",
+    "back": "Back to students",
+    "openProfile": "Open profile"
+  },
+  "empty": {
+    "none": "No students yet",
+    "noneDesc": "No student is registered within this scope yet.",
+    "filtered": "No matching results",
+    "filteredDesc": "Try a different search term or adjust the filters."
+  },
+  "form": {
+    "title": "Add student",
+    "subtitle": "The account is written straight to the database with its own id and password, then appears in every list.",
+    "name": "Student name",
+    "namePlaceholder": "e.g. Ahmed Khaled",
+    "email": "Email",
+    "emailPlaceholder": "student@edulink.test",
+    "parentOptional": "Link a parent (optional)",
+    "parentNone": "No parent for now",
+    "relation": "Relationship",
+    "primaryNote": "This parent becomes the student's primary guardian unless one already exists.",
+    "password": "Temporary password",
+    "passwordPlaceholder": "At least 8 characters",
+    "passwordNote": "Accounts are created manually by the administration; public sign-up is disabled on the platform.",
+    "cancel": "Cancel",
+    "submit": "Save student",
+    "close": "Close add-student dialog",
+    "errName": "Enter the student name.",
+    "errEmail": "Enter a valid email address.",
+    "errPassword": "Password must be at least 8 characters.",
+    "failed": "Could not create the student account.",
+    "success": "{{name}} was added and saved.",
+    "updated": "{{name}}'s details were updated."
+  },
+  "detail": {
+    "notFoundTitle": "Student not found",
+    "notFoundDesc": "The account may have been removed, or the link is incorrect.",
+    "notFoundAction": "Back to the students list",
+    "joined": "Joined {{date}}",
+    "joinedShort": "Joined",
+    "contact": "Contact",
+    "edit": "Edit",
+    "avatarFallback": "?"
+  },
+  "stats": {
+    "totalHours": "Total hours",
+    "completedSessions": "Completed sessions",
+    "attendance": "Attendance rate",
+    "commitment": "Commitment"
+  },
+  "tabs": {
+    "label": "Student data sections",
+    "upcoming": "Upcoming schedule",
+    "history": "History",
+    "followUp": "Follow-up"
+  },
+  "sessionStatus": {
+    "completed": "Completed",
+    "live": "Live",
+    "scheduled": "Scheduled",
+    "cancelled": "Cancelled",
+    "no_show": "No-show"
+  },
+  "attendance": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent",
+    "pending": "Not recorded"
+  },
+  "makeup": "Makeup session",
+  "noData": "—",
+  "upcoming": {
+    "empty": "No upcoming sessions",
+    "emptyDesc": "This student has no scheduled session at the moment.",
+    "duration": "{{minutes}} minutes",
+    "count": "Upcoming sessions: {{n}}"
+  },
+  "history": {
+    "empty": "No session history",
+    "emptyDesc": "No session has been held for this student yet.",
+    "code": "Session code",
+    "date": "Date",
+    "count": "Total: {{n}} sessions"
+  },
+  "followUp": {
+    "chartTitle": "Completed hours per week",
+    "chartHint": "Last eight weeks",
+    "chartAria": "Bar chart of completed hours over the last eight weeks",
+    "hoursUnit": "h",
+    "notesTitle": "Teacher notes",
+    "notesHint": "Notes are stored on this device only (not sent to the server).",
+    "notesPlaceholder": "Write your note about the student's level and commitment…",
+    "notesSave": "Save note",
+    "notesSaved": "Note saved.",
+    "savedTitle": "Saved notes"
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "title": "EduLink",
+  "heading": "Settings",
+  "subtitle": "Profile and security come from the server; preferences and institution identity are stored on this device.",
+  "tabsLabel": "Settings sections",
+  "tabs": {
+    "profile": "Profile",
+    "security": "Security",
+    "preferences": "Preferences",
+    "brand": "Institution identity"
+  },
+  "profile": {
+    "title": "Profile",
+    "desc": "The account details shown across the platform.",
+    "name": "Name",
+    "namePlaceholder": "Your full name",
+    "email": "Email",
+    "emailHint": "Sign-in email — administration changes it on the users page once the backend is wired.",
+    "avatarChange": "Change",
+    "avatarSoon": "Coming soon",
+    "noRole": "Not set",
+    "save": "Save changes",
+    "saved": "Changes saved.",
+    "nameRequired": "Name is required.",
+    "emailInvalid": "The email format is not valid.",
+    "localNote": "Saving is local at this stage — nothing is sent to the backend.",
+    "readOnly": "Your account details are read from the server and managed by your institution.",
+    "readOnlyStaff": "Name and email come from the server; edit them in Account management."
+  },
+  "security": {
+    "passwordTitle": "Password",
+    "passwordDesc": "Choose a strong password of at least 8 characters.",
+    "current": "Current password",
+    "next": "New password",
+    "confirm": "Confirm password",
+    "passwordSave": "Update password",
+    "passwordSaved": "Password updated locally.",
+    "weakPassword": "The password does not meet all the rules.",
+    "mismatch": "The two passwords do not match.",
+    "rules": {
+      "length": "8 characters or more",
+      "upper": "One uppercase letter (A-Z)",
+      "digit": "One number (0-9)",
+      "symbol": "One symbol such as ! @ #"
+    },
+    "devicesTitle": "Devices and sessions",
+    "devicesDesc": "Signing in from several devices is allowed on the platform.",
+    "currentDevice": "This device",
+    "devices": {
+      "thisDevice": "My laptop"
+    },
+    "saveFailed": "Could not save on the server.",
+    "serverNote": "The password is written to your institution database. Sessions on other devices are not ended automatically.",
+    "adminManaged": "Your password is managed by your institution — contact them to reset it.",
+    "sessionTitle": "This device's session",
+    "sessionDesc": "The server does not list other devices yet; this button ends your session on the device you are using now.",
+    "signOutThis": "Sign out this device",
+    "sessionNoList": "Remaining sessions are handled server-side (Edu_Tokens table)."
+  },
+  "preferences": {
+    "languageTitle": "Language",
+    "languageDesc": "Arabic and English from day one, with the page direction switching too.",
+    "languages": {
+      "ar": "العربية",
+      "en": "English"
+    },
+    "themeTitle": "Appearance",
+    "themeDesc": "Light, dark, or follow the system preference.",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "notificationsTitle": "Notifications",
+    "notificationsDesc": "What reaches you inside the platform.",
+    "notifications": {
+      "sessionReminders": "Session reminders",
+      "newMessages": "New messages",
+      "weeklyReport": "Weekly report"
+    },
+    "notificationsHint": {
+      "sessionReminders": "Alert 15 minutes before each session starts.",
+      "newMessages": "Notify when a teacher, student or parent sends a message.",
+      "weeklyReport": "Weekly summary of teacher hours and attendance."
+    },
+    "autoSavedNote": "Choices are saved automatically on this device."
+  },
+  "brand": {
+    "title": "Institution identity",
+    "desc": "Each institution gets its own build, domain and database — this is where the visible identity is set.",
+    "institutionName": "Institution name",
+    "institutionNamePlaceholder": "Example: Nile Academy",
+    "supportEmail": "Support email",
+    "supportEmailHint": "Shown in alert messages and the help page.",
+    "accent": "Accent colour",
+    "accents": {
+      "blue": "Blue",
+      "teal": "Teal",
+      "violet": "Violet",
+      "rose": "Rose",
+      "amber": "Amber",
+      "green": "Green"
+    },
+    "logo": "Logo",
+    "logoUpload": "Upload logo",
+    "logoSoon": "Coming soon",
+    "logoPlaceholder": "PNG or SVG — at least 512×512",
+    "save": "Save identity",
+    "saved": "Identity saved on this device.",
+    "nameRequired": "Institution name is required.",
+    "emailInvalid": "The support email format is not valid.",
+    "previewTitle": "Live preview",
+    "previewDesc": "This is how the identity looks in the platform.",
+    "previewNote": "Preview only — the accent is not applied to the global theme until the backend is wired.",
+    "fallbackName": "Institution name",
+    "tagline": "Learn • Teach • Grow"
+  }
+}

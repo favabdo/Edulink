@@ -1,0 +1,1090 @@
+/* ============================================================
+   صفحة جدول الحصص — كل الألوان من tokens.css (تعمل في الفاتح والغامق)
+   القياسات: calc(N * var(--u)) — المقياس ثابت (1px) والتجاوب بالـ media queries
+   الخصائص المنطقية (inline/block) حتى يعمل RTL/LTR بنفس الكود
+   ============================================================ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: calc(18 * var(--u));
+}
+
+/* ============================ الترويسة ============================ */
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(16 * var(--u));
+  flex-wrap: wrap;
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+  min-width: 0;
+}
+
+.pageTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  font-size: calc(24 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.pageSub {
+  font-size: calc(14 * var(--u));
+  color: var(--dash-muted);
+}
+
+.scopePill {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  padding: calc(5 * var(--u)) calc(12 * var(--u));
+  border-radius: var(--radius-pill);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: calc(12.5 * var(--u));
+  font-weight: 700;
+}
+
+.headActions {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+}
+
+.notice {
+  padding: calc(11 * var(--u)) calc(16 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-radius: calc(14 * var(--u));
+  background: var(--dash-tint-green);
+  color: var(--dash-heading);
+  font-size: calc(13.5 * var(--u));
+  font-weight: 600;
+}
+
+/* ============================ شريط الأدوات ============================ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  flex-wrap: wrap;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding: calc(4 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-pill);
+  background: var(--dash-card);
+}
+
+.navBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  padding: calc(7 * var(--u)) calc(11 * var(--u));
+  border-radius: var(--radius-pill);
+  color: var(--dash-muted);
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.navBtn:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+.rangeLabel {
+  min-width: calc(210 * var(--u));
+  text-align: center;
+  font-size: calc(14.5 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.seg {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--u));
+  padding: calc(4 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-pill);
+  background: var(--dash-card);
+}
+
+.segBtn {
+  padding: calc(7 * var(--u)) calc(16 * var(--u));
+  border-radius: var(--radius-pill);
+  color: var(--dash-muted);
+  font-size: calc(13.5 * var(--u));
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.segBtn:hover {
+  color: var(--dash-heading);
+}
+
+.segBtnActive {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.segBtnActive:hover {
+  color: var(--primary-contrast);
+}
+
+.toggle {
+  padding: calc(9 * var(--u)) calc(14 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-pill);
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.toggle:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+.toggleActive {
+  border-color: var(--primary);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+}
+
+/* ============================ الأزرار ============================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--u));
+  padding: calc(11 * var(--u)) calc(20 * var(--u));
+  border-radius: var(--radius-control);
+  font-size: calc(14 * var(--u));
+  font-weight: 700;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.btnPrimary:hover {
+  background: var(--primary-hover);
+}
+
+.btnGhost {
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+}
+
+.btnGhost:hover {
+  background: var(--dash-hover);
+}
+
+.btnDanger {
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.btnDanger:hover {
+  background: var(--danger);
+  color: var(--text-inverse);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ============================ عناصر الحقول ============================ */
+.fieldLabel {
+  font-size: calc(12.5 * var(--u));
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.selectWrap {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+}
+
+.select {
+  padding: calc(10 * var(--u)) calc(16 * var(--u));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg-field);
+  color: var(--dash-heading);
+  font-size: calc(13.5 * var(--u));
+  font-weight: 600;
+}
+
+/* ============================ بطاقة الإحصاء ============================ */
+.card {
+  padding: calc(20 * var(--u));
+  border-radius: calc(22 * var(--u));
+  background: var(--dash-card);
+  box-shadow: var(--dash-shadow);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: calc(12 * var(--u));
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  padding: calc(14 * var(--u)) calc(16 * var(--u));
+  border-radius: calc(18 * var(--u));
+}
+
+.statIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  border-radius: 50%;
+  background: var(--dash-card);
+}
+
+.statText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.statValue {
+  font-size: calc(24 * var(--u));
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--dash-heading);
+}
+
+.statLabel {
+  font-size: calc(12.5 * var(--u));
+  color: var(--dash-muted);
+}
+
+.tintBlue {
+  background: var(--dash-tint-blue);
+}
+
+.tintGreen {
+  background: var(--dash-tint-green);
+}
+
+.tintPurple {
+  background: var(--dash-tint-purple);
+}
+
+.tintPink {
+  background: var(--dash-tint-pink);
+}
+
+.iconBlue {
+  color: var(--dash-icon-blue);
+}
+
+.iconGreen {
+  color: var(--dash-icon-green);
+}
+
+.iconPurple {
+  color: var(--dash-icon-purple);
+}
+
+.iconPink {
+  color: var(--dash-icon-pink);
+}
+
+/* ============================ الشبكة الأسبوعية ============================ */
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--u));
+}
+
+.calendarHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  flex-wrap: wrap;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+  border: 1px dashed var(--border-strong);
+  border-radius: calc(14 * var(--u));
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+  font-size: calc(13.5 * var(--u));
+  font-weight: 600;
+}
+
+.gridScroll {
+  overflow-x: auto;
+  padding-block-end: calc(4 * var(--u));
+}
+
+/* max-content مع min-width:100% = الأعمدة لا تنضغط، والتمرير الأفقي عند الضيق */
+.grid {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+  border-block-start: 1px solid var(--dash-border);
+}
+
+.weekGroups {
+  display: flex;
+  flex-direction: column;
+  gap: calc(18 * var(--u));
+}
+
+.corner {
+  border-inline-end: 1px solid var(--dash-border);
+}
+
+.dayHead {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--u));
+  padding: calc(10 * var(--u)) calc(6 * var(--u));
+  border-inline-end: 1px solid var(--dash-border);
+  border-block-end: 1px solid var(--dash-border);
+  color: var(--dash-muted);
+  text-align: center;
+  transition: background-color var(--transition-fast);
+}
+
+.dayHead:hover {
+  background: var(--dash-hover);
+}
+
+.dayHeadName {
+  font-size: calc(12.5 * var(--u));
+  font-weight: 700;
+}
+
+.dayHeadNum {
+  font-size: calc(15 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.dayHeadToday {
+  background: var(--dash-active-bg);
+}
+
+.dayHeadToday .dayHeadName,
+.dayHeadToday .dayHeadNum {
+  color: var(--dash-active-fg);
+}
+
+.timeCol {
+  border-inline-end: 1px solid var(--dash-border);
+}
+
+.timeCell {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  height: calc(56 * var(--u));
+  padding-inline: calc(8 * var(--u));
+  font-size: calc(11.5 * var(--u));
+  font-weight: 600;
+  color: var(--dash-muted);
+}
+
+.dayCol {
+  position: relative;
+  border-inline-end: 1px solid var(--dash-border);
+}
+
+.dayColToday {
+  background: var(--dash-hover);
+}
+
+.hourCell {
+  height: calc(56 * var(--u));
+  border-block-end: 1px solid var(--dash-border);
+}
+
+.nowLine {
+  position: absolute;
+  inset-inline: 0;
+  height: calc(2 * var(--u));
+  background: var(--danger);
+  pointer-events: none;
+}
+
+.nowDot {
+  position: absolute;
+  inset-block-start: calc(-3 * var(--u));
+  inset-inline-start: calc(-3 * var(--u));
+  width: calc(8 * var(--u));
+  height: calc(8 * var(--u));
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+/* ============================ كتلة الحصة ============================ */
+.block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: calc(2 * var(--u));
+  overflow: hidden;
+  padding: calc(6 * var(--u)) calc(8 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-inline-start: calc(3 * var(--u)) solid var(--dash-icon-blue);
+  border-radius: calc(12 * var(--u));
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  text-align: start;
+  transition:
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.block:hover {
+  background: var(--dash-hover);
+  box-shadow: var(--dash-shadow);
+  transform: translateY(-1px);
+}
+
+.blockTime {
+  font-size: calc(11 * var(--u));
+  font-weight: 800;
+  color: var(--dash-muted);
+}
+
+.blockStudent {
+  font-size: calc(12.5 * var(--u));
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.blockSubject {
+  font-size: calc(11 * var(--u));
+  color: var(--dash-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.blockScheduled {
+  border-inline-start-color: var(--dash-icon-blue);
+  background: var(--dash-tint-blue);
+}
+
+.blockCompleted {
+  border-inline-start-color: var(--dash-icon-green);
+  opacity: 0.78;
+}
+
+.blockLive {
+  border-inline-start-color: var(--primary);
+  background: var(--dash-tint-purple);
+  box-shadow: 0 0 0 calc(2 * var(--u)) var(--focus-ring);
+}
+
+.blockCancelled {
+  border-inline-start-color: var(--danger);
+  border-style: dashed;
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+.blockCancelled .blockStudent {
+  text-decoration: line-through;
+}
+
+.blockNoShow {
+  border-inline-start-color: var(--dash-icon-pink);
+  background: var(--dash-tint-pink);
+  opacity: 0.85;
+}
+
+.blockMakeup {
+  font-size: calc(10.5 * var(--u));
+  font-weight: 700;
+  color: var(--dash-icon-purple);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ============================ قوائم (اليوم / الشاشات الصغيرة) ============================ */
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+}
+
+.dayGroupHead {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  font-size: calc(14 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.dayGroupCount {
+  padding: calc(2 * var(--u)) calc(9 * var(--u));
+  border-radius: var(--radius-pill);
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+  font-size: calc(11.5 * var(--u));
+  font-weight: 700;
+}
+
+.dayGroupToday {
+  color: var(--dash-active-fg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+}
+
+.listItem {
+  list-style: none;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--u));
+  width: 100%;
+  padding: calc(12 * var(--u)) calc(14 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-radius: calc(16 * var(--u));
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  text-align: start;
+  transition: background-color var(--transition-fast);
+}
+
+.listRow:hover {
+  background: var(--dash-hover);
+}
+
+.listTime {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-width: calc(96 * var(--u));
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.listMain {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: calc(2 * var(--u));
+}
+
+.listTitle {
+  font-size: calc(14.5 * var(--u));
+  font-weight: 700;
+  color: var(--dash-heading);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.listMeta {
+  font-size: calc(12.5 * var(--u));
+  color: var(--dash-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.listExtra {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.listCode {
+  font-size: calc(11.5 * var(--u));
+  font-weight: 700;
+  color: var(--dash-muted);
+}
+
+.subjectIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(38 * var(--u));
+  height: calc(38 * var(--u));
+  border-radius: calc(12 * var(--u));
+}
+
+/* ============================ الشرائح ============================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  flex: none;
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  border-radius: var(--radius-pill);
+  font-size: calc(12 * var(--u));
+  font-weight: 700;
+}
+
+.chipCompleted {
+  background: var(--dash-tint-green);
+  color: var(--dash-icon-green);
+}
+
+.chipLive {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.chipScheduled {
+  background: var(--dash-tint-blue);
+  color: var(--dash-icon-blue);
+}
+
+.chipCancelled {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.chipNoShow {
+  background: var(--dash-tint-pink);
+  color: var(--dash-icon-pink);
+}
+
+.localBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5 * var(--u));
+  padding: calc(5 * var(--u)) calc(11 * var(--u));
+  border-radius: var(--radius-pill);
+  background: var(--dash-tint-purple);
+  color: var(--dash-icon-purple);
+  font-size: calc(11.5 * var(--u));
+  font-weight: 700;
+}
+
+.makeupChip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  padding: calc(5 * var(--u)) calc(11 * var(--u));
+  border-radius: var(--radius-pill);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: calc(11.5 * var(--u));
+  font-weight: 700;
+}
+
+/* ============================ الحالات الفارغة ============================ */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: calc(36 * var(--u)) calc(16 * var(--u));
+  text-align: center;
+}
+
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  width: calc(56 * var(--u));
+  height: calc(56 * var(--u));
+  border-radius: 50%;
+  background: var(--dash-hover);
+  color: var(--dash-muted);
+}
+
+.emptyTitle {
+  font-size: calc(15 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.emptyHint {
+  font-size: calc(13 * var(--u));
+  color: var(--dash-muted);
+}
+
+.demoNote {
+  font-size: calc(12 * var(--u));
+  text-align: center;
+  color: var(--dash-muted);
+  opacity: 0.85;
+}
+
+/* ============================ النوافذ المنبثقة ============================ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(16 * var(--u));
+  background: rgba(6, 12, 26, 0.58);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--u));
+  overflow-y: auto;
+  border: 1px solid var(--dash-border);
+  border-radius: calc(22 * var(--u));
+  background: var(--dash-card);
+  box-shadow: var(--shadow-card);
+  color: var(--dash-heading);
+}
+
+.panel:focus-visible {
+  outline: none;
+}
+
+.panelCenter {
+  width: min(calc(520 * var(--u)), 100%);
+  max-height: 92dvh;
+  padding: calc(22 * var(--u));
+}
+
+.panelDrawer {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: min(calc(430 * var(--u)), 100%);
+  max-height: none;
+  border-width: 0;
+  border-inline-start-width: 1px;
+  border-radius: 0;
+  padding: calc(22 * var(--u)) calc(24 * var(--u));
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+}
+
+.panelTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(9 * var(--u));
+  font-size: calc(17 * var(--u));
+  font-weight: 800;
+  color: var(--dash-heading);
+}
+
+.panelClose {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+  border-radius: 50%;
+  color: var(--dash-muted);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.panelClose:hover {
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+}
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--u));
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--u));
+  padding: calc(14 * var(--u));
+  border: 1px solid var(--dash-border);
+  border-radius: calc(16 * var(--u));
+  background: var(--dash-hover);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(12 * var(--u));
+  font-size: calc(13.5 * var(--u));
+}
+
+.rowLabel {
+  flex: none;
+  color: var(--dash-muted);
+  font-weight: 600;
+}
+
+.rowValue {
+  min-width: 0;
+  text-align: end;
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.note {
+  padding: calc(11 * var(--u)) calc(14 * var(--u));
+  border-radius: calc(14 * var(--u));
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: calc(13 * var(--u));
+  font-weight: 600;
+}
+
+.hint {
+  font-size: calc(12.5 * var(--u));
+  line-height: 1.7;
+  color: var(--dash-muted);
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+.panelActionsEnd {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  flex-wrap: wrap;
+}
+
+/* ============================ النماذج ============================ */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14 * var(--u));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--u));
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(12 * var(--u));
+}
+
+.label {
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.input {
+  padding: calc(11 * var(--u)) calc(16 * var(--u));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--bg-field);
+  color: var(--dash-heading);
+  font-size: calc(14 * var(--u));
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 calc(4 * var(--u)) var(--focus-ring);
+}
+
+.input[data-invalid='true'] {
+  border-color: var(--danger-border);
+}
+
+.textarea {
+  min-height: calc(84 * var(--u));
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+  border: 1px solid var(--border-strong);
+  border-radius: calc(16 * var(--u));
+  background: var(--bg-field);
+  color: var(--dash-heading);
+  font-size: calc(14 * var(--u));
+  resize: vertical;
+}
+
+.textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 calc(4 * var(--u)) var(--focus-ring);
+}
+
+.readonlyValue {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  padding: calc(11 * var(--u)) calc(16 * var(--u));
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--dash-hover);
+  color: var(--dash-heading);
+  font-size: calc(14 * var(--u));
+  font-weight: 700;
+}
+
+.formError {
+  padding: calc(6 * var(--u)) calc(12 * var(--u));
+  border-radius: calc(12 * var(--u));
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: calc(13 * var(--u));
+  font-weight: 700;
+}
+
+.error {
+  font-size: calc(12.5 * var(--u));
+  font-weight: 600;
+  color: var(--danger);
+}
+
+/* ============================ التجاوب ============================ */
+@media (max-width: 1240px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .toolbarGroup {
+    width: 100%;
+  }
+
+  .rangeLabel {
+    min-width: 0;
+    flex: 1 1 auto;
+    text-align: start;
+  }
+
+  .headActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fieldRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .listRow {
+    flex-wrap: wrap;
+  }
+
+  .listTime {
+    min-width: 0;
+  }
+
+  .listExtra {
+    margin-inline-start: auto;
+  }
+
+  .panelDrawer {
+    padding: calc(18 * var(--u));
+  }
+
+  .overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .panelCenter {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: calc(24 * var(--u)) calc(24 * var(--u)) 0 0;
+  }
+
+  .panelDrawer {
+    inset-inline: 0;
+    width: 100%;
+    max-height: 92dvh;
+  }
+}

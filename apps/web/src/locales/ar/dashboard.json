@@ -5,6 +5,11 @@
     "schedule": "جدولي اليومي",
     "sessions": "حصصي",
     "students": "الطلاب",
+    "teachers": "المدرسون",
+    "parents": "أولياء الأمر",
+    "mySchedule": "جدولي",
+    "mySessions": "حصصي",
+    "myChildren": "أبنائي",
     "reports": "التقارير",
     "messages": "الرسائل",
     "settings": "الإعدادات"
@@ -14,6 +19,12 @@
     "notifications": "الإشعارات",
     "account": "الحساب",
     "logout": "تسجيل الخروج"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "markAll": "تعليم الكل كمقروء",
+    "loading": "جارٍ تحميل الإشعارات…",
+    "empty": "لا توجد إشعارات"
   },
   "greeting": "مرحبًا {{name}} 👋",
   "greetingSub": "نتمنى لك يومًا موفقًا مليئًا بالنجاح",
@@ -26,7 +37,12 @@
   "upcomingSessions": "الحصص القادمة",
   "recentActivity": "النشاط الأخير",
   "quote": "التعليم لا يغير العالم… فقط، بل يغير الأشخاص الذين سيغيرون العالم",
-  "demoNote": "بيانات تجريبية — جداول الحصص والطلاب لم تُبنَ بعد",
+  "emptyToday": "لا توجد حصص اليوم",
+  "emptyUpcoming": "لا توجد حصص قادمة",
+  "emptyActivity": "لا يوجد نشاط مسجّل بعد",
+  "loadError": "تعذّر تحميل البيانات من الخادم — حدِّث الصفحة.",
+  "actLive": "حصة {{subject}} جارية الآن مع {{name}}",
+  "actCompleted": "انتهت حصة {{subject}} مع {{name}}",
   "stats": {
     "todaySessions": "حصص اليوم",
     "completed": "حصة مكتملة",
@@ -44,27 +60,87 @@
     "join": "الانضمام للحصة"
   },
   "tools": {
-    "schedule": { "title": "إدارة الجدول", "desc": "تنظيم حصصك ومواعيدك" },
-    "students": { "title": "إدارة الطلاب", "desc": "متابعة تقدم الطلاب" },
-    "reports": { "title": "التقارير", "desc": "إحصائيات وأداء الحصص" },
-    "messages": { "title": "الرسائل", "desc": "التواصل مع الطلاب" }
+    "schedule": {
+      "title": "إدارة الجدول",
+      "desc": "تنظيم حصصك ومواعيدك"
+    },
+    "sessions": {
+      "title": "الحصص",
+      "desc": "الحصص الجارية والمجدولة"
+    },
+    "students": {
+      "title": "إدارة الطلاب",
+      "desc": "متابعة تقدم الطلاب"
+    },
+    "reports": {
+      "title": "التقارير",
+      "desc": "إحصائيات وأداء الحصص"
+    },
+    "messages": {
+      "title": "الرسائل",
+      "desc": "التواصل مع الطلاب"
+    },
+    "messagesFamily": {
+      "title": "الرسائل",
+      "desc": "التواصل مع المدرسين"
+    }
   },
   "subjects": {
     "math": "الرياضيات",
     "english": "اللغة الإنجليزية",
     "physics": "الفيزياء",
-    "chemistry": "الكيمياء"
+    "chemistry": "الكيمياء",
+    "biology": "الأحياء",
+    "other": "أخرى"
   },
-  "activity": {
-    "sessionCompleted": "تم إنهاء حصة الرياضيات بنجاح",
-    "studentJoined": "انضم الطالب سارة محمد للحصة",
-    "studentAdded": "تم إضافة طالب جديد: علي حسن",
-    "scheduleUpdated": "تم تحديث جدول الحصص الأسبوع القادم"
-  },
-  "ago": {
-    "minutes30": "منذ 30 دقيقة",
-    "hour1": "منذ ساعة",
-    "hours2": "منذ ساعتين",
-    "hours3": "منذ 3 ساعات"
+  "console": {
+    "title": "كونسول الإدارة — {{name}}",
+    "sub": "أرقام المنصة كلها: المدرسون، الطلاب، الحصص، الحضور والالتزام — قابلة للتخصيص بمدرس أو طالب.",
+    "periodLabel": "الفترة",
+    "periodWeek": "آخر ٧ أيام",
+    "periodMonth": "آخر ٣٠ يومًا",
+    "periodQuarter": "آخر ٩٠ يومًا",
+    "bookSession": "حجز حصة",
+    "kpis": "المؤشرات",
+    "kpiSessions": "الحصص في الفترة",
+    "kpiHours": "ساعات منفّذة",
+    "kpiAttendance": "نسبة الحضور",
+    "kpiCommitment": "نسبة الالتزام",
+    "kpiCancelled": "ملغاة / بلا حضور",
+    "kpiActiveTeachers": "مدرسون لهم حصص في الفترة",
+    "kpiStudents": "طلاب لهم حصص في الفترة",
+    "kpiUpcoming": "حصص قادمة",
+    "leaderboard": "الأكثر تنفيذًا للساعات",
+    "colTeacher": "المدرس",
+    "colHours": "ساعات",
+    "colSessions": "حصص",
+    "colAttendance": "حضور",
+    "colCommitment": "التزام",
+    "weekly": "الساعات المنفّذة أسبوعيًا (12 أسبوعًا)",
+    "subjects": "الحصص حسب المادة",
+    "alerts": "تنبيهات تشغيلية",
+    "alertsClean": "لا تنبيهات — الجدول والحضور تحت السيطرة.",
+    "alertUnmarked": "{{count}} حصة اليوم بلا تسجيل حضور",
+    "alertIdle": "{{count}} مدرس بلا أي حصة قادمة",
+    "alertStudentsIdle": "{{count}} طالب بلا حصة قادمة",
+    "alertLowAttendance": "مدرسون بنسبة حضور أقل من 70٪",
+    "alertCancellers": "مدرسون تجاوزت إلغاءاتهم 20٪",
+    "avgLatency": "متوسط تأخر بداية الحصص: {{minutes}} دقيقة",
+    "vsPrevious": "مقارنة بالفترة السابقة المماثلة",
+    "noData": "لا توجد حصص في هذه الفترة",
+    "quick": "إجراءات سريعة",
+    "addStudent": "إضافة طالب",
+    "addTeacher": "إضافة مدرس",
+    "addParent": "إضافة ولي أمر",
+    "openSchedule": "فتح الجدول الكبير",
+    "kpiOnTime": "بداية في الموعد",
+    "kpiLate": "تأخر الحضور",
+    "kpiCompleted": "حصص منفذة",
+    "scheduledHours": "ساعات مجدولة",
+    "studentsBoard": "الطلاب — الأكثر حضورًا",
+    "grades": "الحصص حسب الصف",
+    "colStudent": "الطالب",
+    "colGrade": "الصف",
+    "colStudents": "طلاب"
   }
 }

@@ -249,18 +249,18 @@
   background: var(--dash-hover);
 }
 
-.demoNote {
-  margin-block-start: 14px;
-  font-size: 12px;
+.emptyRows {
+  padding: 18px 10px;
+  font-size: 13px;
   text-align: center;
   color: var(--dash-muted);
-  opacity: 0.8;
+  list-style: none;
 }
 
 /* ============================ الأدوات السريعة ============================ */
 .toolsGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 14px;
 }
 

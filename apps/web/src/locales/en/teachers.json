@@ -1,0 +1,122 @@
+{
+  "title": "Teachers",
+  "subtitle": "Teacher, supervisor and manager accounts: permissions, status and hour tracking.",
+  "kpis": {
+    "total": "Staff accounts",
+    "activePaused": "Active / paused",
+    "monthHours": "Total hours this month",
+    "avgCommitment": "Average commitment"
+  },
+  "searchPlaceholder": "Search by name or email",
+  "filters": {
+    "allSubjects": "All subjects",
+    "subjectLabel": "Subject",
+    "statusLabel": "Status"
+  },
+  "status": {
+    "all": "All",
+    "active": "Active",
+    "paused": "Paused"
+  },
+  "subjects": {
+    "math": "Mathematics",
+    "english": "English",
+    "physics": "Physics",
+    "chemistry": "Chemistry",
+    "biology": "Biology",
+    "other": "Other"
+  },
+  "roles": {
+    "teacher": "Teacher",
+    "supervisor": "Supervisor",
+    "manager": "Manager",
+    "owner": "Platform owner"
+  },
+  "table": {
+    "staff": "Teacher",
+    "email": "Email",
+    "subject": "Subject",
+    "upcoming": "Upcoming sessions",
+    "hours": "Completed hours",
+    "commitment": "Commitment",
+    "status": "Status",
+    "actions": "Actions",
+    "resultsCount": "Showing {{shown}} of {{total}}"
+  },
+  "actions": {
+    "view": "View profile",
+    "edit": "Edit",
+    "pause": "Pause",
+    "activate": "Activate"
+  },
+  "form": {
+    "createTitle": "Add teacher",
+    "editTitle": "Edit teacher",
+    "createDesc": "Public sign-up is disabled — accounts are created manually here.",
+    "editDesc": "Name, role and status, plus an optional password reset.",
+    "name": "Full name",
+    "email": "Email",
+    "emailLocked": "The email address cannot be changed once the account exists.",
+    "password": "Initial password",
+    "passwordHint": "At least 8 characters — changed by the user on first sign-in",
+    "resetPassword": "New password",
+    "resetHint": "Leave it empty to keep the current password.",
+    "role": "Role",
+    "roleHint": "You cannot assign a role equal to or higher than your own.",
+    "roleLocked": "You cannot change the role of your own account or an account at your level.",
+    "activeLabel": "Account active",
+    "activeHint": "A paused account cannot sign in (access = 0).",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "create": "Add teacher",
+    "errors": {
+      "name": "Name is required.",
+      "email": "Enter a valid email address.",
+      "password": "Password must be at least 8 characters."
+    }
+  },
+  "loadFailed": "Could not load staff accounts.",
+  "saveFailed": "Could not save the changes.",
+  "flash": {
+    "created": "{{name}} was added successfully.",
+    "updated": "{{name}}'s details were updated.",
+    "paused": "{{name}}'s account was paused.",
+    "activated": "{{name}}'s account was activated."
+  },
+  "confirm": {
+    "pauseTitle": "Pause teacher account",
+    "activateTitle": "Activate teacher account",
+    "pauseDesc": "{{name}} will lose sign-in access immediately; data and session history stay intact.",
+    "activateDesc": "{{name}} will be able to sign in and receive sessions again.",
+    "cancel": "Cancel",
+    "pauseConfirm": "Confirm pause",
+    "activateConfirm": "Confirm activation"
+  },
+  "drawer": {
+    "title": "Teacher profile",
+    "close": "Close",
+    "performance": "Performance summary",
+    "completedHours": "Completed hours",
+    "monthHours": "Hours this month",
+    "attendance": "Attendance rate",
+    "commitment": "Commitment",
+    "scheduled": "Scheduled sessions",
+    "cancelled": "Cancelled sessions",
+    "upcomingTitle": "Next 3 sessions",
+    "noUpcoming": "No upcoming sessions for this teacher.",
+    "weeklyTitle": "Weekly hours — last 8 weeks",
+    "weekLabel": "Week of {{date}}",
+    "withStudent": "With student {{name}}",
+    "duration": "{{minutes}} minutes"
+  },
+  "readOnly": "View only — account management belongs to supervisors and above.",
+  "empty": {
+    "title": "No matching results",
+    "desc": "Try changing the search text or the filters.",
+    "clear": "Clear filters"
+  },
+  "noStaff": {
+    "title": "No teachers yet",
+    "desc": "Add the first teacher to start scheduling."
+  }
+}

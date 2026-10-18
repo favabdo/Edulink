@@ -305,3 +305,123 @@
     display: none;
   }
 }
+
+/* --- لوحة الإشعارات + شريط معاينة الدور (أُضيفت مع التنقل بالأدوار) --- */
+.notifWrap {
+  position: relative;
+}
+
+.notifPanel {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 60;
+  width: min(340px, calc(100vw - 32px));
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--dash-shadow);
+  overflow: hidden;
+}
+
+.notifHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--dash-border);
+  color: var(--dash-heading);
+}
+
+.notifMarkAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.notifList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notifItem,
+.notifItemUnread {
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.notifItemUnread {
+  background: var(--dash-active-bg);
+}
+
+.notifItemButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--dash-heading);
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: start;
+  cursor: pointer;
+}
+
+.notifItemButton:hover {
+  background: var(--dash-hover);
+}
+
+.notifTime {
+  font-size: 11.5px;
+  color: var(--dash-muted);
+}
+
+.notifEmpty {
+  padding: 20px 16px;
+  margin: 0;
+  text-align: center;
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+.statusBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--dash-tint-purple);
+  color: var(--dash-heading);
+  font-size: 12.5px;
+}
+
+.statusBannerError {
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.statusBanner button {
+  border: 1px solid var(--dash-border);
+  border-radius: var(--radius-control);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font-size: 11.5px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
