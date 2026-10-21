@@ -116,7 +116,6 @@ curl -X POST http://localhost:5279/api/setup/owner -H "Content-Type: application
 | `apps/api/README.md` | تشغيل الباك اند + نقاط النهاية |
 | `docs/reference/` | صور الريفيرنس الأصلية |
 | `docs/screenshots/` | لقطات التنفيذ الفعلي (عربي/إنجليزي × فاتح/غامق) |
-| `docs/history/` | النصوص الخام للجلسات السابقة (مرجع تاريخي) |
 
 ---
 
