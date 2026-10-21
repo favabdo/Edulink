@@ -94,7 +94,7 @@ curl http://localhost:5279/api/health/db
 
 ### 1) أنشئ القاعدة وشغّل المخطط (ملف واحد يعمل Run)
 
-الملف المُسلَّم: **`RUN-ON-SQL-SERVER.sql`** (في جذر المستودع، ونسخة منه `deploy/EduLink-SQLServer-ascii.sql`) — قسم T-SQL من `database/schema.sql` مع ترويسة `CREATE DATABASE` + `USE`. مُهيّأ لـ **SQL Server 2014**: لا `CREATE OR ALTER` ولا `DROP … IF EXISTS` ولا `FOR JSON` ولا تريجرات.
+الملف المُسلَّم **والوحيد**: **`RUN-ON-SQL-SERVER.sql`** في جذر المستودع (نسخ `deploy/sqlserver-setup.sql` و`deploy/EduLink-SQLServer-ascii.sql` حُذِفتا في 2026-10-21 — كان اسمان لملف واحد فيصدّق المشغّل أيهما) — قسم T-SQL من `database/schema.sql` مع ترويسة `CREATE DATABASE` + `USE`. مُهيّأ لـ **SQL Server 2014**: لا `CREATE OR ALTER` ولا `DROP … IF EXISTS` ولا `FOR JSON` ولا تريجرات.
 
 **لا تلصق المخطط يدويًا في SSMS — شغّله بالملف مباشرة:** اللصق اليدوي هو ما أوقع جولة `Msg 156/102/178/111` كاملة، لأن الملصوق كان قسم PostgreSQL من `schema.sql` (993 سطرًا بصيغة `CREATE TABLE IF NOT EXISTS` و`TEXT` و`RETURN NEW`) لا قسم T-SQL:
 

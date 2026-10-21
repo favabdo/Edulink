@@ -1,184 +1,309 @@
-# النشر على Vercel — EduLink
+# النشر على سيرفر واحد — EduLink
 
-> كل إعدادات النشر جاهزة في `eduspace-web/vercel.json`. المشروع **لا يحتاج أي متغيّرات بيئة**.
+> **الشكل المُسلَّم (قرار صاحب المشروع 2026-10-21):** كل شيء على **سيرفر الاستضافة الذي يعمل
+> عليه Nile Chat**: الواجهة ملفات ثابتة يخدمها nginx، والـ API **عملية `dotnet` مباشرة**
+> (systemd أو PM2 — بلا Docker) تسمع على `127.0.0.1:5279` وحدها، والمنصة كلها تحت **بادئة مسار
+> واحدة** على نفس الدومين (`/edulink`)، والقاعدة على **SQL Server** عند العميل.
+>
+> **ما حُذف من المستودع في هذه الخطوة:** `vercel.json` (الجذر و`apps/web`) و`render.yaml` و
+> `docs/12-render-deployment.md`. ترويسات الأمان والكاش التي كانت في `vercel.json` **نُقلت
+> حرفيًا** إلى `deploy/nginx-edulink.conf` — حذفها بلا نقل كان يُسقط `nosniff` و
+> `Permissions-Policy` (الكاميرا/المايك للحصص) والكاش الدائم للأصول المُوقَّعة ببصمة المحتوى.
+>
+> **لماذا بادئة لا دومين فرعي؟** نفس سبب `/nilechat`: على استضافة مشتركة لا دومينات ولا منفذات
+> جديدة، و**نفس الأصل يلغي CORS من المعادلة** — لا طلب عابر للأصل يحدث، فلا سطرَين متقابلين
+> يُنسى أحدهما فيسقط النشر بصمت (كان هذا أكبر مصدر سقوط في الشكل القديم).
 
 ---
 
-## الطريقة الأسرع: Vercel CLI (بدون Git) ⭐
+## 0) قبل أي شيء: قِس العربة، لا تفترضها
 
-الأسرع لأنك تنشر من داخل مجلد المشروع مباشرة، فلا توجد مشكلة «المجلد الجذري».
+الـ runbook كله مبني على شكل Nile Chat (nginx + عملية مستضافة على localhost). لا تُنفّذ أي خطوة
+قبل هذه النتيجة، لأن `dotnet` نفسه قد لا يكون موجودًا:
 
 ```bash
-cd "D:\work\My Project\Eduspace\eduspace-web"
-npm i -g vercel        # مرة واحدة
-vercel login           # مرة واحدة
-vercel --prod          # النشر للإنتاج
+cat /etc/os-release | head -3                       # AlmaLinux؟ Ubuntu؟ cPanel؟
+nginx -v 2>&1; sudo nginx -t 2>&1 | tail -3         # نسخة nginx وأين يقبل التضمين
+dotnet --list-runtimes 2>&1 | tail -5 || echo "NO_DOTNET"
+command -v pm2 && pm2 -v || echo "NO_PM2"
+ss -lntp | grep -E ':80 |:443 |:5279 ' || true      # من يسمع على المنافذ
+grep -rl "nilechat" /etc/nginx/ 2>/dev/null | head   # ملف إعداد Nile Chat = rif reference لشكل التضمين
 ```
 
-في أول مرة سيسألك:
-- `Set up and deploy?` → **Y**
-- `Which scope?` → اختر حسابك
-- `Link to existing project?` → **N**
-- `What's your project's name?` → `edulink` (أو أي اسم)
-- `In which directory is your code located?` → **`.`** (نقطة = المجلد الحالي)
-- سيكتشف Vite تلقائيًا، فيضبط أمر البناء والمخرجات من `vercel.json`.
-
-بعد النشر سيطبع لك الرابط، وكل مرة بعدها `vercel --prod` تنشر تحديثًا.
+- **بلا `dotnet`:** التنصيب من مستودع مايكروسوفت الرسمي حسب توزيعتك —
+  `dnf search 'dotnet*'` / `apt-cache search dotnet` واختر **ASP.NET Core Runtime 10.0**
+  (لا يحتاج SDK على سيرفر التشغيل، لكن البناء `dotnet publish` قد يتم هنا أو على جهازك وترفع المخرجات).
+  لا تُثبّت شيئًا قبل أن تُرجع نتائج البحث الاسم الحرفي للحزمة.
+- **`NO_DOTNET` ولا قدرة على تنصيبه** (استضافة لا تسمح بتشغيل عمليات): هذه العربة لا تصلح للـ API،
+  ويبقى الـ API على عربة أخرى — وعندئذٍ يرجع **`tools/verify-external-deploy.py`** أداةً مطلوبة
+  لأنه يقيس شكل الأصلين (CORS + `wss`)، وتُدرَج أصل الواجهة في `Cors__Origins__n`.
 
 ---
 
-## الطريقة الثانية: GitHub + Vercel (نشر تلقائي عند كل تعديل)
+## 1) المخطط: ملف واحد يعمل Run على SQL Server
 
-> **المستودع المرتبط:** `https://github.com/favabdo/Edulink` — وهو **monorepo**:
-> الفرونت في `apps/web` والباك اند في `apps/api` وقاعدة البيانات في `database/`.
-
-### ⚠️ مهم جدًا بعد إعادة الهيكلة إلى monorepo
-
-البناء ينجح لكن Vercel لا يجد مجلد المخرجات، لأن الفرونت انتقل إلى `apps/web`:
-
-```
-Error: No Output Directory named "dist" found after the Build completed.
-```
-
-**الحل (اختر واحدًا):**
-
-**الأفضل — اضبط Root Directory:** من **Project → Settings → General → Root Directory** اختر **`apps/web`**، ثم أعد النشر.
-هذا هو الإعداد القياسي للـ monorepo، و`apps/web/vercel.json` يتكفّل بالباقي.
-
-**أو اترك الإعداد كما هو:** أُضيف `vercel.json` في **جذر المستودع** يحدّد
-`outputDirectory: "apps/web/dist"` — فيعمل النشر بلا أي تغيير في الإعدادات.
-
-> ℹ️ لو ضبطت Root Directory على `apps/web`، ملف `vercel.json` في الجذر يصبح **غير مستخدم**
-> ويُفضَّل حذفه لاحقًا حتى لا تتكرر نفس الإعدادات في مكانين.
-
-> ⚠️ **لا تضبط `installCommand` داخل `apps/web`** — ملف القفل (`package-lock.json`) موجود في
-> **جذر الـ workspace** بعد التحوّل إلى npm workspaces، فتشغيل `npm ci` داخل `apps/web` يفشل.
-> اترك Vercel يكتشف الـ workspace ويتثبّت من الجذر تلقائيًا.
-
-### الرفع على GitHub
+الملف: **`RUN-ON-SQL-SERVER.sql`** في جذر المستودع — قسم T-SQL من `database/schema.sql`
+(مُستخرَج، **لا يُحرَّر يدويًا**) مع مقدمة `CREATE DATABASE` + `USE`. تراكمي ومحمي بـ
+`IF NOT EXISTS`: مرة أو عشر مرات بنفس النتيجة. **لا يُنشئ EF Migrations أي جدول أبدًا**،
+والـ API يرفض الإقلاع خارج Development على `EnsureCreated=true`.
 
 ```bash
-cd "D:\work\My Project\Eduspace\eduspace-web"
-git add -A
-git commit -m "..."
-git push origin main
+sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -f 65001 -I -b -i RUN-ON-SQL-SERVER.sql
+sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d EdulinkDb -I -Q "SET NOCOUNT ON; SELECT tables=(SELECT COUNT(*) FROM sys.tables), triggers=(SELECT COUNT(*) FROM sys.triggers), checks=(SELECT COUNT(*) FROM sys.check_constraints), fks=(SELECT COUNT(*) FROM sys.foreign_keys)"
 ```
 
-### الاستيراد في Vercel
+- **الأعلام ليست ترفًا:** `-f 65001` تقرأ الملف UTF-8 (بلاها تُحفَظ العربية `?` حرفيًا)، و`-I`
+  تفعّل `QUOTED_IDENTIFIER` (بلاها يرفض المحرّك أي `INSERT/DELETE` يدوي على جداول `Edu_` لأن
+  عليها فهارس مفلترة — `Msg 1934`)، و`-b` يجعل أي خطأ يخرج بكود غير صفري بدل الصمت.
+- **البصمة المتوقعة:** 11 جدولًا · صفر تريجر · 21 فحصًا · 9 مفاتيح خارجية · 43 قيمة افتراضية ·
+  8 قيود تفريد · 104 أعمدة.
+- **مقيس (2026-10-21):** الملف المُسلَّم نفسه (لا مقتطف منه) شُغِّل **مرتين متتاليتين** على
+  SQL Server بخروج **0 ثم 0**، والبصمة طابقت العدد أعلاه حرفيًا، ثم أُقفلت الحلقة في §4 بتشغيل
+  الـ API على القاعدة التي أنشأها الملف وحده.
+- **اسم القاعدة:** `EdulinkDb` (سطران في أول الملف يُعدَّلان مرة واحدة). لكل مؤسسة نسختها
+  وقاعدتها المستقلة — لا تُشغَّل المنصة على قاعدة نظام آخر قائم.
 
-1. افتح <https://vercel.com/new> واختر مستودع `Edulink`.
-2. اترك **Root Directory** على `/` كما هي (لا تغيّرها).
-3. Framework Preset سيُضبط تلقائيًا على **Vite**:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Install Command: `npm ci`
-4. اضغط **Deploy**.
+### حساب دخول للمنصة لا `sa`
 
-بعد الربط، كل `git push` على `main` ينشر تلقائيًا، وكل Pull Request يحصل على رابط معاينة.
+ملف المخطط لا يُنشئ Login (يبقى مصدر الأسرار خارج Git). على سيرفر العميل، من SSMS:
 
-> ℹ️ **ملاحظة:** مجلد `docs/` يقع **خارج** المستودع (في المجلد الأب)، فهو غير مُتتبَّع بـ Git
-> وغير مرفوع إلى GitHub. لو أردت رفعه أيضًا: انقله إلى داخل `eduspace-web/docs/` وسيصبح
-> مُتتبَّعًا تلقائيًا، ولن يؤثر على النشر لأن Vite لا يبنيه.
+```sql
+USE [master];
+CREATE LOGIN [edulink] WITH PASSWORD = N'<كلمة-قوية>';
+USE [EdulinkDb];
+CREATE USER [edulink] FOR LOGIN [edulink];
+ALTER ROLE [db_datareader] ADD MEMBER [edulink];
+ALTER ROLE [db_datawriter] ADD MEMBER [edulink];
+```
 
----
-
-## ما الموجود في `vercel.json`
-
-| الإعداد | القيمة | لماذا |
-|---|---|---|
-| `framework` | `vite` | ضبط تلقائي صحيح |
-| `installCommand` | `npm ci` | تثبيت أسرع ومطابق لـ `package-lock.json` |
-| `buildCommand` | `npm run build` | `tsc -b && vite build` (فحص أنواع ثم بناء) |
-| `outputDirectory` | `dist` | مخرجات Vite |
-| `cleanUrls` | `true` | روابط بدون `.html` |
-| `rewrites` | كل المسارات → `/index.html` | مهم عند إضافة مسارات (Router) لاحقًا؛ الملفات الثابتة لها الأولوية دائمًا |
-| `Cache-Control` على `/assets/*` و `/fonts/*` | `max-age=31536000, immutable` | هذه ملفات باسم يحتوي بصمة المحتوى، فتُخزَّن سنة كاملة |
-| `Cache-Control` على `/login-showcase.jpg` | 7 أيام + `stale-while-revalidate` | اسمه ثابت بلا بصمة، فكاش أقصر |
-| ترويسات أمان | `nosniff`, `Referrer-Policy`, `X-Frame-Options: SAMEORIGIN` | حماية أساسية |
-| `Permissions-Policy` | `camera=(self), microphone=(self), display-capture=(self)` | **مقصودة**: الجلسات المباشرة (LiveKit) ستحتاج الكاميرا والمايك من نفس النطاق |
+`db_datareader` + `db_datawriter` تكفيان فعلًا لأن التطبيق **لا يُنشئ ولا يُعدّل جداول**
+(Migrations معطّلة بحاجز في `Program.cs`). أما `sa` فحساب على مستوى **النسخة كلها**: كلمة سر واحدة
+تفتح كل قواعد العميل لا قاعدتها، والمنفذ 1433 يظل مكشوفًا للإنترنت من عربة Linux.
+لا تُعطِ `db_owner` بلا سبب.
 
 ---
 
-## النطاق المخصّص (Custom Domain)
+## 2) بناء الواجهة تحت بادئة النشر
 
-من **Project → Settings → Domains** أضف نطاق المؤسسة، واتبع تعليمات الـ DNS.
+`VITE_BASE_PATH` هو **وقت بناء** لا وقت تشغيل: يُخبَز داخل حزم JS، فتغييره بعد البناء لا يعمل —
+يلزم بناء جديد ثم رفع `apps/web/dist`.
 
-> **للبيع لأكثر من مؤسسة (White-label):** كل مؤسسة لها نطاق وقاعدة بيانات مستقلة.
-> أقترح مشروع Vercel واحد مع عدة Domains، والـ backend يحدّد المؤسسة من الدومين (get host → connection string)، فيبقى النشر واحدًا للجميع.
+```bash
+cp apps/web/.env.example apps/web/.env     # VITE_BASE_PATH=/edulink/
+npm ci && npm run build                    # → apps/web/dist
+```
 
----
-
-## أيقونة التطبيق والتثبيت على الموبايل
-
-المنصة قابلة **للتثبيت كتطبيق** من المتصفح (Add to Home Screen) عبر Web App Manifest.
-
-| الملف | الاستخدام |
+| المصدر | النتيجة المقيسة (2026-10-21) |
 |---|---|
-| `public/icons/icon-192.png` | أيقونة أندرويد (192×192) |
-| `public/icons/icon-512.png` | أيقونة أندرويد عالية الدقة + شاشة البداية (512×512) |
-| `public/icons/apple-touch-icon.png` | أيقونة iOS عند الإضافة للشاشة الرئيسية (180×180) |
-| `public/manifest.webmanifest` | `display: standalone` + الأيقونات + اللغة والاتجاه |
-| `public/favicon.png` | أيقونة تبويب المتصفح |
+| `apps/web/.env` بـ `VITE_BASE_PATH=/edufile/` | `dist/index.html` يشير `/edufile/assets/…` ✔ (`loadEnv` لا `process.env`) |
+| متغيّر بيئة في الصدفة `/edulink/` | `/edulink/assets/…` ✔ ولوج CSS `/edulink/login-showcase.jpg` ✔ |
+| بلا أي ضبط | `/assets/…` و`API_BASE_URL = ''` ✔ — التطوير والجذر لم يتغيّرا |
 
-**ملاحظات فنية:**
-- الأيقونة الأصلية كان لها **حواف مستديرة على خلفية سوداء**.
+**ما يشتقّ تلقائيًا:** `lib/constants.ts` يبني `API_BASE_URL` من `BASE_URL` إن لم يُضبط
+`VITE_API_BASE_URL`، فبناءٌ بـ `/edulink/` ينادي `/edulink/api/…` و`/edulink/hubs/…` بلا أي سطر
+ثانٍ. البادئة يجب أن تساوي **حرفيًا** اسم `location` في `deploy/nginx-edulink.conf`.
 
-  لتفادي ظهور السواد عند أقنعة المشغّلات (launcher masks)، تُملأ الحواف
-  بامتداد ألوان الحافة نفسها فتخرج **مربعة كاملة (full-bleed)**.
-- الأيقونات مُعلَنة بـ `purpose: "any maskable"` — ومحتوى الأيقونة (القبعة والحرف
-  والاسم) يقع داخل المنطقة الآمنة، فيُقتطع الخلفية فقط عند القناع.
-- `background_color` و`theme_color` بلون خلفية الصفحة الفاتح `#f3f8fd` لمطابقة
-  أول رسم للتطبيق فلا يحدث وميض داكن→فاتح.
-- سكربت التوليد محفوظ في `tmp/make-app-icons.ps1`، والملف الأصلي في
-  `docs/reference/app-icon-source.png`.
+**رفع المخرجات:** إلى `/home/YOUR-USER/edulink/web/` (مسار `alias` في بلوك nginx). الملفات نفسها
+تُرفع كما هي — لا حاجة لأي بناء مختلف لكل وسيط.
 
-## الأداء — ما تم تجهيزه
+⚠️ **على Windows/Git Bash:** المسار المبدوء بشرطة يُحوَّل (`/edulink` → `/Program Files/Git/edulink`)
+فيبنى الموقع ببادئة خاطئة. اكتب البادئة في `apps/web/.env` (يُقرأ بلا تحويل)، أو استعمل
+`MSYS_NO_PATHCONV=1 VITE_BASE_PATH=/edulink/ npm run build`.
+
+---
+
+## 3) الـ API كعملية مباشرة
+
+```bash
+dotnet publish apps/api/EduspaceApi.csproj -c Release -o tmp/publish   # على جهازك أو على العربة
+# ثم انسخ tmp/publish/* إلى /opt/edulink/api/ و apps/api/.env إلى نفس المجلد (chmod 600)
+sudo cp deploy/edulink-api.service /etc/systemd/system/ && sudo systemctl daemon-reload
+sudo systemctl enable --now edulink-api && curl -s http://127.0.0.1:5279/api/health/db
+```
+
+- **`ASPNETCORE_URLS=http://127.0.0.1:5279`** في `.env`: الـ API لا يسمع من العامة، nginx هو
+  المدخل الوحيد. بلا هذا السطر يرجع Kestrel إلى 5000 فيبدو الـ API ميتًا (مقيس — الخطوة 49).
+- **`WorkingDirectory` في الـ unit ليس تجميلًا:** `Configuration/DotEnv.cs` يقرأ `.env` من مجلد
+  التشغيل أولًا ثم من مجلد الـ dll، و`appsettings*.json` من مجلد المحتوى. بتشغيل الـ dll من مجلد
+  آخر تُقرأ إعدادات لا علاقة لها بالملف الذي ملأته (فخّ مقيس في جلسة سابقة).
+- **كل الأسرار في `apps/api/.env` وحده** (مستثنى من Git): `ConnectionStrings__SqlServer` بالسطر
+  الوحيد الذي تحتاجه، والأولوية `متغيّرات البيئة > .env > appsettings*.json`.
+- **مقيس (2026-10-21):** تشغيل `EduspaceApi.dll` من مجلد عمل نظيف **بلا أي `.env`** وبمتغيّرات
+  بيئة فقط ⇒ `{"provider":"SqlServer","canConnect":true,"usesMigrations":false}` على قاعدة
+  أنشأها `RUN-ON-SQL-SERVER.sql`، مع `appsettings.json` يقول `Sqlite`/`EnsureCreated=true` —
+  فالملف/البيئة هما ما يربط، لا الكود.
+
+بديل PM2 بنفس العقد تمامًا (لأن Nile Chat يشتغل بها):
+
+```bash
+cd /opt/edulink/api && pm2 start "dotnet EduspaceApi.dll" --name edulink-api && pm2 save
+```
+
+---
+
+## 4) nginx: تضمين بلوكات `deploy/nginx-edulink.conf`
+
+داخل بلوك `server {}` الموجود على العربة (نفس المكان الذي يُضمَّن فيه إعداد Nile Chat):
+
+```nginx
+include /etc/nginx/edulink.conf;      # = محتوى deploy/nginx-edulink.conf بعد تعديل 3 أشياء
+```
+
+الثلاثة: اسم البادئة `/edulink` (مطابق لـ `VITE_BASE_PATH`)، ومجلد `web`، ومنفذ `127.0.0.1:5279`.
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**ماذا يحدث في كل بلوك:** `/edulink/api/…` يُجرَّد إلى `/api/…` عند الـ API (فلا `PathBase` في
+الكود)، و`/edulink/hubs/…` يُمرَّر بترقية WebSocket حقيقية (`Upgrade`/`Connection` +
+`proxy_read_timeout 100s` لأن KeepAlive=15 ث)، وروابط SPA العميقة (`/edulink/reports`) ترجع
+`index.html` من التطبيق نفسه لا 404 من nginx، وترويسات الأمان + كاش الأصول انتقلت من
+`vercel.json` إلى هنا.
+
+**مع الوسيط يجب أن يبقى في `.env`:**
+
+```
+Network__UseForwardedHeaders=true
+Network__ForwardedHeadersLimit=1
+Network__TrustAllProxies=true
+```
+
+`ForwardedHeadersLimit=1` = وسيط واحد مأمون. **ارفعه إلى 2 فقط** لو أضفت CDN أمام nginx؛ رفعه
+بلا داعٍ يجعل العميل يفتح حزنة حدّ جديدة بكل `X-Forwarded-For` مزوَّرة — مقيس: حدّ 4 ⇒ **صفر 429**
+على 130 محاولة بتزوير مختلف، وحدّ 1 ⇒ **429 عند المحاولة 121**.
+
+### الإثبات الكامل على هذا الشكل (2026-10-21، مقاس لا موصوف)
+
+شغّل `node tools/edge-proxy.mjs --listen 8080 --api http://127.0.0.1:5279 --prefix /edulink`
+(يحاكي نفس عقد بلوكات nginx، بما فيها تجريد البادئة وترقية WebSocket):
+
+- أصول ثابتة تحت البادئة كلها **200**: `/edulink/`، `/edulink/reports` و`/edulink/students/12`
+  (SPA fallback)، `assets/*.js|css`، `fonts/fonts.css`، `fonts/cairo-arabic.woff2`،
+  `manifest.webmanifest`، `icons/icon-192.png`، `login-showcase.jpg`؛ وخارج البادئة **404**.
+- `node tools/hub-through-proxy-check.mjs --proxy http://localhost:8080/edulink` ⇒ **خروج 0**:
+  تكويد وحصة عبر REST، اتصالان مُرقَّيان إلى WebSocket في نفس الغرفة، رسالة مستقبَلة، والدور
+  محسوب من القاعدة (مطالعة `teacher` من غير مدرس الحصة رجعت `observer`).
+- **البناء الإنتاجي نفسه في متصفح حقيقي:** من `/edulink/` إلى `/edulink/home`، و`/edulink/api/auth/login`
+  ثم `sessions`/`students`/`users`/`parents`/`reports/overview` كلها **200**، والخط يُنزَّل من
+  `/edulink/fonts/…`. **بلا أي إعداد CORS** — نفس الأصل.
+- ⚠️ الفخّ الذي لازم القياس أول محاولة: `--prefix /edulink` على Git Bash يُحوَّل إلى
+  `/Program Files/Git/edulink` فيردّ الوسيط 404 على كل شيء. شغّله بـ `MSYS_NO_PATHCONV=1`.
+
+---
+
+## 5) أول حساب مالك (مرة واحدة على قاعدة فارغة)
+
+```bash
+printf '{"name":"مالك المنصة","email":"OWNER@DOMAIN","password":"<كلمة-قوية>"}' > owner.json
+curl -sS -X POST https://YOUR-DOMAIN/edulink/api/setup/owner -H "Content-Type: application/json" --data-binary @owner.json
+rm owner.json
+```
+
+- `POST /api/setup/owner` يعمل **مرة واحدة فقط** على قاعدة فارغة، ثم يُقفل.
+- ⚠️ **العربية لا تُرسَل في وسائط الأوامر على Windows/Git Bash:** `curl` يحوّل الوسائط إلى cp1252
+  فيُخزَّن الاسم `?`. على Linux curl لا يمسّ الوسائط، لكن الأسلم دائمًا الجسم من ملف UTF-8 بـ
+  `--data-binary @owner.json` لا `-d` (وهذا ما يفعله `deploy/run.sh`).
+
+---
+
+## 6) التشفير — مقيس لا مُخمَّن (2026-10-18، على `nile-server.com,1433`)
+
+**`Encrypt=True;TrustServerCertificate=True` أتمّ مصافحة TLS** والفشل الوحيد كان
+`Error 18456, State:1 — Login failed for user 'sa'` أي كلمة السر. فالعبارة التي كانت مكتوبة في
+ثلاث وثائق («السيرفر يرفض المصافحة ⇒ لازم `Encrypt=False`») **منتَقدة ومُصحَّحة**. الرتبة:
+
+1. **المستهدف للتسليم:** TLS 1.2 على SQL Server + شهادة موثوقة ⇒ `Encrypt=True;TrustServerCertificate=False`.
+2. **كما هو الآن:** `Encrypt=True;TrustServerCertificate=True` — مشفَّر **بلا تحقّق** من هوية
+   السيرفر (محمي من القراءة لا من الانتحال)، واللوج يطبع `negotiated TLS 1.0 is an insecure protocol`.
+3. **بديل مكافئ الأمن:** نفق مُؤمَّن بين الـ API والقاعدة مع إبقاء 1433 بعيدًا عن العامة.
+4. **مرفوض:** `Encrypt=False` والقاعدة تعبر الإنترنت — اسم المستخدم وكل صف بلا تشفير.
+
+الـ API لا يضيف أيًّا من هذه الأعلام صمتًا (`ConnectionStringNormalizer` يضبط المهلة وMARS فقط):
+**الترخيص الأمني قرار إنسان**. لاحظ أن الـ API الآن على عربة Linux والقاعدة على عربة Windows ⇒
+العبور عبر الإنترنت حتمي، فلا تُرخَّص إلا الرتبة 1 أو 2 أو نفق في الرتبة 3.
+
+---
+
+## 7) بوابات ما بعد النشر — الترتيب إلزامي
+
+لا تُقرأ أي بوابة خضراء قبل تشغيل **حالة حمراء واحدة** عليها (القاعدة التي وُلّدت من بوابة
+كذّبت نفسها). وشغّلها بالترتيب، لأن التحقق نفسه يترك حسابات اختبار في القاعدة:
+
+```bash
+BASE=https://YOUR-DOMAIN/edulink
+python tools/verify-xff-spoof.py                 # تزوير X-Forwarded-For لا يفتح حزنة جديدة
+python tools/verify-rate-limits.py               # الطبقات الثلاث + القفل لكل حساب
+python tools/verify-production-flow.py           # الدورة الوظيفية كاملة على الرابط العام
+python tools/verify-ice-turn.py green            # توقيع TURN مطابق لما يفحصه coturn
+python tools/verify-default-credentials.py       # كل كلمة سر موثّقة في المستودع ⇒ مرفوضة
+python tools/verify-no-dev-data.py               # لا بصمات زرع (@edulink.test / seed_dev)
+node tools/hub-through-proxy-check.mjs --proxy $BASE
+```
+
+ثم الترتيب المُسلَّم للتسليم النهائي (مقيس في الخطوة 45 — جولة التحقق تترك **14 حساب
+`@edulink.test` بنفسها**):
+
+1. البوابات أعلاه ⇒ كلها خضراء.
+2. **احذف** حسابات التحقق و`DELETE FROM dbo.[Edu_Tokens];` (بترتيب `sys.foreign_keys`).
+3. **دوّر** كلمة سر المالك وأنشئ حسابات المؤسسة الحقيقية من الشاشات.
+4. أعد `verify-default-credentials.py` و`verify-no-dev-data.py` — ويجب أن تكونا **خضراوين**.
+
+بند §7-أ من قائمة التسليم القديمة لا يزال إلزاميًا: تغيير كلمة سر مستخدم يبقي توكن جهازه القديم
+صالحًا حتى تُصفّى `Edu_Tokens` (الموضع موثّق في `docs/11` §7)، والإصلاح الأوتوماتيكي ينتظر «ابدأ».
+
+**أين `tools/verify-external-deploy.py`؟** هي بوابة **شكل الأصلين** (واجهة على أصل وAPI على أصل،
+تقيس https + شهادة موثَّقة + CORS + ترقية WebSocket محسوبة). على هذا الشكل (نفس الأصل) لا عمل
+ لها؛ احتفظ بها ليوم يُنقل الـ API إلى وسيط منفصل، وعندها تُفعَّل مع `Cors__Origins__n`.
+
+---
+
+## 8) ما لا تزال العربة المشتركة لا تعطيه
+
+1. **coturn / الوسائط خلف NAT صارم:** محتاج **مدى بوابات UDP** (3478 + 49160-49200 كما في
+   `deploy/turnserver.conf`) مفتوحًا في جدار نار المستضيف. على استضافة مشتركة هذا غالبًا مغلق
+   ⇒ عربة مستقلة للـ TURN. `Meeting__TurnUrls__*` و`Meeting__TurnSecret` في `.env`، وسرّ مطابق
+   لـ `static-auth-secret`، ثم قياس من **شبكتين مختلفتين** (لا تقدر أي أداة على إثبات وسائط فعلية
+   من جهاز واحد). **الغرفة تعرض تنبيهًا صريحًا أنها تعمل بـ STUN العام فقط** إن لم تُقرأ إعدادات TURN.
+2. **إعادة قياس الحمل على النشر الحقيقي:** الرقم المرجعي **2000 حصة = 4000 اتصال، صفر فقدان**
+   مقيس على جهاز تطوير ⇒ `node tools/loadtest/meeting-loadtest.mjs --rooms 1000 --peers 2 --hold 60`
+   ضد `https://YOUR-DOMAIN/edulink` مع مراقبة 301 اتصال قاعدة مفتوح.
+3. **النسخ الاحتياطي عند مصدر القاعدة:** `deploy/backup.sql` + `deploy/restore-drill.sql StrictLive=1`
+   على سيرفر SQL Server نفسه (الإجراء في `docs/11` §9) — لا نسخة تُقرأ خضراء بلا استعادة مُجرَّبة.
+4. **حدود الواجهة المحلية:** هوية white-label (اسم المؤسسة ولوجوها)، التفضيلات، ملاحظات المتابعة،
+   والدخول برقم الهاتف — لا نقاط نهاية لها بعد (`docs/04` الخطوة 51).
+5. **قاعدة الـ API من عربة Linux إلى SQL Server Windows تعبر الإنترنت:** لا 1433 مكشوف بلا
+   Firewall، والتشفير بالرتبة §6. لو أمكن نقل الـ API إلى نفس عربة القاعدة يصير الاتصال `localhost`
+   وتقفل تلك العبور كلها — وهذا هو الفرق العملي الذي كان يجعل `deploy/run.sh` على عربة واحدة هو الأكمل.
+
+---
+
+## 9) الأداء والأصول — ما هو مُنفَّذ فعلًا
 
 | البند | قبل | بعد |
 |---|---|---|
-| الخطوط | طلب خارجي إلى Google Fonts (DNS + TLS + CSS حاجب للرسم) | **3 ملفات محلية** من نفس النطاق، خطوط متغيّرة تغطّي الأوزان 400–800، `font-display: swap` |
-| طلب الخط | 8 ملفات محتملة | **ملف واحد** للغة المستخدمة (عربي: `cairo-arabic` + `cairo-latin` / إنجليزي: `inter-latin`) |
-| نسخة الاسم في الشعار | كانتا تُنزَّلان معًا (50KB هدر) | خلفية CSS — **نسخة الثيم الفعّال فقط** |
-| صورة اللوحة على الجوال | كانت تُنزَّل رغم إخفاء اللوحة (125KB هدر) | خلفية CSS داخل لوحة مخفية → **لا تُنزَّل إطلاقًا** |
-| LCP (صورة اللوحة) | تبدأ بعد تنزيل JS وترتيب React | **`preload` + `fetchpriority=high`** من `<head>` بالتوازي مع JS (على الشاشات الكبيرة فقط) |
-| وميض الثيم / انقلاب الاتجاه | يحصلان بعد التحميل | يُطبَّقان **قبل أول رسم** من سكربت مضمّن |
-| إزاحة التصميم (CLS) | صور الشعار بلا أبعاد | `aspect-ratio` محدّد مسبقًا لكل صورة |
-| النقل | — | Vercel يضغط Brotli تلقائيًا للملفات النصية |
+| الخطوط | طلب خارجي إلى Google Fonts | **3 ملفات محلية** من نفس الأصل، متغيّرة 400–800، `font-display: swap` |
+| طلب الخط | 8 ملفات محتملة | **ملف واحد** للغة المستخدمة، عبر `preload` في `<head>` |
+| صورة اللوحة على الجوال | تُنزَّل رغم إخفاء اللوحة (125KB هدر) | خلفية CSS داخل لوحة مخفية → **لا تُنزَّل** |
+| LCP (صورة اللوحة) | بعد تنزيل JS وترتيب React | `preload` + `fetchpriority=high` بالتوازي مع JS (ديسكتوب فقط) |
+| وميض الثيم / انقلاب الاتجاه | بعد التحميل | يُطبَّقان **قبل أول رسم** من سكربت مضمّن |
+| أصول ثابتة الاسم | كاش قصير | `Cache-Control: immutable` للأصول الموقّعة ببصمة المحتوى (من `vercel.json` إلى `nginx-edulink.conf`) |
+| مسارات الأصول تحت بادئة النشر | `/fonts/…` تخرج من مجلد التطبيق | `base` في Vite + `url()` نسبي في `public/fonts/fonts.css` + `manifest` نسبي (`./`) |
 
-**حجم الصفحة عند أول زيارة (عربي، ديسكتوب):** ≈ 89KB JS (92KB مضغوط) + 3.8KB CSS + 1KB CSS خطوط + 64KB خطوط + 125KB صورة + 46KB شعار ≈ **330KB** قبل ضغط Brotli للملفات النصية.
+**حجم الصفحة عند أول زيارة (عربي، ديسكتوب):** ≈ 89KB JS + 3.8KB CSS + 1KB CSS خطوط + 64KB خطوط +
+125KB صورة + 46KB شعار ≈ **330KB** قبل الضغط. (على nginx فعّل `gzip`/`brotli` للنصوص — لم يكن
+Brotli تلقائيًا كما في المضيف السابق.)
 
----
+## 10) التحقق بعد النشر
 
-## نشر الباك اند (منفصل عن الواجهة)
-
-الواجهة تُنشر على Vercel، أما **الباك اند (ASP.NET Core) فيحتاج استضافة تشغّل .NET** — لا يصلح Vercel له.
-خيارات مناسبة: **Azure App Service**، **Railway**، **Render**، أو **VPS** (Hetzner في ألمانيا كما اتفقنا) بـ Docker.
-
-### خطوات الربط
-
-1. انشر الـ API واحصل على عنوانه، مثال: `https://api.edulink.example`.
-2. على Vercel اضبط متغيّر البيئة:
-   ```
-   VITE_API_BASE_URL = https://api.edulink.example
-   ```
-   الواجهة تقرأه في `src/lib/constants.ts`: `API_BASE_URL` لكل نداءات `/api`، و**`HUB_BASE_URL` يشتق منه أصل اتصال الغرفة** (`https:` ← `wss:`). **بدونه** تستخدم مسارات نسبية `/api` و`/hubs` — وهذا يعمل في التطوير عبر بروكسي Vite أو خلف nginx بنفس الدومين فقط؛ ولو خُدمت الواجهة من دومين مختلف بلا المتغيّر فإن **الحصص الحيّة تفشل** (الـ Hub لا يصل للسيرفر) حتى لو عمل بقية الموقع.
-3. اضبط في الـ API:
-   ```
-   Database__Provider=SqlServer        # أو Postgres على Supabase
-   Database__EnsureCreated=false
-   ConnectionStrings__SqlServer=Server=...,1433;Database=Edulink;User ID=...;Password=...
-   Cors__Origins__0=https://edulink.vercel.app
-   Cors__Origins__1=https://<الدومين النهائي>
-   ```
-   ⚠️ لا تنسَ إضافة دومين الواجهة إلى `Cors__Origins` وإلا رفض المتصفح النداءات.
-4. **لا تُشغّل EF Migrations** على قاعدة الإنتاج — المخطط من `database/schema.sql` فقط.
-
-## التحقق بعد النشر
-
-1. افتح الرابط، وتأكد أن الخطوط ظاهرة (وليست خط النظام).
-2. بدّل اللغة والمظهر — يجب أن يعملا والاتجاه ينقلب فورًا.
-3. افتح DevTools → **Network**:
-   - `/fonts/*.woff2` يجب أن يكون من نفس النطاق.
-   - `/login-showcase.jpg` يجب أن يظهر في الوضع الديسكتوب ولا يظهر على مقاس الجوال.
-   - `/assets/*` يجب أن تحمل `cache-control: public, max-age=31536000, immutable`.
-4. **Lighthouse** → يجب أن تكون درجات Performance / Best Practices / SEO عالية.
+1. افتح `https://YOUR-DOMAIN/edulink/` — يجب أن **لا** يُعاد توجيهك إلى جذر الدومين، ويجب أن
+   يظهر الخط المستضاف محليًا لا خط النظام.
+2. بدّل اللغة والمظهر — يعملان والاتجاه ينقلب فورًا، والرابط يبقى داخل `/edulink/…`.
+3. DevTools → Network: `/edulink/fonts/*.woff2` و`/edulink/assets/*` من نفس النطاق؛ أي نداء على
+   `/api/…` بلا البادئة = بناء بـ `VITE_BASE_PATH` خاطئ.
+4. `curl -I https://YOUR-DOMAIN/edulink/assets/<ملف>.js` — يجب أن ترى `cache-control: … immutable`
+   و`x-content-type-options: nosniff` (هذه الترويسات **لم تُقَس على العربة بعد**: نقلناها نصًّا من
+   `vercel.json`، فقيسها هناك أول مرة).
+5. ادخل بحساب حقيقي وافتح حصة: الغرفة يجب أن تُظهر **2** participant ورسالة الطرف الثاني؛ وإن
+   ظهر تنبيه «STUN العام فقط» فذلك §8-1 ولم يُخفَ عنك.
+6. `npm run lint` و`npm run check:i18n` و`npm run build` = صفر قبل أي تسليم.

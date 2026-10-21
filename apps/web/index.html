@@ -38,12 +38,20 @@
           root.lang = lang
           root.dir = lang === 'ar' ? 'rtl' : 'ltr'
 
+          /*
+            هذا السكربت مضمّن، فـ Vite لا تعيد كتابة المسارات داخله عند ضبط `base`.
+            البادئة تُشتَقّ من رابط الأيقونة (تعيد Vite كتابته مع base)، فيبقى الطلب
+            داخل مجلد التطبيق سواء على الجذر أو تحت `/edulink/`.
+          */
+          var icon = document.querySelector('link[rel=icon]')
+          var base = icon ? icon.href.replace(/[^/]*$/, '') : '/'
+
           var font = document.createElement('link')
           font.rel = 'preload'
           font.as = 'font'
           font.type = 'font/woff2'
           font.crossOrigin = 'anonymous'
-          font.href = lang === 'en' ? '/fonts/inter-latin.woff2' : '/fonts/cairo-arabic.woff2'
+          font.href = base + (lang === 'en' ? 'fonts/inter-latin.woff2' : 'fonts/cairo-arabic.woff2')
           document.head.appendChild(font)
 
           /*
@@ -55,7 +63,7 @@
             var hero = document.createElement('link')
             hero.rel = 'preload'
             hero.as = 'image'
-            hero.href = '/login-showcase.jpg'
+            hero.href = base + 'login-showcase.jpg'
             hero.setAttribute('fetchpriority', 'high')
             document.head.appendChild(hero)
           }

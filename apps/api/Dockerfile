@@ -17,8 +17,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish ./
 
-# المنفذ: Render يمرّر منفذ الخدمة في `PORT`، و`deploy/docker-compose.yml` + nginx
-# يتوقعان 80 — فالافتراضي 80. الصيغة shell لأن متغيّر بيئة يحتاج صدفة، و`exec` تجعل
+# المنفذ: `${PORT:-80}` يحترم منفذًا تمرّره منصة الاستضافة إن وُجد، وإلا 80 كما يتوقعه
+# `deploy/docker-compose.yml` + nginx. الصيغة shell لأن متغيّر بيئة يحتاج صدفة، و`exec` تجعل
 # `dotnet` هو العملية نفسها فيتلقّى SIGTERM مباشرة؛ بدونها يبقى الصدفة فوقه والإيقاف
 # القوي بعد 10 ثوانٍ يقطع الطلبات أثناءها.
 CMD ["bash", "-c", "exec dotnet EduspaceApi.dll --urls \"http://0.0.0.0:${PORT:-80}\""]

@@ -134,7 +134,7 @@ say "3/8 بناء الواجهة (Vite)"
 ( cd apps/web && npm run build >/dev/null )
 [ -f apps/web/dist/index.html ] && ok "apps/web/dist جاهزة — يخدمها nginx" || die "لم يُنتَج apps/web/dist"
 grep -qE '^VITE_API_BASE_URL=..' "$ENV_FILE" 2>/dev/null \
-  && warn "VITE_API_BASE_URL في .env لا يُقرأ في بناء الواجهة — اضبطه في environment الخاص بـ Vercel/السيرفر"
+  && warn "VITE_API_BASE_URL في $ENV_FILE لا يقرأه بناء الواجهة — متغيّرات الواجهة تُقرأ من apps/web/.env (انظر apps/web/.env.example: VITE_BASE_PATH)"
 
 # ------------------------------------------------------------------ 4) الإقلاع
 say "4/8 تشغيل الخدمات (api + nginx + coturn)"

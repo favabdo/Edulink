@@ -155,4 +155,8 @@ cd apps/api && dotnet run --launch-profile http
 
 - الواجهة: `http://localhost:5173` (وتمرّر `/api` إلى الـ API عبر بروكسي Vite).
 - الـ API: `http://localhost:5279`.
-- **Vercel:** اضبط **Root Directory = `apps/web`**.
+- **النشر على السيرفر:** البناء بـ `VITE_BASE_PATH=/edulink/` (أو `apps/web/.env`) يساوي حرفيًا
+  بادئة `location` في `deploy/nginx-edulink.conf`، والـ API عملية `dotnet` تسمع على
+  `127.0.0.1:5279` وحدها. لا تُكتب مسارات `/edulink/api` نصًّا في أي مكوّن — القاعدة في
+  `AGENTS.md` («لا مسار API أو Hub مكتوب نصًّا في الواجهة») والمنطق كله في `lib/constants.ts`.
+  الدليل: `docs/06-deployment.md`.

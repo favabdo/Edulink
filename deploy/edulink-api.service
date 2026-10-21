@@ -1,0 +1,46 @@
+# ============================================================================
+#  EduLink API — وحدة systemd لتشغيل الـ API كعملية مباشرة على السيرفر
+#  (نفس شكل تشغيل Nile Chat عندك، بدون Docker).
+#
+#  التثبيت (مسار النشر = مجلد `dotnet publish`، ويُرفع إليه `apps/api/.env`):
+#    sudo mkdir -p /opt/edulink/api
+#    sudo cp -r tmp-publish/* /opt/edulink/api/            # من dotnet publish
+#    sudo cp apps/api/.env /opt/edulink/api/.env && sudo chmod 600 /opt/edulink/api/.env
+#    sudo nano /etc/systemd/system/edulink-api.service      # هذا الملف، بعد تعديل YOUR-USER
+#    sudo systemctl daemon-reload && sudo systemctl enable --now edulink-api
+#    systemctl status edulink-api --no-pager && curl -s http://127.0.0.1:5279/api/health/db
+#
+#  ⚠️ `WorkingDirectory` ليس تجميلًا: `Configuration/DotEnv.cs` يقرأ `.env` من مجلد
+#  التشغيل أولًا ثم من مجلد الـ dll، و`appsettings*.json` يُقرأ من مجلد المحتوى نفسه.
+#  بتشغيل الـ dll من مجلد آخر تُقرأ إعدادات خطأ بصمت (منفذ/مزوّد قاعدة) فتظهر نتائج
+#  دخول لا علاقة لها بالملف الذي ملأته.
+#
+#  الـ API يسمع على 127.0.0.1 وحده — nginx هو المدخل الوحيد للجمهور (deploy/nginx-edulink.conf).
+#  لا منفذ عام = لا حاجة لتغيير Network:ForwardedHeadersLimit (يبقى 1).
+# ============================================================================
+
+[Unit]
+Description=EduLink API (ASP.NET Core + SignalR)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=YOUR-USER
+Group=YOUR-USER
+WorkingDirectory=/opt/edulink/api
+ExecStart=/usr/bin/dotnet /opt/edulink/api/EduspaceApi.dll
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+SyslogIdentifier=edulink-api
+
+# ASPNETCORE_ENVIRONMENT وASPNETCORE_URLS وConnectionStrings__SqlServer كلها من
+# /opt/edulink/api/.env (قاعدة 8 في AGENTS.md: لا أسرار في المستودع ولا في هذا الملف).
+EnvironmentFile=/opt/edulink/api/.env
+
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

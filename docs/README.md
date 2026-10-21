@@ -16,7 +16,7 @@
 | `03-design-reference.md` | قياسات ريفيرنس صفحة اللوجين والألوان والقرارات التصميمية |
 | `04-progress-log.md` | سجل التقدم خطوة بخطوة + أين توقفنا |
 | `05-project-structure.md` | بنية الكود والتقنيات المستخدمة فعليًا |
-| `06-deployment.md` | النشر على Vercel + تحسينات الأداء + التحقق بعد النشر |
+| `06-deployment.md` | النشر على سيرفر واحد (nginx + systemd + SQL Server) + الأداء + التحقق بعد النشر |
 | `07-database.md` | قواعد قاعدة البيانات + الجداول + خطة Supabase→SQL Server |
 | `08-backend.md` | الباك اند (ASP.NET Core): التقنية وتدفق الدخول والصفحة الداخلية |
 | `09-structure.md` | استراكشر المشروع (monorepo + pages/features + namespaces) |

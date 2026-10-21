@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-بوابة التحقق من نشر EduLink على وسيط عام (Render / أي nginx أمامي مع TLS).
-docs/12-render-deployment.md — لا تمرّ هذه الأداة بصمت: كل بند «لم أُتحقق» = خروج 1.
+بوابة التحقق من نشر EduLink على **أصلين**: الواجهة على أصل، والـ API على **وسيط آخر بـ TLS**
+(عربة العميل نفسها أو أي استضافة تشغّل .NET — الأداة محايدة المضيف، لا تفترض منصة بعينها).
+docs/06-deployment.md §7 — لا تمرّ هذه الأداة بصمت: كل بند «لم أُتحقق» = خروج 1.
 
-تقيس ما **يكسر النشر** ولا تراه اختبارات الجهاز المحلي:
+⚠️ **لا عمل لها على الشكل المُسلَّم حاليًا** (2026-10-21): واجهة وAPI من **نفس الأصل** تحت
+بادئة `/edulink` — هناك القياس الصحيح هو
+`node tools/hub-through-proxy-check.mjs --proxy https://YOUR-DOMAIN/edulink`.
+تُستدعى هذه الأداة لو نُقل الـ API إلى أصل آخر (وعندها يجب إدراج أصل الواجهة في `Cors__Origins__n`).
+
+تقيس ما **يكسر النشر على أصلين** ولا تراه اختبارات الجهاز المحلي:
 
   1. **المدخل العام https**: الـ URL يجب أن يكون https، والشهادة تُتحقَّق منها
      بسلسلة ثقة حقيقية (نظام التشغيل، أو ملف CA تعطيه — لا `verify_mode=NONE`).
   2. **`/api/health/db`** ⇒ 200 و`provider` = المتوقع (SqlServer) و`canConnect` = true.
-     هذا هو الجاهزية التي يقرأها Render نفسه في `healthCheckPath`.
+     هذا هو البند الذي يسقط أولًا حين تُنشر الواجهة وتُنسى القاعدة، أو العكس.
   3. **CORS بين أصلين**: نداء بـ `Origin: <أصل الواجهة>` يجب أن يرجّع
-     `Access-Control-Allow-Origin` مطابقًا. النشر على أصلين (API في حاوية والواجهة
-     static) يسقط هنا أول يوم لو تُرك `Cors__Origins__0` على قيمة localhost.
+     `Access-Control-Allow-Origin` مطابقًا. الواجهة على أصل والـ API على أصل آخر
+     تسقط هنا أول يوم لو تُرك `Cors__Origins__0` على قيمة localhost.
   4. **دخول حقيقي**: `POST /api/auth/login` ⇒ توكن، ثم `/api/auth/me` ⇒ 200 وهوية صحيحة.
   5. **`POST /hubs/meetings/negotiate`** بتوكن ⇒ 200 و`connectionToken` (المسار الذي
      يفتحه SignalR قبل أي غرفة).
@@ -19,18 +25,19 @@ docs/12-render-deployment.md — لا تمرّ هذه الأداة بصمت: ك�
      `Sec-WebSocket-Accept` محسوبًا كما في RFC 6455. بلا هذا تموت الحصة الحيّة على
      وسيط لا يمرّر الترقية — وهو ما لا يقدر أي فحص HTTP على كشفه.
 
-الحالات الخاصة بـ Render (وليست أخطاء في المنصة) موثَّقة في docs/12: لا SQL Server
-مدار لديهم، ولا coturn في حاوياتهم، وخطة المجاني تنام فتنهي الاتصالات.
+حدود هذا الشكل موثَّقة في `docs/06`: الـ API يحتاج وسيطًا يشغّل .NET (لا تُشغّله منصات
+الـ static وحدها)، و`VITE_API_BASE_URL` **وقت بناء** لا وقت تشغيل فتغييره يلزمه نشر جديد،
+و`coturn` لا يعمل على استضافة بلا مدى بوابات UDP.
 
 التشغيل:
-   EDULINK_API_URL=https://edulink-api.onrender.com \
-   EDULINK_ORIGIN=https://edulink-web.onrender.com \
+   EDULINK_API_URL=https://api.<دومينك> \
+   EDULINK_ORIGIN=https://<أصل الواجهة> \
    EDULINK_EMAIL=owner@… EDULINK_PASSWORD=… \
    [EDULINK_EXPECT_PROVIDER=SqlServer] [EDULINK_TLS_CA=ca.pem] \
-   python tools/verify-render-deploy.py green
+   python tools/verify-external-deploy.py green
 
-حالة الرفض (تُثبت أن الأداة تفشل فعلًا — ثلاث حالات، كل واحدة يجب أن تخرج 1):
-   python tools/verify-render-deploy.py red
+حالة الرفض (تُثبت أن الأداة تفشل فعلًا — أربع حالات، كل واحدة يجب أن تخرج 1):
+   python tools/verify-external-deploy.py red
 """
 import base64
 import json
@@ -164,7 +171,7 @@ def run():
         if acao != ORIGIN:
             bad.append(f"CORS: `Access-Control-Allow-Origin` = {acao!r} والقيمة المطلوبة {ORIGIN!r} "
                        "— الواجهة على أصل مختلف فلن يستطيع المتصفح قراءة أي نداء /api "
-                       "(اضبط Cors__Origins__0 في render.yaml / لوحة Render)")
+                       "(اضبط Cors__Origins__0 في apps/api/.env)")
         else:
             ok.append(f"✓ CORS: الأصل {ORIGIN} مقبول على /api")
 
@@ -199,7 +206,7 @@ def run():
     conn_token = str(neg["connectionToken"])
 
     # 6) ترقية WebSocket حقيقية (ما لا يراه أي فحص HTTP) — بنفس ما يرسله SignalR
-    path = (f"/hubs/meetings?access_token={token}&room=rendercheck"
+    path = (f"/hubs/meetings?access_token={token}&room=externalcheck"
             f"&negotiateVersion=1&connectionToken={urllib.parse.quote(conn_token, safe='')}")
     line, headers, key = ws_upgrade(path)
     if line is None:
@@ -224,7 +231,7 @@ def red_cases():
     cases = [
         ("مزوّد متوقع خاطئ", {"EDULINK_EXPECT_PROVIDER": "Postgres"}),
         ("أصل CORS خاطئ", {"EDULINK_ORIGIN": "https://definitely-not-the-web-origin.invalid"}),
-        ("حساب غير موجود", {"EDULINK_EMAIL": "no-such-user@render-check.invalid",
+        ("حساب غير موجود", {"EDULINK_EMAIL": "no-such-user@external-check.invalid",
                             "EDULINK_PASSWORD": "NoSuch@12345"}),
         ("أصل غير reachable", {"EDULINK_API_URL": "https://127.0.0.1:1"}),
     ]

@@ -25,11 +25,9 @@ deploy
 apps/web
 eduspace-web
 packages
-.vercel
 *.md
 package.json
 package-lock.json
-vercel.json
 .qoder
 .zcode
 .zcodeignore
