@@ -120,6 +120,9 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<SessionTokenService>();
 builder.Services.AddScoped<NotificationService>();
 
+// الحصص التي مرّ موعدها دون أن تُفتح: تُقفل no_show ويُشعَر بها الطالب وولي أمره والمدرس
+builder.Services.AddHostedService<MissedSessionWatcher>();
+
 builder.Services
     .AddAuthentication(TokenAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, TokenAuthenticationHandler>(

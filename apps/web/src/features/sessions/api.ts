@@ -48,6 +48,7 @@ export type ApiStudent = {
   states: number
   access: number
   imgUrl: string | null
+  phone: string | null
   createdAt: string
 }
 
@@ -60,6 +61,7 @@ export type ApiUser = {
   states: number
   access: number
   imgUrl: string | null
+  phone: string | null
   createdAt: string
 }
 
@@ -71,6 +73,7 @@ export type ApiParent = {
   email: string
   states: number
   access: number
+  phone: string | null
   children: ApiRelation[]
 }
 
@@ -144,7 +147,7 @@ export function fetchStudents(): Promise<ApiStudent[]> {
   return apiFetch<ApiStudent[]>('/api/students')
 }
 
-export function createStudent(body: { name: string; email: string; password: string }): Promise<ApiStudent> {
+export function createStudent(body: { name: string; email: string; password: string; phone?: string }): Promise<ApiStudent> {
   return apiFetch<ApiStudent>('/api/students', { method: 'POST', body })
 }
 
@@ -163,6 +166,7 @@ export function createParent(body: {
   access?: number
   studentId?: number
   relation?: number
+  phone?: string
 }): Promise<ApiParent> {
   return apiFetch<ApiParent>('/api/parents', { method: 'POST', body })
 }
@@ -259,6 +263,7 @@ export function toStudent(dto: ApiStudent): Student {
     id: dto.id,
     name: dto.name ?? dto.email.split('@')[0]!,
     email: dto.email,
+    phone: dto.phone ?? '',
     grade: '',
     subject: 'other',
     teacherId: 0,

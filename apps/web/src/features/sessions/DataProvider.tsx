@@ -70,13 +70,14 @@ type AppData = {
   markAttendanceAction: (sessionId: number, studentId: number, mark?: AttendanceMark) => Promise<void>
   markLeaveAction: (sessionId: number, studentId: number) => Promise<void>
   endSessionAction: (sessionId: number, durationMinutes: number) => Promise<void>
-  addStudent: (input: { name: string; email: string; password: string }) => Promise<Student>
+  addStudent: (input: { name: string; email: string; password: string; phone?: string }) => Promise<Student>
   addParent: (input: {
     name: string
     email: string
     password: string
     studentId?: number
     relation?: number
+    phone?: string
   }) => Promise<Parent>
   linkParent: (parentId: number, studentId: number, relation: number, isPrimary: boolean) => Promise<void>
   unlinkParent: (parentId: number, studentId: number) => Promise<void>
@@ -121,6 +122,7 @@ function studentFromDto(
     id: dto.id,
     name: dto.name ?? dto.email.split('@')[0]!,
     email: dto.email,
+    phone: dto.phone ?? '',
     grade: modeOr(mine.map((s) => s.gradeKey as GradeKey).filter((g) => GRADE_KEYS.includes(g)), '') as GradeKey | '',
     subject: modeOr(mine.map((s) => toSubjectKey(s.subject)), 'other'),
     subjectText: rawSubject || undefined,
@@ -171,6 +173,7 @@ function parentsFromDtos(dtos: ApiParent[]): Parent[] {
     id: p.id,
     name: p.name ?? p.email,
     email: p.email,
+    phone: p.phone ?? '',
     relation: Math.min(2, p.children.find((c) => c.isPrimary)?.relation ?? 2) as 0 | 1 | 2,
     studentIds: p.children.map((c) => c.studentId),
   }))
@@ -223,6 +226,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             states: 1,
             access: 1,
             imgUrl: user.imgUrl ?? null,
+            phone: user.phone ?? null,
             createdAt: user.createdAt,
           },
         ]

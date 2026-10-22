@@ -42,6 +42,9 @@ public class EduUser
 
     public string? ImgUrl { get; set; }
 
+    /// <summary>رقم الهاتف مطبَّعًا (انظر PhoneNormalizer) — يُستخدم لتنبيهات الحصص.</summary>
+    public string? Phone { get; set; }
+
     /// <summary>هل إنشاء هذا المستخدم أُرسل كإشعار للكل: 0=لا، 1=نعم.</summary>
     public short Notifications { get; set; }
 

@@ -170,16 +170,20 @@
   gap: 12px;
   justify-content: center;
   align-content: center;
+  min-width: 0;
   grid-template-columns: min(92%, calc(58dvh * 16 / 9));
 }
 
+/* minmax(0، سقف) عمدًا: السقف بالارتفاع (dvh) كما هو، لكن المسار ينكمش حين
+   تأخذ اللوحة الجانبية عرضًا — بـ vw كانت البلاطات تفيض من المسرح وترسم
+   تحت اللوحة (قيس على الإنتاج: بلاطة المدرس مقطوعة خلف المحادثة). */
 .grid[data-count='2'] {
-  grid-template-columns: repeat(2, min(46vw, calc(42dvh * 16 / 9)));
+  grid-template-columns: repeat(2, minmax(0, calc(42dvh * 16 / 9)));
 }
 
 .grid[data-count='3'],
 .grid[data-count='4'] {
-  grid-template-columns: repeat(2, min(46vw, calc(30dvh * 16 / 9)));
+  grid-template-columns: repeat(2, minmax(0, calc(30dvh * 16 / 9)));
   grid-template-rows: repeat(2, auto);
 }
 

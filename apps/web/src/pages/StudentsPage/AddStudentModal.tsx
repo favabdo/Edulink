@@ -7,10 +7,22 @@ import { ApiError } from '../../lib/apiClient'
 import type { Student } from '../../lib/data/eduStore'
 import styles from './StudentsPage.module.css'
 
-type Errors = { name: boolean; email: boolean; password: boolean }
+type Errors = { name: boolean; email: boolean; phone: boolean; phoneMissing: boolean; password: boolean }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const NO_ERRORS: Errors = { name: false, email: false, password: false }
+const NO_ERRORS: Errors = { name: false, email: false, phone: false, phoneMissing: false, password: false }
+
+/** نفس قواعد PhoneNormalizer في الخادم: أرقام مع «+» اختياري و8..15 رقمًا */
+const PHONE_PATTERN = /^\+?[\d\s().-]+$/
+
+/** الخادم يرفض الإنشاء بلا رقم — فالفرق بين «فارغ» و«غير صحيح» رسالةٌ مختلفة على الشاشة */
+function phoneState(value: string): 'ok' | 'missing' | 'invalid' {
+  const trimmed = value.trim()
+  if (!trimmed) return 'missing'
+  const digits = trimmed.replace(/\D/g, '')
+  if (!PHONE_PATTERN.test(trimmed) || digits.length < 8 || digits.length > 15) return 'invalid'
+  return 'ok'
+}
 
 /** صلات القرابة المحفوظة في Edu_Relations.relation: 0 أب · 1 أم · 2 وصي */
 const RELATIONS = [0, 1, 2] as const
@@ -36,6 +48,7 @@ function AddStudentForm({ onClose, onCreated }: { onClose: () => void; onCreated
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [parentId, setParentId] = useState<number | null>(null)
   const [relation, setRelation] = useState<(typeof RELATIONS)[number]>(0)
@@ -45,18 +58,26 @@ function AddStudentForm({ onClose, onCreated }: { onClose: () => void; onCreated
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const phoneResult = phoneState(phone)
     const nextErrors: Errors = {
       name: name.trim().length < 3,
       email: !EMAIL_PATTERN.test(email.trim()),
+      phone: phoneResult === 'invalid',
+      phoneMissing: phoneResult === 'missing',
       password: password.trim().length < 8,
     }
     setErrors(nextErrors)
-    if (nextErrors.name || nextErrors.email || nextErrors.password) return
+    if (Object.values(nextErrors).some(Boolean)) return
 
     setBusy(true)
     setServerError(null)
     try {
-      const student = await addStudent({ name: name.trim(), email: email.trim(), password: password.trim() })
+      const student = await addStudent({
+        name: name.trim(),
+        email: email.trim(),
+        password: password.trim(),
+        phone: phone.trim(),
+      })
       if (parentId) await linkParent(parentId, student.id, relation, true)
       onCreated(student)
     } catch (e) {
@@ -93,6 +114,29 @@ function AddStudentForm({ onClose, onCreated }: { onClose: () => void; onCreated
           aria-invalid={errors.email}
         />
         {errors.email && <span className={styles.error}>{t('students:form.errEmail')}</span>}
+      </Field>
+
+      <Field label={t('students:form.phone')}>
+        <input
+          className={styles.input}
+          type="tel"
+          dir="ltr"
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          placeholder={t('students:form.phonePlaceholder')}
+          autoComplete="off"
+          aria-invalid={errors.phone || errors.phoneMissing}
+          aria-required
+        />
+        {(errors.phoneMissing || errors.phone) && (
+          <span className={styles.error}>
+            {t(errors.phoneMissing ? 'students:form.errPhoneRequired' : 'students:form.errPhone')}
+          </span>
+        )}
+        <span className={styles.hint}>
+          <CircleAlert size={14} aria-hidden="true" />
+          <span>{t('students:form.phoneHint')}</span>
+        </span>
       </Field>
 
       <Field label={t('students:form.password')}>

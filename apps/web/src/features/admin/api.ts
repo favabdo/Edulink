@@ -94,6 +94,8 @@ export type StaffAccount = {
   role: number
   states: number
   access: number
+  /** رقم مطبَّع من الخادم (PhoneNormalizer) أو null إن لم يُسجَّل بعد */
+  phone: string | null
 }
 
 export function fetchStaff(): Promise<StaffAccount[]> {
@@ -106,6 +108,7 @@ export type AccountPatch = {
   states?: number
   access?: number
   password?: string
+  phone?: string
 }
 
 export function updateUser(id: number, patch: AccountPatch): Promise<unknown> {
@@ -117,6 +120,7 @@ export function createStaffUser(body: {
   email: string
   password: string
   role: number
+  phone?: string
 }): Promise<unknown> {
   return apiFetch<unknown>('/api/users', { method: 'POST', body })
 }

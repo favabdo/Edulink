@@ -13,6 +13,7 @@
 """
 
 import json
+import itertools
 import random
 import sys
 import urllib.error
@@ -74,8 +75,17 @@ else:
         sys.exit(1)
 
 
+_seq = itertools.count(1)
+
+
+def dev_phone() -> str:
+    """الخادم يرفض إنشاء أي حساب بلا رقم هاتف — الزرع المحلي يولّد رقمًا حتميًّا لكل حساب."""
+    return f"+20100000{next(_seq):04d}"
+
+
 def ensure_user(name: str, email: str, password: str, role: int) -> int | None:
-    status, data = call("POST", "/api/users", {"name": name, "email": email, "password": password, "role": role})
+    status, data = call("POST", "/api/users",
+                        {"name": name, "email": email, "password": password, "role": role, "phone": dev_phone()})
     if status in (200, 201):
         print(f"  + {name} <{email}>")
         return data["id"]
@@ -87,7 +97,8 @@ def ensure_user(name: str, email: str, password: str, role: int) -> int | None:
 
 
 def ensure_student(name: str, email: str, password: str) -> int | None:
-    status, data = call("POST", "/api/students", {"name": name, "email": email, "password": password})
+    status, data = call("POST", "/api/students",
+                        {"name": name, "email": email, "password": password, "phone": dev_phone()})
     if status in (200, 201):
         print(f"  + {name} <{email}>")
         return data["id"]
@@ -159,6 +170,7 @@ for name, email, child_idx in parents:
         "name": name,
         "email": email,
         "password": PARENT_PASSWORD,
+        "phone": dev_phone(),
         "access": 1,
         "studentId": student_ids[child_idx[0]],
         "relation": 0,

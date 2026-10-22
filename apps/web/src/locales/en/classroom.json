@@ -18,7 +18,7 @@
   "roles": {
     "teacher": "Teacher",
     "student": "Student",
-    "observer": "Supervisor"
+    "observer": "Observer"
   },
   "waiting": {
     "title": "Waiting for the teacher",

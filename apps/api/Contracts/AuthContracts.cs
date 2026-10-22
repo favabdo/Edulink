@@ -4,7 +4,7 @@ namespace EduspaceApi.Contracts;
 
 public record LoginRequest(string? Email, string? Password);
 
-public record CreateUserRequest(string? Name, string? Email, string? Password, short Role, short Access = 1, short States = 1);
+public record CreateUserRequest(string? Name, string? Email, string? Password, short Role, short Access = 1, short States = 1, string? Phone = null);
 
 public record BootstrapOwnerRequest(string? Name, string? Email, string? Password);
 
@@ -17,6 +17,8 @@ public record UserDto(
     short States,
     short Access,
     string? ImgUrl,
+    /// <summary>رقم مطبَّع من PhoneNormalizer، أو null إذا لم يُسجَّل بعد.</summary>
+    string? Phone,
     DateTimeOffset CreatedAt,
     /// <summary>staff = موظفو Edu_Users بأدوارهم الرقمية — student = Edu_Students (Role = -1).</summary>
     string Aud = "staff");
@@ -34,6 +36,7 @@ public static class UserMapping
         u.States,
         u.Access,
         u.ImgUrl,
+        u.Phone,
         u.CreatedAt);
 
     /// <summary>الطالب يُقدَّم للواجهة بنفس عقد المستخدم — الدور ثابت «طالب» والتوكن من جدول الطلاب.</summary>
@@ -46,6 +49,7 @@ public static class UserMapping
         s.States,
         s.Access,
         s.ImgUrl,
+        s.Phone,
         new DateTimeOffset(
             s.CreatedAt.Kind == DateTimeKind.Unspecified ? s.CreatedAt : DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc),
             TimeSpan.Zero),
@@ -61,6 +65,7 @@ public static class UserMapping
         p.States,
         p.Access,
         p.ImgUrl,
+        p.Phone,
         new DateTimeOffset(
             p.CreatedAt.Kind == DateTimeKind.Unspecified ? p.CreatedAt : DateTime.SpecifyKind(p.CreatedAt, DateTimeKind.Utc),
             TimeSpan.Zero),
@@ -106,6 +111,7 @@ public record StudentDto(
     short States,
     short Access,
     string? ImgUrl,
+    string? Phone,
     DateTimeOffset CreatedAt);
 
 public record CreateStudentRequest(
@@ -114,7 +120,8 @@ public record CreateStudentRequest(
     string? Password,
     short Access = 1,
     // 1 = ظاهر للطالب — الحساب الذي يُنشئه الإدارة ظاهر بطبيعته إلا لو طُلب غير ذلك صراحةً
-    short States = 1);
+    short States = 1,
+    string? Phone = null);
 
 public static class StudentMapping
 {
@@ -125,6 +132,7 @@ public static class StudentMapping
         s.States,
         s.Access,
         s.ImgUrl,
+        s.Phone,
         new DateTimeOffset(s.CreatedAt.Kind == DateTimeKind.Unspecified
             ? s.CreatedAt
             : DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc)));

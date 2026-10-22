@@ -544,6 +544,35 @@ ALTER TABLE "Edu_Sessions"
 
 
 -- ============================================================================
+--  [2026-10-22] (9) أرقام الهواتف — المدرس/المشرف والطالب وولي الأمر
+--
+--  طلب صاحب المشروع: كل حساب يكون له رقم، لأن تنبيهات الحصص سترسل عبر واتساب.
+--  العمود **اختياري** (NULL) لأن الأرقام تُدخل تدريجيًا على حسابات موجودة،
+--  والفهرس الفريد **جزئي**: يستثني NULL والنص الفاضي، فبلا عدد غير محدود من
+--  الحسابات بلا رقم، بينما الرقم الواحد لا يتكرّر في نفس الجدول إطلاقًا.
+--
+--  المخزَّن نصّ أرقام مع «+» اختياري في أوله، والتطبيع في طبقة التطبيق
+--  (`Services/PhoneNormalizer.cs`) لا في القاعدة — لأن دوال إزالة الرموز
+--  تختلف بين المحرّكين. الطول 30 يكفي أي صيغة دولية ويبقي العمود قابلًا للفهرسة.
+-- ============================================================================
+
+ALTER TABLE "Edu_Users"      ADD COLUMN IF NOT EXISTS "phone" VARCHAR(30);
+ALTER TABLE "Edu_Students"   ADD COLUMN IF NOT EXISTS "phone" VARCHAR(30);
+ALTER TABLE "Edu_Parents"    ADD COLUMN IF NOT EXISTS "phone" VARCHAR(30);
+
+COMMENT ON COLUMN "Edu_Users".phone    IS 'رقم المدرس/المشرف/المدير/الأونر بصيغة دولية مطبَّعة، أو NULL';
+COMMENT ON COLUMN "Edu_Students".phone IS 'رقم الطالب — قناة تنبيه بديلة لولي الأمر';
+COMMENT ON COLUMN "Edu_Parents".phone  IS 'رقم ولي الأمر — قناة التنبيه الأساسية (واتساب)';
+
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_edu_users_phone"
+    ON "Edu_Users" ("phone")   WHERE "phone" IS NOT NULL AND "phone" <> '';
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_edu_students_phone"
+    ON "Edu_Students" ("phone") WHERE "phone" IS NOT NULL AND "phone" <> '';
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_edu_parents_phone"
+    ON "Edu_Parents" ("phone")  WHERE "phone" IS NOT NULL AND "phone" <> '';
+
+
+-- ============================================================================
 -- >>> BEGIN SQL SERVER (T-SQL) — نسخة سيرفر الشركة
 -- ============================================================================
 --
@@ -971,6 +1000,33 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Messages_conver
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Tokens_account' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Tokens]'))
     CREATE INDEX [ix_Edu_Tokens_account] ON [dbo].[Edu_Tokens] ([kind], [accountId]);
+GO
+
+-- ============================================================================
+--  [2026-10-22] (9) أرقام الهواتف — نفس قسم PostgreSQL أعلاه
+--
+--  العمود اختياري، والفهرس الفريد **مفلتَر** (SQL Server 2008+): لا يطبّق
+--  التفريد على NULL ولا على النص الفاضي، فالحسابات بلا رقم تبقى طبيعية،
+--  والرقم نفسه لا يتكرّر. التطبيع في طبقة التطبيق لا هنا.
+-- ============================================================================
+
+IF COL_LENGTH(N'[dbo].[Edu_Users]', N'phone') IS NULL
+    ALTER TABLE [dbo].[Edu_Users] ADD [phone] NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH(N'[dbo].[Edu_Students]', N'phone') IS NULL
+    ALTER TABLE [dbo].[Edu_Students] ADD [phone] NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH(N'[dbo].[Edu_Parents]', N'phone') IS NULL
+    ALTER TABLE [dbo].[Edu_Parents] ADD [phone] NVARCHAR(30) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_users_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    CREATE UNIQUE INDEX [uq_edu_users_phone] ON [dbo].[Edu_Users] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_students_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    CREATE UNIQUE INDEX [uq_edu_students_phone] ON [dbo].[Edu_Students] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_parents_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    CREATE UNIQUE INDEX [uq_edu_parents_phone] ON [dbo].[Edu_Parents] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
 GO
 
 -- ============================================================================

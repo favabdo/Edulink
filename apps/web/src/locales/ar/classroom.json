@@ -18,7 +18,7 @@
   "roles": {
     "teacher": "مدرس",
     "student": "طالب",
-    "observer": "مشرف"
+    "observer": "مراقب"
   },
   "waiting": {
     "title": "بانتظار المدرس",

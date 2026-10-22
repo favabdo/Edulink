@@ -30,6 +30,8 @@ export type Student = {
   id: number
   name: string
   email: string
+  /** رقم الطالب/ولي الأمر بصيغة دولية مطبَّعة — '' عند عدم التسجيل */
+  phone: string
   /** الصف مشتق من حصص الطالب — '' معناه لم تُجدوَل له حصة بعد */
   grade: GradeKey | ''
   subject: SubjectKey
@@ -44,6 +46,8 @@ export type Parent = {
   id: number
   name: string
   email: string
+  /** رقم ولي الأمر المطبَّع — قناة التنبيه الأساسية، '' عند عدم التسجيل */
+  phone: string
   studentIds: number[]
   /** 0 أب · 1 أم · 2 وصي — مفتاح ترجمة في صفحة أولياء الأمر */
   relation: 0 | 1 | 2

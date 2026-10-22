@@ -92,6 +92,7 @@ if (TOKENS > 1) {
       await api('POST', '/api/users', {
         name: `مشرف اختبار ${staff.length + created}`,
         email, password: 'LoadTest@12345', role: 1,
+        phone: `+201099${String(staff.length + created).padStart(6, '0')}`,
       }, ownerToken)
       created += 1
     } catch (e) {

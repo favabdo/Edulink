@@ -40,6 +40,8 @@ type Relation = Parent['relation']
 type ParentValues = {
   name: string
   email: string
+  /** رقم ولي الأمر — قناة التنبيه الأساسية؛ فارغ = لا رقم */
+  phone: string
   relation: Relation
   studentIds: number[]
   /** إلزامية عند الإنشاء، واختيارية عند التعديل (تصفير كلمة المرور) */
@@ -164,14 +166,15 @@ function ParentFormModal({
       ? {
           name: parent.name,
           email: parent.email,
+          phone: parent.phone,
           relation: parent.relation,
           studentIds: [...parent.studentIds],
           password: '',
         }
-      : { name: '', email: '', relation: 0, studentIds: [], password: '' },
+      : { name: '', email: '', phone: '', relation: 0, studentIds: [], password: '' },
   )
   const [childQuery, setChildQuery] = useState('')
-  const [error, setError] = useState<'name' | 'email' | 'children' | 'password' | null>(null)
+  const [error, setError] = useState<'name' | 'email' | 'phone' | 'children' | 'password' | null>(null)
 
   function update<K extends keyof ParentValues>(key: K, value: ParentValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
@@ -203,10 +206,18 @@ function ParentFormModal({
     if (!parent && values.password.trim().length < 8) return setError('password')
     if (parent && values.password.trim().length > 0 && values.password.trim().length < 8) return setError('password')
     if (values.studentIds.length === 0) return setError('children')
+    // نفس قواعد PhoneNormalizer: أرقام مع «+» اختياري و8..15 رقمًا — والخادم يرفض الإنشاء بلا رقم
+    const phone = values.phone.trim()
+    if (!phone) return setError('phone')
+    const phoneDigits = phone.replace(/\D/g, '')
+    if (!/^\+?[\d\s().-]+$/.test(phone) || phoneDigits.length < 8 || phoneDigits.length > 15) {
+      return setError('phone')
+    }
     setError(null)
     onSave({
       name: values.name.trim(),
       email: values.email.trim(),
+      phone,
       relation: values.relation,
       studentIds: values.studentIds,
       password: values.password.trim(),
@@ -251,6 +262,26 @@ function ParentFormModal({
               autoComplete="off"
             />
             {error === 'name' && <span className={styles.errorText}>{t('parents:form.errors.name')}</span>}
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>{t('parents:form.phone')}</span>
+            <input
+              className={styles.input}
+              type="tel"
+              dir="ltr"
+              value={values.phone}
+              onChange={(event) => update('phone', event.target.value)}
+              autoComplete="off"
+              aria-required
+            />
+            <span className={styles.hint}>{t('parents:form.phoneHint')}</span>
+            {error === 'phone' && values.phone.trim() !== '' && (
+              <span className={styles.errorText}>{t('parents:form.errors.phone')}</span>
+            )}
+            {error === 'phone' && values.phone.trim() === '' && (
+              <span className={styles.errorText}>{t('parents:form.errors.phoneRequired')}</span>
+            )}
           </label>
 
           <div className={styles.fieldRow}>
@@ -583,6 +614,7 @@ export function ParentsPage() {
         await updateParent(id, {
           name: values.name,
           states: 1,
+          phone: values.phone,
           ...(values.password ? { password: values.password } : {}),
         })
         const toAdd = values.studentIds.filter((studentId) => !before.includes(studentId))
@@ -596,6 +628,7 @@ export function ParentsPage() {
           name: values.name,
           email: values.email,
           password: values.password,
+          phone: values.phone,
           studentId: firstChild,
           relation: values.relation,
         })

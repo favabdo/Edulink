@@ -17,8 +17,12 @@
 -- QUOTED_IDENTIFIER (بلاها يرفض المحرّك INSERT/DELETE على جداول Edu_ لأن عليها فهارس
 -- مفلترة — Msg 1934)، و-b يجعل أي خطأ يخرج بكود غير صفري بدل الصمت.
 --
--- البصمة المتوقعة بعد التشغيل (مقيسة): 11 جدولًا · صفر تريجر · 21 فحصًا · 9 مفاتيح
--- خارجية · 43 قيمة افتراضية · 8 قيود تفريد · 104 أعمدة.
+-- البصمة المتوقعة بعد التشغيل (مقيسة 2026-10-22): 11 جدولًا · صفر تريجر · 21 فحصًا ·
+-- 9 مفاتيح خارجية · 43 قيمة افتراضية · 8 قيود تفريد · 107 أعمدة — منها 3 أعمدة `phone`
+-- (المدرس/المشرف في Edu_Users، الطالب، ولي الأمر) و3 فهارس تفريد مفلترة
+-- uq_edu_users_phone / uq_edu_students_phone / uq_edu_parents_phone (الرقم لا يتكرّر،
+-- وNULL و'' مستثنيان لأن الفهارس مفلترة — لا تدخل في عداد «8 قيود تفريد» لأن نوعها
+-- فهرس لا key constraint).
 --
 -- هذا الملف لا يُنشئ حساب دخول ولا يلمس صلاحيات: يُنشئ القاعدة EdulinkDb والجداول فقط.
 -- إنشاء Login مخصّص للمنصة (أمنع من sa) خطوة منفصلة موثّقة في docs/06-deployment.md.
@@ -457,6 +461,33 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Messages_conver
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Tokens_account' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Tokens]'))
     CREATE INDEX [ix_Edu_Tokens_account] ON [dbo].[Edu_Tokens] ([kind], [accountId]);
+GO
+
+-- ============================================================================
+--  [2026-10-22] (9) أرقام الهواتف — نفس قسم PostgreSQL أعلاه
+--
+--  العمود اختياري، والفهرس الفريد **مفلتَر** (SQL Server 2008+): لا يطبّق
+--  التفريد على NULL ولا على النص الفاضي، فالحسابات بلا رقم تبقى طبيعية،
+--  والرقم نفسه لا يتكرّر. التطبيع في طبقة التطبيق لا هنا.
+-- ============================================================================
+
+IF COL_LENGTH(N'[dbo].[Edu_Users]', N'phone') IS NULL
+    ALTER TABLE [dbo].[Edu_Users] ADD [phone] NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH(N'[dbo].[Edu_Students]', N'phone') IS NULL
+    ALTER TABLE [dbo].[Edu_Students] ADD [phone] NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH(N'[dbo].[Edu_Parents]', N'phone') IS NULL
+    ALTER TABLE [dbo].[Edu_Parents] ADD [phone] NVARCHAR(30) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_users_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    CREATE UNIQUE INDEX [uq_edu_users_phone] ON [dbo].[Edu_Users] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_students_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    CREATE UNIQUE INDEX [uq_edu_students_phone] ON [dbo].[Edu_Students] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_parents_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    CREATE UNIQUE INDEX [uq_edu_parents_phone] ON [dbo].[Edu_Parents] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
 GO
 
 -- ============================================================================

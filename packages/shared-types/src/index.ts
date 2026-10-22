@@ -39,6 +39,8 @@ export type AuthUser = {
   /** 0 = غير مفعّل (لا يستطيع الدخول)، 1 = مفعّل */
   access: number
   imgUrl: string | null
+  /** رقم الهاتف المطبَّع من الخادم — اختياري لأن الحسابات القديمة بلا رقم */
+  phone?: string | null
   createdAt: string
   /** staff = موظفون (Edu_Users) — student = طالب (Edu_Students) — parent = ولي أمر (Edu_Parents). غيابها يُفسَّر staff */
   aud?: 'staff' | 'student' | 'parent'

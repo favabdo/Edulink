@@ -83,6 +83,11 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
         if (await db.Parents.AnyAsync(p => p.Email == email))
             return Conflict(new { message = "هذا البريد الإلكتروني مستخدم بالفعل." });
 
+        var phone = PhoneNormalizer.NormalizeRequired(request.Phone, out var phoneError);
+        if (phoneError is not null) return BadRequest(new { message = phoneError });
+        if (await db.Parents.AnyAsync(p => p.Phone == phone))
+            return Conflict(new { message = "رقم الهاتف مسجَّل لولي أمر آخر — الرقم لا يتكرّر في المنصة." });
+
         var parent = new EduParent
         {
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name!.Trim(),
@@ -90,6 +95,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             Password = passwords.Hash(request.Password),
             Access = (short)(request.Access == 1 ? 1 : 0),
             States = 1,
+            Phone = phone,
         };
         db.Parents.Add(parent);
         await db.SaveChangesAsync();
@@ -234,6 +240,16 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             parent.Password = passwords.Hash(request.Password);
         }
 
+        // null = لا تغيير، "" = مسح الرقم، غير ذلك = تطبيع ثم فحص تكرار
+        if (request.Phone is not null)
+        {
+            var phone = PhoneNormalizer.Normalize(request.Phone, out var phoneError);
+            if (phoneError is not null) return BadRequest(new { message = phoneError });
+            if (phone is not null && await db.Parents.AnyAsync(p => p.Phone == phone && p.Id != id))
+                return Conflict(new { message = "رقم الهاتف مسجَّل لولي أمر آخر — الرقم لا يتكرّر في المنصة." });
+            parent.Phone = phone;
+        }
+
         await db.SaveChangesAsync();
         var relations = await db.Relations.AsNoTracking().ToListAsync();
         return Ok(ToDto(parent, relations));
@@ -245,6 +261,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
         p.Email,
         p.States,
         p.Access,
+        p.Phone,
         relations.Where(r => r.ParentId == p.Id)
             .Select(r => new RelationDto(r.Id, r.StudentId, r.Relation, r.IsPrimary == 1))
             .ToList());
@@ -256,11 +273,12 @@ public record CreateParentRequest(
     string? Password,
     short Access = 1,
     long? StudentId = null,
-    short? Relation = null);
+    short? Relation = null,
+    string? Phone = null);
 
 public record LinkStudentRequest(long StudentId, short Relation, bool IsPrimary = false);
 
-public record UpdateParentRequest(string? Name, short? States, short? Access, string? Password);
+public record UpdateParentRequest(string? Name, short? States, short? Access, string? Password, string? Phone);
 
 public record RelationDto(long Id, long StudentId, short Relation, bool IsPrimary);
 
@@ -270,4 +288,6 @@ public record ParentDto(
     string Email,
     short States,
     short Access,
+    /// <summary>رقم ولي الأمر — القناة الأساسية لتنبيهات الحصص، أو null إن لم يُسجَّل.</summary>
+    string? Phone,
     IReadOnlyList<RelationDto> Children);

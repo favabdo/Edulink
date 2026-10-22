@@ -20,6 +20,13 @@ OWNER_PASSWORD = os.environ.get("EDULINK_OWNER_PASSWORD", "Owner@12345")
 lines = []
 failures = []
 SUF = str(random.randint(1000, 9999))
+# رقم الهاتف مطلوب عند الإنشاء وعليه فهرس فريد على مستوى المنصة — فيُبنى جديدًا لكل تشغيل
+_PH = random.randint(100000, 999999)
+
+
+def phone(slot: int) -> str:
+    return f"+201{_PH}{slot}"
+
 SUBJECT = "اللغة العربية — النحو والصرف وتحليل النصوص الأدبية للصف الثالث الثانوي"
 
 
@@ -70,14 +77,17 @@ IP_OWN, IP_TEACH, IP_STU, IP_PAR = "203.0.113.90", "203.0.113.91", "203.0.113.92
 _, owner = call("POST", "/api/auth/login", {"email": OWNER_EMAIL, "password": OWNER_PASSWORD}, xff=IP_OWN)
 tok = need_token("دخول المالك", owner)
 step("POST /api/users (مدرس جديد)", "POST", "/api/users",
-     {"name": "أ. سارة فؤاد", "email": f"sara" + SUF + "@edulink.test", "password": "Sara@12345", "role": 0}, tok, IP_OWN, 201)
+     {"name": "أ. سارة فؤاد", "email": f"sara" + SUF + "@edulink.test", "password": "Sara@12345", "role": 0,
+      "phone": phone(1)}, tok, IP_OWN, 201)
 _, teacher = call("POST", "/api/auth/login", {"email": f"sara" + SUF + "@edulink.test", "password": "Sara@12345"}, xff=IP_TEACH)
 ttok = need_token("دخول المدرس", teacher)
 _, student = step("POST /api/students", "POST", "/api/students",
-     {"name": "نور حمدي", "email": f"nour" + SUF + "@edulink.test", "password": "Nour@12345", "states": 1, "access": 1}, tok, IP_OWN, 201)
+     {"name": "نور حمدي", "email": f"nour" + SUF + "@edulink.test", "password": "Nour@12345", "states": 1, "access": 1,
+      "phone": phone(2)}, tok, IP_OWN, 201)
 sid = student["id"]
 step("POST /api/parents (ربط ابن)", "POST", "/api/parents",
      {"name": "والد نور", "email": f"dadanour" + SUF + "@edulink.test", "password": "Dad@12345",
+      "phone": phone(3),
       "studentId": sid, "relation": 0, "access": 1}, tok, IP_OWN, 201)
 _, stu = call("POST", "/api/auth/students/login", {"email": f"nour" + SUF + "@edulink.test", "password": "Nour@12345"}, xff=IP_STU)
 stok = need_token("دخول الطالب", stu)

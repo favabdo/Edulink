@@ -54,6 +54,10 @@ public class EduStudent : EduTimestamped
     public short States { get; set; }
     public short Access { get; set; }
     public string? ImgUrl { get; set; }
+
+    /// <summary>رقم الطالب مطبَّعًا — قناة تنبيه بديلة لولي الأمر.</summary>
+    public string? Phone { get; set; }
+
     public short Notifications { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

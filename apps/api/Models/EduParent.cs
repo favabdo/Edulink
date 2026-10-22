@@ -11,6 +11,10 @@ public class EduParent : EduTimestamped
     public short States { get; set; }
     public short Access { get; set; }
     public string? ImgUrl { get; set; }
+
+    /// <summary>رقم ولي الأمر مطبَّعًا — القناة الأساسية لتنبيهات الحصص (واتساب).</summary>
+    public string? Phone { get; set; }
+
     public short Notifications { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

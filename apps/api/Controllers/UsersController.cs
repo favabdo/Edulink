@@ -66,6 +66,11 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
         if (await db.Users.AnyAsync(u => u.Email == email))
             return Conflict(new { message = "هذا البريد الإلكتروني مستخدم بالفعل." });
 
+        var phone = PhoneNormalizer.NormalizeRequired(request.Phone, out var phoneError);
+        if (phoneError is not null) return BadRequest(new { message = phoneError });
+        if (await db.Users.AnyAsync(u => u.Phone == phone))
+            return Conflict(new { message = "رقم الهاتف مسجَّل لحساب آخر — الرقم لا يتكرّر في المنصة." });
+
         var user = new EduUser
         {
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name!.Trim(),
@@ -74,6 +79,7 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
             Role = request.Role,
             States = (short)(request.States == 1 ? 1 : 0),
             Access = (short)(request.Access == 1 ? 1 : 0),
+            Phone = phone,
         };
 
         db.Users.Add(user);
@@ -121,6 +127,16 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
             user.Password = passwords.Hash(request.Password);
         }
 
+        // null = لا تغيير، "" = مسح الرقم، غير ذلك = تطبيع ثم فحص تكرار
+        if (request.Phone is not null)
+        {
+            var phone = PhoneNormalizer.Normalize(request.Phone, out var phoneError);
+            if (phoneError is not null) return BadRequest(new { message = phoneError });
+            if (phone is not null && await db.Users.AnyAsync(u => u.Phone == phone && u.Id != id))
+                return Conflict(new { message = "رقم الهاتف مسجَّل لحساب آخر — الرقم لا يتكرّر في المنصة." });
+            user.Phone = phone;
+        }
+
         await db.SaveChangesAsync();
         return Ok(user.ToDto());
     }
@@ -131,4 +147,5 @@ public record UpdateUserRequest(
     short? Role,
     short? States,
     short? Access,
-    string? Password);
+    string? Password,
+    string? Phone);

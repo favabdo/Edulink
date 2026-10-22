@@ -105,6 +105,11 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
         if (await db.Students.AnyAsync(s => s.Email == email))
             return Conflict(new { message = "هذا البريد الإلكتروني مستخدم بالفعل." });
 
+        var phone = PhoneNormalizer.NormalizeRequired(request.Phone, out var phoneError);
+        if (phoneError is not null) return BadRequest(new { message = phoneError });
+        if (await db.Students.AnyAsync(s => s.Phone == phone))
+            return Conflict(new { message = "رقم الهاتف مسجَّل لطالب آخر — الرقم لا يتكرّر في المنصة." });
+
         var student = new EduStudent
         {
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name!.Trim(),
@@ -112,6 +117,7 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
             Password = passwords.Hash(password),
             States = (short)(request.States == 1 ? 1 : 0),
             Access = (short)(request.Access == 1 ? 1 : 0),
+            Phone = phone,
         };
 
         db.Students.Add(student);
@@ -140,9 +146,19 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
             student.Password = passwords.Hash(request.Password);
         }
 
+        // null = لا تغيير، "" = مسح الرقم، غير ذلك = تطبيع ثم فحص تكرار
+        if (request.Phone is not null)
+        {
+            var phone = PhoneNormalizer.Normalize(request.Phone, out var phoneError);
+            if (phoneError is not null) return BadRequest(new { message = phoneError });
+            if (phone is not null && await db.Students.AnyAsync(s => s.Phone == phone && s.Id != id))
+                return Conflict(new { message = "رقم الهاتف مسجَّل لطالب آخر — الرقم لا يتكرّر في المنصة." });
+            student.Phone = phone;
+        }
+
         await db.SaveChangesAsync();
         return Ok(student.ToDto());
     }
 }
 
-public record UpdateStudentRequest(string? Name, short? States, short? Access, string? Password);
+public record UpdateStudentRequest(string? Name, short? States, short? Access, string? Password, string? Phone);

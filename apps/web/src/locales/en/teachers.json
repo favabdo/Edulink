@@ -56,6 +56,8 @@
     "editDesc": "Name, role and status, plus an optional password reset.",
     "name": "Full name",
     "email": "Email",
+    "phone": "Phone number",
+    "phoneHint": "Required — WhatsApp session reminders need it. International format, e.g. +201012345678",
     "emailLocked": "The email address cannot be changed once the account exists.",
     "password": "Initial password",
     "passwordHint": "At least 8 characters — changed by the user on first sign-in",
@@ -72,6 +74,8 @@
     "errors": {
       "name": "Name is required.",
       "email": "Enter a valid email address.",
+      "phone": "Enter a valid phone number: 8 to 15 digits, optionally starting with +.",
+      "phoneRequired": "A phone number is required — without one this account never gets session reminders.",
       "password": "Password must be at least 8 characters."
     }
   },

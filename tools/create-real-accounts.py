@@ -120,10 +120,14 @@ def main():
 
     # 2) حسابات المؤسسة: مدير (2) + مشرفة (1) + مدرسان (0)
     staff = [
-        {"name": "مدير عام تيلا", "email": "manager" + DOMAIN, "password": STAFF_PASSWORD, "role": 2},
-        {"name": "مشرفة قسم تيلا", "email": "supervisor" + DOMAIN, "password": STAFF_PASSWORD, "role": 1},
-        {"name": "أ. محمود سيد", "email": "teacher1" + DOMAIN, "password": TEACHER_PASSWORD, "role": 0},
-        {"name": "أ. رانيا شكري", "email": "teacher2" + DOMAIN, "password": TEACHER_PASSWORD, "role": 0},
+        {"name": "مدير عام تيلا", "email": "manager" + DOMAIN, "password": STAFF_PASSWORD, "role": 2,
+         "phone": "+201001110001"},
+        {"name": "مشرفة قسم تيلا", "email": "supervisor" + DOMAIN, "password": STAFF_PASSWORD, "role": 1,
+         "phone": "+201001110002"},
+        {"name": "أ. محمود سيد", "email": "teacher1" + DOMAIN, "password": TEACHER_PASSWORD, "role": 0,
+         "phone": "+201001110003"},
+        {"name": "أ. رانيا شكري", "email": "teacher2" + DOMAIN, "password": TEACHER_PASSWORD, "role": 0,
+         "phone": "+201001110004"},
     ]
     ids = {}
     for s in staff:
@@ -138,8 +142,10 @@ def main():
 
     # 3) طالبان لهما كلمة سر خاصة بهما (aud=student)
     students = [
-        {"name": "ياسمين عبد الله", "email": "student1" + DOMAIN, "password": STUDENT_PASSWORD},
-        {"name": "عمر سيد", "email": "student2" + DOMAIN, "password": STUDENT_PASSWORD},
+        {"name": "ياسمين عبد الله", "email": "student1" + DOMAIN, "password": STUDENT_PASSWORD,
+         "phone": "+201001110005"},
+        {"name": "عمر سيد", "email": "student2" + DOMAIN, "password": STUDENT_PASSWORD,
+         "phone": "+201001110006"},
     ]
     for st in students:
         parsed, code = post("/api/students", st, token, expect=[200, 201, 409])
@@ -150,7 +156,8 @@ def main():
     # 4) ولي أمر + ربطه بابنه
     parsed, code = post(
         "/api/parents",
-        {"name": "عبد الله منصور", "email": "parent1" + DOMAIN, "password": PARENT_PASSWORD, "relation": 0, "isPrimary": True},
+        {"name": "عبد الله منصور", "email": "parent1" + DOMAIN, "password": PARENT_PASSWORD,
+         "phone": "+201001110007", "relation": 0, "isPrimary": True},
         token,
         expect=[200, 201, 409],
     )

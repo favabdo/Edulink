@@ -42,6 +42,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         user.Property(x => x.States).HasColumnName("states");
         user.Property(x => x.Access).HasColumnName("access");
         user.Property(x => x.ImgUrl).HasColumnName("img_url");
+        user.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(30);
         user.Property(x => x.Notifications).HasColumnName("notifications");
         user.Property(x => x.CreatedAt).HasColumnName("created_at");
         user.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -94,6 +95,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         student.Property(x => x.States).HasColumnName("states");
         student.Property(x => x.Access).HasColumnName("access");
         student.Property(x => x.ImgUrl).HasColumnName("img_url");
+        student.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(30);
         student.Property(x => x.Notifications).HasColumnName("notifications");
         student.Property(x => x.CreatedAt).HasColumnName("created_at");
         student.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -135,6 +137,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         parent.Property(x => x.States).HasColumnName("states");
         parent.Property(x => x.Access).HasColumnName("access");
         parent.Property(x => x.ImgUrl).HasColumnName("img_url");
+        parent.Property(x => x.Phone).HasColumnName("phone").HasMaxLength(30);
         parent.Property(x => x.Notifications).HasColumnName("notifications");
         parent.Property(x => x.CreatedAt).HasColumnName("created_at");
         parent.Property(x => x.UpdatedAt).HasColumnName("updated_at");

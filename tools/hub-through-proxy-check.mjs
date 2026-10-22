@@ -52,9 +52,9 @@ const tok = login.token
 results.push(`✓ دخول عبر الوسيط — توكن ${String(tok).slice(0, 8)}…`)
 
 const teacher = await ensure('/api/users',
-  { name: 'أ. سارة الوسيط', email: 'sara.edge@edulink.test', password: 'Sara@12345', role: 0 }, tok)
+  { name: 'أ. سارة الوسيط', email: 'sara.edge@edulink.test', password: 'Sara@12345', role: 0, phone: '+201001119001' }, tok)
 const student = await ensure('/api/students',
-  { name: 'نور الوسيط', email: 'nour.edge@edulink.test', password: 'Nour@12345', states: 1, access: 1 }, tok)
+  { name: 'نور الوسيط', email: 'nour.edge@edulink.test', password: 'Nour@12345', states: 1, access: 1, phone: '+201001119002' }, tok)
 const session = await api('POST', '/api/sessions', {
   subject: 'اللغة العربية — النحو والصرف عبر الوسيط',
   teacherId: teacher.id, studentId: student.id, gradeKey: 'g12', durationMin: 60,

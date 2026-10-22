@@ -73,6 +73,13 @@ def call(method, path, body=None, token=None, xff=None):
 
 
 SUF = str(random.randint(1000, 9999))
+# الإنشاء بلا رقم هاتف يُرفض الآن، وعلى الرقم فهرس فريد — فلكل تشغيل أرقام جديدة
+_PH = random.randint(100000, 999999)
+
+
+def phone(slot: int) -> str:
+    return f"+201{_PH}{slot}"
+
 IP_OWN = f"203.0.113.{random.randint(10, 90)}"
 
 _, _, owner = call("POST", "/api/auth/login", {"email": OWNER_EMAIL, "password": OWNER_PASSWORD}, xff=IP_OWN)
@@ -103,9 +110,10 @@ log("")
 # ── الطبقة 2: قفل لكل حساب (نفس الحساب من عناوين كثيرة) ──
 victim = f"lockvictim{SUF}@edulink.test"
 bystander = f"lockbystander{SUF}@edulink.test"
-for addr in (victim, bystander):
+for addr, slot in ((victim, 1), (bystander, 2)):
     call("POST", "/api/users",
-         {"name": f"حساب اختبار {addr[4:9]}", "email": addr, "password": "Probe@12345", "role": 0}, tok, IP_OWN)
+         {"name": f"حساب اختبار {addr[4:9]}", "email": addr, "password": "Probe@12345", "role": 0,
+          "phone": phone(slot)}, tok, IP_OWN)
 
 codes = []
 retry_after = None
@@ -131,7 +139,8 @@ log("")
 # ── الطبقة 3: حدّ لكل جلسة على بقية /api ──
 student = f"sess{SUF}@edulink.test"
 call("POST", "/api/students", {"name": "طالب اختبار الجلسة", "email": student,
-                               "password": "Nour@12345", "states": 1, "access": 1}, tok, IP_OWN)
+                               "password": "Nour@12345", "states": 1, "access": 1,
+                               "phone": phone(3)}, tok, IP_OWN)
 _, _, stu = call("POST", "/api/auth/students/login", {"email": student, "password": "Nour@12345"}, xff="203.0.113.210")
 stok = need_token("دخول الطالب", stu)
 

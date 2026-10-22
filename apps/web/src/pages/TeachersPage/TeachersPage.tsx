@@ -63,16 +63,18 @@ type StaffMember = {
   id: number
   name: string
   email: string
+  phone: string
   subject: SubjectKey
   subjectText?: string
   role: StaffRole
   active: boolean
 }
 
-/** قيم النموذج القابلة للحفظ فعليًا في القاعدة (لا عمود هاتف/مادة في Edu_Users) */
+/** قيم النموذج القابلة للحفظ فعليًا في القاعدة — phone مطلوب: الخادم يرفض الإنشاء بلا رقم */
 type StaffValues = {
   name: string
   email: string
+  phone: string
   role: StaffRole
   active: boolean
   /** تُترك فارغة عند التعديل لتحافظ الحسابات على كلمات مرورها */
@@ -239,10 +241,11 @@ function StaffFormModal({
 
   const [draft, setDraft] = useState<StaffValues>(() =>
     member
-      ? { name: member.name, email: member.email, role: member.role, active: member.active, password: '' }
+      ? { name: member.name, email: member.email, phone: member.phone, role: member.role, active: member.active, password: '' }
       : {
           name: '',
           email: '',
+          phone: '',
           role: allowedRoles[allowedRoles.length - 1] ?? 'teacher',
           active: true,
           password: '',
@@ -263,10 +266,16 @@ function StaffFormModal({
     if (!member && !/^\S+@\S+\.\S+$/.test(draft.email.trim())) return setError('email')
     if (!member && draft.password.length < 8) return setError('password')
     if (member && draft.password.length > 0 && draft.password.length < 8) return setError('password')
+    const phone = draft.phone.trim()
+    // نفس قواعد PhoneNormalizer: أرقام مع «+» اختياري، 8..15 رقمًا — والخادم يرفض الإنشاء بلا رقم
+    if (!phone) return setError('phone')
+    const digits = phone.replace(/\D/g, '')
+    if (!/^\+?[\d\s().-]+$/.test(phone) || digits.length < 8 || digits.length > 15) return setError('phone')
     setError(null)
     onSave({
       name: draft.name.trim(),
       email: draft.email.trim(),
+      phone,
       role: draft.role,
       active: draft.active,
       password: draft.password,
@@ -328,6 +337,26 @@ function StaffFormModal({
               <span className={styles.hint}>{t('teachers:form.emailLocked')}</span>
             ) : (
               error === 'email' && <span className={styles.errorText}>{t('teachers:form.errors.email')}</span>
+            )}
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>{t('teachers:form.phone')}</span>
+            <input
+              className={styles.input}
+              type="tel"
+              dir="ltr"
+              value={draft.phone}
+              onChange={(event) => update('phone', event.target.value)}
+              autoComplete="off"
+              aria-required
+            />
+            <span className={styles.hint}>{t('teachers:form.phoneHint')}</span>
+            {error === 'phone' && draft.phone.trim() !== '' && (
+              <span className={styles.errorText}>{t('teachers:form.errors.phone')}</span>
+            )}
+            {error === 'phone' && draft.phone.trim() === '' && (
+              <span className={styles.errorText}>{t('teachers:form.errors.phoneRequired')}</span>
             )}
           </label>
 
@@ -656,6 +685,7 @@ export function TeachersPage() {
           id: account.id,
           name: account.name || account.email,
           email: account.email,
+          phone: account.phone ?? '',
           subject: derived?.subject ?? 'other',
           subjectText: derived?.subjectText,
           role: ROLE_NAME[account.role] ?? 'teacher',
@@ -730,6 +760,7 @@ export function TeachersPage() {
           role: ROLE_NUMBER[values.role],
           states: 1,
           access: values.active ? 1 : 0,
+          phone: values.phone,
           ...(values.password ? { password: values.password } : {}),
         })
         setFlash(t('teachers:flash.updated', { name: values.name }))
@@ -739,6 +770,7 @@ export function TeachersPage() {
           email: values.email,
           password: values.password,
           role: ROLE_NUMBER[values.role],
+          phone: values.phone,
         })
         setFlash(t('teachers:flash.created', { name: values.name }))
       }
@@ -927,6 +959,11 @@ export function TeachersPage() {
                             <span className={styles.staffText}>
                               <span className={styles.staffName}>{member.name}</span>
                               <span className={styles.staffRole}>{t(`teachers:roles.${member.role}`)}</span>
+                              {member.phone && (
+                                <span className={styles.staffRole} dir="ltr">
+                                  {member.phone}
+                                </span>
+                              )}
                             </span>
                           </span>
                         </td>
