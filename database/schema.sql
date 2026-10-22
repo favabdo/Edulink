@@ -626,15 +626,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS "uq_edu_parents_phone"
 --        sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -Q "CREATE DATABASE [Edulink]"
 --
 --      تحقّق بعد التشغيل — هذه أرقام قياس فعلي على نسخة نظيفة:
---        tables=11 · triggers=0 · checks=21 · foreign_keys=9 · unique_keys=8 · defaults=43
+--        edu tables=11 · edu triggers=0 · edu checks=21 · edu foreign_keys=9 ·
+--        edu unique_keys=8 · edu defaults=43 · edu columns=107
 --        (عدد sys.indexes أعلى لأنه يعدّ فهارس المفاتيح الفريدة أيضًا)
---        sqlcmd -S "SERVER,1433" -d Edulink -Q "SET NOCOUNT ON;
---          SELECT tables=(SELECT COUNT(*) FROM sys.tables),
---                 triggers=(SELECT COUNT(*) FROM sys.triggers),
---                 checks=(SELECT COUNT(*) FROM sys.check_constraints),
---                 fks=(SELECT COUNT(*) FROM sys.foreign_keys),
---                 unique_keys=(SELECT COUNT(*) FROM sys.key_constraints WHERE type='UQ'),
---                 defaults=(SELECT COUNT(*) FROM sys.default_constraints);"
+--
+--        ⚠️ **لا تَعُدّ المجموعة كلها — عُدّ جداول `Edu_` فقط.** مقيس 2026-10-22 على
+--        قاعدة العميل: الاستعلام بلا فلتر أعطى **637 جدولًا و8657 عمودًا** لأن
+--        المنصة تسكن قاعدة فيها تطبيق آخر، فأي مقارنة بالرقم المرجعي تصبح بلا معنى
+--        (وقد تُقرأ خضراء أو حمراء بغير سبب). الفلتر `LIKE 'Edu[_]%'` هو البصمة.
+--        sqlcmd -S "SERVER,1433" -d <القاعدة> -I -Q "SET NOCOUNT ON;
+--          SELECT edu_tables  =(SELECT COUNT(*) FROM sys.tables   WHERE name LIKE 'Edu[_]%'),
+--                 edu_columns =(SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_triggers=(SELECT COUNT(*) FROM sys.triggers tr JOIN sys.tables t ON t.object_id=tr.parent_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_checks  =(SELECT COUNT(*) FROM sys.check_constraints  cc JOIN sys.tables t ON t.object_id=cc.parent_object_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_fks     =(SELECT COUNT(*) FROM sys.foreign_keys       fk JOIN sys.tables t ON t.object_id=fk.parent_object_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_unique  =(SELECT COUNT(*) FROM sys.key_constraints    kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE t.name LIKE 'Edu[_]%' AND kc.type='UQ'),
+--                 edu_defaults=(SELECT COUNT(*) FROM sys.default_constraints d JOIN sys.tables t ON t.object_id=d.parent_object_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_phone   =(SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id WHERE t.name LIKE 'Edu[_]%' AND c.name='phone'),
+--                 other_tables=(SELECT COUNT(*) FROM sys.tables WHERE name NOT LIKE 'Edu[_]%')"
 --
 --  (3) لا حاجة لـ Row Level Security هنا: هذا السيرفر خلف الـ API فقط، بخلاف
 --      Supabase الذي ينشر الجداول عبر Data API (لذلك تُفعَّل RLS في قسم PostgreSQL).

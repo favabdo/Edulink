@@ -49,8 +49,14 @@ grep -rl "nilechat" /etc/nginx/ 2>/dev/null | head   # ملف إعداد Nile Ch
 
 ```bash
 sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -f 65001 -I -b -i RUN-ON-SQL-SERVER.sql
-sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d EdulinkDb -I -Q "SET NOCOUNT ON; SELECT tables=(SELECT COUNT(*) FROM sys.tables), triggers=(SELECT COUNT(*) FROM sys.triggers), checks=(SELECT COUNT(*) FROM sys.check_constraints), fks=(SELECT COUNT(*) FROM sys.foreign_keys)"
+sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d EdulinkDb -I -Q "SET NOCOUNT ON; SELECT edu_tables=(SELECT COUNT(*) FROM sys.tables WHERE name LIKE 'Edu[_]%'), edu_columns=(SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id WHERE t.name LIKE 'Edu[_]%'), edu_triggers=(SELECT COUNT(*) FROM sys.triggers tr JOIN sys.tables t ON t.object_id=tr.parent_id WHERE t.name LIKE 'Edu[_]%'), edu_checks=(SELECT COUNT(*) FROM sys.check_constraints cc JOIN sys.tables t ON t.object_id=cc.parent_object_id WHERE t.name LIKE 'Edu[_]%'), edu_fks=(SELECT COUNT(*) FROM sys.foreign_keys fk JOIN sys.tables t ON t.object_id=fk.parent_object_id WHERE t.name LIKE 'Edu[_]%'), edu_phone=(SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id WHERE t.name LIKE 'Edu[_]%' AND c.name='phone')"
 ```
+
+- **الفلتر `LIKE 'Edu[_]%'` ليس تحسينًا — مقيس 2026-10-22 على قاعدة العميل:** العدّ بلا فلتر
+  أعطى **637 جدولًا و8657 عمودًا** لأن المنصة تسكن قاعدة فيها تطبيق آخر، فالبصمة بلا حصر
+  لا تُقارن بشيء وقد تُقرأ خضراء أو حمراء بغير سبب. (الملف نفسه آمن في القاعدة المشتركة
+  لأنه محميّ بالأسماء: `IF OBJECT_ID(N'[dbo].[Edu_…]')` و`IF COL_LENGTH(...)`، فلا يلمس
+  جدولًا غير `Edu_` ولا يُنشئ ما هو موجود.)
 
 - **الأعلام ليست ترفًا:** `-f 65001` تقرأ الملف UTF-8 (بلاها تُحفَظ العربية `?` حرفيًا)، و`-I`
   تفعّل `QUOTED_IDENTIFIER` (بلاها يرفض المحرّك أي `INSERT/DELETE` يدوي على جداول `Edu_` لأن

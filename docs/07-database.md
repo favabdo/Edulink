@@ -64,7 +64,10 @@ sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d Edulink -f 65001 -I -b -i /tmp/ed
 
 في `appsettings.json` (أو متغيّرات البيئة): `Database:Provider = "SqlServer"` و`ConnectionStrings:SqlServer = "Server=...;Database=Edulink;User ID=...;Password=...;TrustServerCertificate=True"` و**`Database:EnsureCreated = false`** — فالـ API يقرأ ويكتب في المخطط الذي أنشأه الاسكريبت، ولا يُنشئ جداول إطلاقًا. سلسلة الاتصال تُقبل كما هي (أو بصيغة `Host:port` بفاصلة) ويعبرها `ConnectionStringNormalizer.ForSqlServer` الذي يضيف `ConnectTimeout` و`MultipleActiveResultSets` فقط — **لا يضيف `TrustServerCertificate` تلقائيًا** (يُكتب صراحة عند شهادة ذاتية التوقيع فقط).
 
-### بصمة التحقق (قياس فعلي على قاعدة نظيفة)
+### بصمة التحقق (قياس فعلي على قاعدة نظيفة — **كل رقم هنا على جداول `Edu_` وحدها**)
+
+> على قاعدة مشتركة لا يُعدّ شيء بـ `sys.tables` وحده: مقيس 2026-10-22 أن العدّ بلا فلتر
+> `LIKE 'Edu[_]%'` أعطى **637 جدولًا و8657 عمودًا** لأن تطبيقًا آخر يسكن نفس القاعدة.
 
 | المقياس | القيمة |
 |---|---|
