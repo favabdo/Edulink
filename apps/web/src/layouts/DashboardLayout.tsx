@@ -12,6 +12,7 @@ import {
   Check,
   ChevronDown,
   GraduationCap,
+  FolderOpen,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -39,6 +40,7 @@ const NAV_ICONS: Record<NavItemDef['icon'], typeof LayoutDashboard> = {
   teachers: GraduationCap,
   parents: UserCheck,
   reports: BarChart3,
+  files: FolderOpen,
   messages: MessageSquare,
   settings: Settings,
 }

@@ -54,7 +54,7 @@ public class AuthController(
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { message = "الحساب غير مفعّل. تواصل مع إدارة مؤسستك." });
 
-        var staffToken = await tokens.IssueAsync(Models.AccountKinds.Staff, user.Id);
+        var staffToken = await tokens.IssueAsync(Models.AccountKinds.Staff, user.Id, user.TenantId);
         user.Token = staffToken;
         await db.SaveChangesAsync();
 
@@ -94,7 +94,7 @@ public class AuthController(
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { message = "الحساب غير مفعّل. تواصل مع إدارة مؤسستك." });
 
-        var studentToken = await tokens.IssueAsync(Models.AccountKinds.Student, student.Id);
+        var studentToken = await tokens.IssueAsync(Models.AccountKinds.Student, student.Id, student.TenantId);
         student.Token = studentToken;
         await db.SaveChangesAsync();
 
@@ -134,7 +134,7 @@ public class AuthController(
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { message = "الحساب غير مفعّل. تواصل مع إدارة مؤسستك." });
 
-        var parentToken = await tokens.IssueAsync(Models.AccountKinds.Parent, parent.Id);
+        var parentToken = await tokens.IssueAsync(Models.AccountKinds.Parent, parent.Id, parent.TenantId);
         parent.Token = parentToken;
         await db.SaveChangesAsync();
 

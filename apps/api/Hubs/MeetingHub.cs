@@ -47,9 +47,9 @@ public class MeetingHub : Hub
 
         bool ok = session.Kind switch
         {
-            AccountKinds.Staff => await _db.Users.AnyAsync(u => u.Id == session.AccountId && u.Access == 1),
-            AccountKinds.Student => await _db.Students.AnyAsync(s => s.Id == session.AccountId && s.Access == 1),
-            AccountKinds.Parent => await _db.Parents.AnyAsync(p => p.Id == session.AccountId && p.Access == 1),
+            AccountKinds.Staff => await _db.Users.AnyAsync(u => u.Id == session.AccountId && u.TenantId == session.TenantId && u.Access == 1),
+            AccountKinds.Student => await _db.Students.AnyAsync(s => s.Id == session.AccountId && s.TenantId == session.TenantId && s.Access == 1),
+            AccountKinds.Parent => await _db.Parents.AnyAsync(p => p.Id == session.AccountId && p.TenantId == session.TenantId && p.Access == 1),
             _ => false,
         };
         if (!ok)
@@ -60,6 +60,7 @@ public class MeetingHub : Hub
 
         Context.Items["userId"] = session.AccountId;
         Context.Items["aud"] = session.Kind;
+        Context.Items["tenantId"] = session.TenantId;
         Context.Items["userName"] = session.Kind switch
         {
             AccountKinds.Staff => (await _db.Users.AsNoTracking().FirstAsync(u => u.Id == session.AccountId)) is { } u ? u.Name ?? u.Email : "موظف",
@@ -88,8 +89,9 @@ public class MeetingHub : Hub
         var aud = (string?)Context.Items["aud"] ?? "staff";
         var isStudent = aud == "student";
         var staffRole = Convert.ToInt16(Context.Items["staffRole"] ?? (short)-1);
+        var tenantId = Convert.ToInt64(Context.Items["tenantId"] ?? 1L);
 
-        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Code == room)
+        var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Code == room && s.TenantId == tenantId)
             ?? throw new HubException("الحصة غير موجودة.");
         if (session.Status is SessionStatuses.Cancelled or SessionStatuses.Completed)
             throw new HubException("هذه الحصة منتهية أو ملغاة.");
@@ -103,7 +105,7 @@ public class MeetingHub : Hub
         }
         else if (aud == "parent")
         {
-            var linked = await _db.Relations.AnyAsync(r => r.ParentId == userId && r.StudentId == session.StudentId);
+            var linked = await _db.Relations.AnyAsync(r => r.ParentId == userId && r.StudentId == session.StudentId && r.TenantId == session.TenantId);
             if (!linked) throw new HubException("هذه الحصة ليست لأبنائك.");
             resolvedRole = "observer";
         }
@@ -171,6 +173,7 @@ public class MeetingHub : Hub
                     StudentId = userId,
                     Mark = mark,
                     JoinedAt = now,
+                    TenantId = session.TenantId,
                 });
             }
             else

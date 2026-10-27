@@ -29,6 +29,9 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
     private short CurrentRole =>
         short.TryParse(User.FindFirstValue(ClaimTypes.Role), out var role) ? role : (short)-1;
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     private IActionResult? DenyNotStaff() =>
         Aud == AccountKinds.Staff ? null : StatusCode(403, new { message = "هذه الإدارة للموظفين فقط." });
 
@@ -50,7 +53,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
     {
         if (DenyNotStaff() is { } deny) return deny;
 
-        var query = db.Parents.AsNoTracking().AsQueryable();
+        var query = db.Parents.AsNoTracking().Where(p => p.TenantId == CurrentTenantId);
         if (child.HasValue)
             query = query.Where(p => db.Relations.Any(r => r.ParentId == p.Id && r.StudentId == child.Value));
 
@@ -59,7 +62,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             query = query.Where(p => db.Relations.Any(r => r.ParentId == p.Id && OwnStudentIds().Contains(r.StudentId)));
 
         var parents = await query.OrderBy(p => p.Id).ToListAsync();
-        var relationsQuery = db.Relations.AsNoTracking();
+        var relationsQuery = db.Relations.AsNoTracking().Where(r => r.TenantId == CurrentTenantId);
         if (IsTeacher)
             relationsQuery = relationsQuery.Where(r => OwnStudentIds().Contains(r.StudentId));
         var relations = await relationsQuery.ToListAsync();
@@ -85,8 +88,8 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
 
         var phone = PhoneNormalizer.NormalizeRequired(request.Phone, out var phoneError);
         if (phoneError is not null) return BadRequest(new { message = phoneError });
-        if (await db.Parents.AnyAsync(p => p.Phone == phone))
-            return Conflict(new { message = "رقم الهاتف مسجَّل لولي أمر آخر — الرقم لا يتكرّر في المنصة." });
+        if (await db.Parents.AnyAsync(p => p.Phone == phone && p.TenantId == CurrentTenantId))
+            return Conflict(new { message = "رقم الهاتف مسجَّل لولي أمر آخر داخل الشركة — الرقم لا يتكرّر في المؤسسة." });
 
         var parent = new EduParent
         {
@@ -96,6 +99,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             Access = (short)(request.Access == 1 ? 1 : 0),
             States = 1,
             Phone = phone,
+            TenantId = CurrentTenantId,
         };
         db.Parents.Add(parent);
         await db.SaveChangesAsync();
@@ -106,7 +110,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             if (linked is not null) return linked;
         }
 
-        var relations = await db.Relations.AsNoTracking().ToListAsync();
+        var relations = await db.Relations.AsNoTracking().Where(r => r.TenantId == parent.TenantId).ToListAsync();
         return Created($"/api/parents/{parent.Id}", ToDto(parent, relations));
     }
 
@@ -124,10 +128,10 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
 
     private async Task<IActionResult?> LinkInternalAsync(long parentId, long studentId, short relation, bool isPrimary)
     {
-        var parent = await db.Parents.FirstOrDefaultAsync(p => p.Id == parentId);
+        var parent = await db.Parents.FirstOrDefaultAsync(p => p.Id == parentId && p.TenantId == CurrentTenantId);
         if (parent is null) return NotFound(new { message = "ولي الأمر غير موجود." });
-        if (!await db.Students.AnyAsync(s => s.Id == studentId))
-            return BadRequest(new { message = "الطالب غير موجود." });
+        if (!await db.Students.AnyAsync(s => s.Id == studentId && s.TenantId == parent.TenantId))
+            return BadRequest(new { message = "الطالب غير موجود في هذه الشركة." });
         if (relation is < 0 or > 3) return BadRequest(new { message = "نوع العلاقة غير صالح." });
         if (await db.Relations.AnyAsync(r => r.ParentId == parentId && r.StudentId == studentId))
             return Conflict(new { message = "الربط موجود بالفعل." });
@@ -135,7 +139,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
         if (isPrimary)
         {
             var others = await db.Relations
-                .Where(r => r.StudentId == studentId && r.IsPrimary == 1)
+                .Where(r => r.StudentId == studentId && r.IsPrimary == 1 && r.TenantId == parent.TenantId)
                 .ToListAsync();
             foreach (var other in others) other.IsPrimary = 0;
         }
@@ -147,6 +151,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             Relation = relation,
             IsPrimary = (short)(isPrimary ? 1 : 0),
             States = 1,
+            TenantId = parent.TenantId,
         });
         await db.SaveChangesAsync();
         return null;
@@ -160,7 +165,8 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
         if (CurrentRole < UserRoles.Supervisor)
             return StatusCode(403, new { message = "المشرف فأعلى فقط يفك الربط." });
 
-        var rel = await db.Relations.FirstOrDefaultAsync(r => r.ParentId == id && r.StudentId == studentId);
+        var rel = await db.Relations
+            .FirstOrDefaultAsync(r => r.ParentId == id && r.StudentId == studentId && r.TenantId == CurrentTenantId);
         if (rel is null) return NotFound(new { message = "لا يوجد هذا الربط." });
 
         db.Relations.Remove(rel);
@@ -185,7 +191,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             if (Aud != AccountKinds.Parent)
                 return BadRequest(new { message = "mine=1 لولي الأمر فقط." });
             studentIds = await db.Relations
-                .Where(r => r.ParentId == CurrentUserId && r.States == 1)
+                .Where(r => r.ParentId == CurrentUserId && r.States == 1 && r.TenantId == CurrentTenantId)
                 .Select(r => r.StudentId).ToListAsync();
         }
         else if (student.HasValue && isStaff)
@@ -196,6 +202,9 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
                 return StatusCode(StatusCodes.Status403Forbidden,
                     new { message = "المدرس يقرأ بيانات طالب من حصصه فقط." });
             }
+            var target = await db.Students.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == student.Value && s.TenantId == CurrentTenantId);
+            if (target is null) return NotFound(new { message = "الطالب غير موجود في هذه الشركة." });
             studentIds = [student.Value];
         }
         else
@@ -227,7 +236,7 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
         if (CurrentRole < UserRoles.Supervisor)
             return StatusCode(403, new { message = "المشرف فأعلى فقط يعدّل أولياء الأمور." });
 
-        var parent = await db.Parents.FindAsync(id);
+        var parent = await db.Parents.FirstOrDefaultAsync(p => p.Id == id && p.TenantId == CurrentTenantId);
         if (parent is null) return NotFound(new { message = "ولي الأمر غير موجود." });
 
         if (!string.IsNullOrWhiteSpace(request.Name)) parent.Name = request.Name!.Trim();
@@ -245,13 +254,13 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
         {
             var phone = PhoneNormalizer.Normalize(request.Phone, out var phoneError);
             if (phoneError is not null) return BadRequest(new { message = phoneError });
-            if (phone is not null && await db.Parents.AnyAsync(p => p.Phone == phone && p.Id != id))
-                return Conflict(new { message = "رقم الهاتف مسجَّل لولي أمر آخر — الرقم لا يتكرّر في المنصة." });
+            if (phone is not null && await db.Parents.AnyAsync(p => p.Phone == phone && p.TenantId == parent.TenantId && p.Id != id))
+                return Conflict(new { message = "رقم الهاتف مسجَّل لولي أمر آخر داخل الشركة — الرقم لا يتكرّر في المؤسسة." });
             parent.Phone = phone;
         }
 
         await db.SaveChangesAsync();
-        var relations = await db.Relations.AsNoTracking().ToListAsync();
+        var relations = await db.Relations.AsNoTracking().Where(r => r.TenantId == parent.TenantId).ToListAsync();
         return Ok(ToDto(parent, relations));
     }
 

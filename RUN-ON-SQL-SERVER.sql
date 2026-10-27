@@ -20,8 +20,8 @@
 -- QUOTED_IDENTIFIER (بلاها يرفض المحرّك INSERT/DELETE على جداول Edu_ لأن عليها فهارس
 -- مفلترة — Msg 1934)، و-b يجعل أي خطأ يخرج بكود غير صفري بدل الصمت.
 --
--- البصمة المتوقعة بعد التشغيل (مقيسة 2026-10-22): 11 جدولًا · صفر تريجر · 21 فحصًا ·
--- 9 مفاتيح خارجية · 43 قيمة افتراضية · 8 قيود تفريد · 107 أعمدة — منها 3 أعمدة `phone`
+-- البصمة المتوقعة بعد التشغيل (مقيسة 2026-10-28): 12 جدولًا · صفر تريجر · 22 فحصًا ·
+-- 10 مفاتيح خارجية · 45 قيمة افتراضية · 8 قيود تفريد · 115 عمودًا — منها 3 أعمدة `phone`
 -- (المدرس/المشرف في Edu_Users، الطالب، ولي الأمر) و3 فهارس تفريد مفلترة
 -- uq_edu_users_phone / uq_edu_students_phone / uq_edu_parents_phone (الرقم لا يتكرّر،
 -- وNULL و'' مستثنيان لأن الفهارس مفلترة — لا تدخل في عداد «8 قيود تفريد» لأن نوعها
@@ -103,10 +103,10 @@ GO
 --          SELECT edu_tables  =(SELECT COUNT(*) FROM sys.tables   WHERE name LIKE 'Edu[_]%'),
 --                 edu_columns =(SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id WHERE t.name LIKE 'Edu[_]%'),
 --                 edu_triggers=(SELECT COUNT(*) FROM sys.triggers tr JOIN sys.tables t ON t.object_id=tr.parent_id WHERE t.name LIKE 'Edu[_]%'),
---                 edu_checks  =(SELECT COUNT(*) FROM sys.check_constraints  cc JOIN sys.tables t ON t.object_id=cc.parent_id WHERE t.name LIKE 'Edu[_]%'),
---                 edu_fks     =(SELECT COUNT(*) FROM sys.foreign_keys       fk JOIN sys.tables t ON t.object_id=fk.parent_id WHERE t.name LIKE 'Edu[_]%'),
---                 edu_unique  =(SELECT COUNT(*) FROM sys.key_constraints    kc JOIN sys.tables t ON t.object_id=kc.parent_id WHERE t.name LIKE 'Edu[_]%' AND kc.type='UQ'),
---                 edu_defaults=(SELECT COUNT(*) FROM sys.default_constraints d JOIN sys.tables t ON t.object_id=d.parent_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_checks  =(SELECT COUNT(*) FROM sys.check_constraints  cc JOIN sys.tables t ON t.object_id=cc.parent_object_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_fks     =(SELECT COUNT(*) FROM sys.foreign_keys       fk JOIN sys.tables t ON t.object_id=fk.parent_object_id WHERE t.name LIKE 'Edu[_]%'),
+--                 edu_unique  =(SELECT COUNT(*) FROM sys.key_constraints    kc JOIN sys.tables t ON t.object_id=kc.parent_object_id WHERE t.name LIKE 'Edu[_]%' AND kc.type='UQ'),
+--                 edu_defaults=(SELECT COUNT(*) FROM sys.default_constraints d JOIN sys.tables t ON t.object_id=d.parent_object_id WHERE t.name LIKE 'Edu[_]%'),
 --                 edu_phone   =(SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.object_id=c.object_id WHERE t.name LIKE 'Edu[_]%' AND c.name='phone'),
 --                 other_tables=(SELECT COUNT(*) FROM sys.tables WHERE name NOT LIKE 'Edu[_]%')"
 --
@@ -500,6 +500,145 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_students_phone'
 GO
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_parents_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
     CREATE UNIQUE INDEX [uq_edu_parents_phone] ON [dbo].[Edu_Parents] ([phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+GO
+
+-- ============================================================================
+--  [2026-10-27] (10) مكتبة ملفات الحساب — نفس قسم PostgreSQL أعلاه
+--
+--  الميتاداتا فقط هنا؛ المحتوى على قرص السيرفر بمسار يولّده الخادم.
+-- ============================================================================
+
+IF OBJECT_ID(N'[dbo].[Edu_Files]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_Files] (
+        [id]          BIGINT        IDENTITY(1,1) NOT NULL,
+        [ownerId]     BIGINT        NOT NULL,
+        [fileName]    NVARCHAR(255) NOT NULL,
+        [mime]        NVARCHAR(120) NOT NULL,
+        [sizeBytes]   BIGINT        NOT NULL,
+        [storagePath] NVARCHAR(400) NOT NULL,
+        [created_at]  DATETIME2     NOT NULL CONSTRAINT [df_edu_files_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at]  DATETIME2     NOT NULL CONSTRAINT [df_edu_files_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_files]        PRIMARY KEY ([id]),
+        CONSTRAINT [fk_edu_files_owner]  FOREIGN KEY ([ownerId]) REFERENCES [dbo].[Edu_Users] ([id]),
+        CONSTRAINT [ck_edu_files_size]   CHECK ([sizeBytes] > 0)
+    );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Files_owner' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Files]'))
+    CREATE INDEX [ix_Edu_Files_owner] ON [dbo].[Edu_Files] ([ownerId], [created_at] DESC);
+GO
+
+-- ============================================================================
+--  [2026-10-28] (11) الشركات المتعددة — نفس قسم PostgreSQL أعلاه
+--
+--  Edu_Tenants + tenantId NOT NULL DEFAULT 1 على كل جدول Edu_ (إنكار البيانات
+--  لا اشتقاقها)، والهاتف فريد داخل الشركة والبريد فريد عالميًا (لتوحيد الدخول).
+--  القيمة الافتراضية 1 تملأ الصفوف القديمة عند الترقية تلقائيًا، والخادم يضبط
+--  tenantId صراحةً عند كل إنشاء.
+-- ============================================================================
+
+IF OBJECT_ID(N'[dbo].[Edu_Tenants]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_Tenants] (
+        [id]         BIGINT        IDENTITY(1,1) NOT NULL,
+        [name]       NVARCHAR(120) NOT NULL,
+        [states]     SMALLINT      NOT NULL CONSTRAINT [df_edu_tenants_states] DEFAULT 1,
+        [created_at] DATETIME2     NOT NULL CONSTRAINT [df_edu_tenants_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at] DATETIME2     NOT NULL CONSTRAINT [df_edu_tenants_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_tenants] PRIMARY KEY ([id])
+    );
+END
+GO
+
+-- الشركة 1 لازم تكون موجودة قبل مفاتيح tenantId (الصفوف القديمة تتملّى 1 افتراضيًا)
+SET IDENTITY_INSERT [dbo].[Edu_Tenants] ON;
+IF NOT EXISTS (SELECT 1 FROM [dbo].[Edu_Tenants] WHERE [id] = 1)
+    INSERT INTO [dbo].[Edu_Tenants] ([id], [name]) VALUES (1, N'المؤسسة الأولى');
+SET IDENTITY_INSERT [dbo].[Edu_Tenants] OFF;
+GO
+
+IF COL_LENGTH(N'[dbo].[Edu_Users]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Users] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_users_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Students]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Students] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_students_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Parents]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Parents] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_parents_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Relations]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Relations] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_relations_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Sessions]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Sessions] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_sessions_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_SessionAttendance]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_SessionAttendance] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_sa_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Notifications]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Notifications] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_notifications_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Conversations]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Conversations] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_conversations_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_ConversationMembers]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_ConversationMembers] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_conv_members_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Messages]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Messages] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_messages_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Tokens]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Tokens] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_tokens_tenant] DEFAULT 1;
+IF COL_LENGTH(N'[dbo].[Edu_Files]', N'tenantId') IS NULL
+    ALTER TABLE [dbo].[Edu_Files] ADD [tenantId] BIGINT NOT NULL CONSTRAINT [df_edu_files_tenant] DEFAULT 1;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_users_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    ALTER TABLE [dbo].[Edu_Users] ADD CONSTRAINT [fk_edu_users_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_students_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    ALTER TABLE [dbo].[Edu_Students] ADD CONSTRAINT [fk_edu_students_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_parents_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    ALTER TABLE [dbo].[Edu_Parents] ADD CONSTRAINT [fk_edu_parents_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_relations_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Relations]'))
+    ALTER TABLE [dbo].[Edu_Relations] ADD CONSTRAINT [fk_edu_relations_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_sessions_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    ALTER TABLE [dbo].[Edu_Sessions] ADD CONSTRAINT [fk_edu_sessions_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_sa_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_SessionAttendance]'))
+    ALTER TABLE [dbo].[Edu_SessionAttendance] ADD CONSTRAINT [fk_edu_sa_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_notifications_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Notifications]'))
+    ALTER TABLE [dbo].[Edu_Notifications] ADD CONSTRAINT [fk_edu_notifications_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_conversations_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Conversations]'))
+    ALTER TABLE [dbo].[Edu_Conversations] ADD CONSTRAINT [fk_edu_conversations_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_conv_members_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_ConversationMembers]'))
+    ALTER TABLE [dbo].[Edu_ConversationMembers] ADD CONSTRAINT [fk_edu_conv_members_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_messages_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Messages]'))
+    ALTER TABLE [dbo].[Edu_Messages] ADD CONSTRAINT [fk_edu_messages_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_tokens_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Tokens]'))
+    ALTER TABLE [dbo].[Edu_Tokens] ADD CONSTRAINT [fk_edu_tokens_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE [name] = N'fk_edu_files_tenant' AND [parent_object_id] = OBJECT_ID(N'[dbo].[Edu_Files]'))
+    ALTER TABLE [dbo].[Edu_Files] ADD CONSTRAINT [fk_edu_files_tenant] FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Users_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    CREATE INDEX [ix_Edu_Users_tenant] ON [dbo].[Edu_Users] ([tenantId], [role]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Students_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    CREATE INDEX [ix_Edu_Students_tenant] ON [dbo].[Edu_Students] ([tenantId]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Parents_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    CREATE INDEX [ix_Edu_Parents_tenant] ON [dbo].[Edu_Parents] ([tenantId]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Sessions_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Sessions]'))
+    CREATE INDEX [ix_Edu_Sessions_tenant] ON [dbo].[Edu_Sessions] ([tenantId], [status]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Notifications_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Notifications]'))
+    CREATE INDEX [ix_Edu_Notifications_tenant] ON [dbo].[Edu_Notifications] ([tenantId]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_Files_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Files]'))
+    CREATE INDEX [ix_Edu_Files_tenant] ON [dbo].[Edu_Files] ([tenantId]);
+GO
+
+-- تفريد الهاتف داخل الشركة: الفهارس العالمية القديمة تُحذف وتُستبدل
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_users_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    DROP INDEX [uq_edu_users_phone] ON [dbo].[Edu_Users];
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_students_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    DROP INDEX [uq_edu_students_phone] ON [dbo].[Edu_Students];
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_parents_phone' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    DROP INDEX [uq_edu_parents_phone] ON [dbo].[Edu_Parents];
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_users_phone_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Users]'))
+    CREATE UNIQUE INDEX [uq_edu_users_phone_tenant] ON [dbo].[Edu_Users] ([tenantId], [phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_students_phone_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Students]'))
+    CREATE UNIQUE INDEX [uq_edu_students_phone_tenant] ON [dbo].[Edu_Students] ([tenantId], [phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_parents_phone_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
+    CREATE UNIQUE INDEX [uq_edu_parents_phone_tenant] ON [dbo].[Edu_Parents] ([tenantId], [phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
 GO
 
 -- ============================================================================

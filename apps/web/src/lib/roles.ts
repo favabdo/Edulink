@@ -42,7 +42,7 @@ export function roleLabelKey(role: EffectiveRole): string {
 
 export type NavItemDef = {
   to: RoutePath
-  icon: 'home' | 'schedule' | 'sessions' | 'students' | 'teachers' | 'parents' | 'reports' | 'messages' | 'settings'
+  icon: 'home' | 'schedule' | 'sessions' | 'students' | 'teachers' | 'parents' | 'reports' | 'files' | 'messages' | 'settings'
   labelKey: string
   end?: boolean
 }
@@ -61,6 +61,7 @@ export const NAV_BY_ROLE: Record<EffectiveRole, NavItemDef[]> = {
     item(ROUTES.schedule, 'schedule', 'dashboard:nav.schedule'),
     item(ROUTES.sessions, 'sessions', 'dashboard:nav.sessions'),
     item(ROUTES.students, 'students', 'dashboard:nav.students'),
+    item(ROUTES.files, 'files', 'dashboard:nav.files'),
     item(ROUTES.reports, 'reports', 'dashboard:nav.reports'),
     item(ROUTES.messages, 'messages', 'dashboard:nav.messages'),
     item(ROUTES.settings, 'settings', 'dashboard:nav.settings'),
@@ -72,6 +73,7 @@ export const NAV_BY_ROLE: Record<EffectiveRole, NavItemDef[]> = {
     item(ROUTES.students, 'students', 'dashboard:nav.students'),
     item(ROUTES.teachers, 'teachers', 'dashboard:nav.teachers'),
     item(ROUTES.parents, 'parents', 'dashboard:nav.parents'),
+    item(ROUTES.files, 'files', 'dashboard:nav.files'),
     item(ROUTES.reports, 'reports', 'dashboard:nav.reports'),
     item(ROUTES.messages, 'messages', 'dashboard:nav.messages'),
     item(ROUTES.settings, 'settings', 'dashboard:nav.settings'),
@@ -83,6 +85,7 @@ export const NAV_BY_ROLE: Record<EffectiveRole, NavItemDef[]> = {
     item(ROUTES.students, 'students', 'dashboard:nav.students'),
     item(ROUTES.teachers, 'teachers', 'dashboard:nav.teachers'),
     item(ROUTES.parents, 'parents', 'dashboard:nav.parents'),
+    item(ROUTES.files, 'files', 'dashboard:nav.files'),
     item(ROUTES.reports, 'reports', 'dashboard:nav.reports'),
     item(ROUTES.messages, 'messages', 'dashboard:nav.messages'),
     item(ROUTES.settings, 'settings', 'dashboard:nav.settings'),
@@ -94,6 +97,7 @@ export const NAV_BY_ROLE: Record<EffectiveRole, NavItemDef[]> = {
     item(ROUTES.students, 'students', 'dashboard:nav.students'),
     item(ROUTES.teachers, 'teachers', 'dashboard:nav.teachers'),
     item(ROUTES.parents, 'parents', 'dashboard:nav.parents'),
+    item(ROUTES.files, 'files', 'dashboard:nav.files'),
     item(ROUTES.reports, 'reports', 'dashboard:nav.reports'),
     item(ROUTES.messages, 'messages', 'dashboard:nav.messages'),
     item(ROUTES.settings, 'settings', 'dashboard:nav.settings'),

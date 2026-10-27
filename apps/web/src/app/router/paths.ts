@@ -12,6 +12,7 @@ export const ROUTES = {
   teachers: '/teachers',
   parents: '/parents',
   reports: '/reports',
+  files: '/files',
   messages: '/messages',
   settings: '/settings',
 } as const

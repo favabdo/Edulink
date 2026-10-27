@@ -1,0 +1,25 @@
+{
+  "title": "My Files",
+  "subtitle": "Your library on the platform — upload what you need instead of losing it on your device, and share it inside a session later.",
+  "upload": {
+    "button": "Upload file",
+    "busy": "Uploading…",
+    "hint": "Any file type — up to 50 MB per file"
+  },
+  "table": {
+    "name": "File",
+    "size": "Size",
+    "date": "Uploaded",
+    "actions": "Actions"
+  },
+  "download": "Download",
+  "downloading": "Downloading…",
+  "delete": "Delete",
+  "empty": {
+    "title": "No files yet",
+    "sub": "Upload your first file using the button above."
+  },
+  "loading": "Loading files…",
+  "error": "The operation failed — {{message}}",
+  "count": "{{count}} files"
+}

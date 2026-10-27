@@ -10,6 +10,7 @@ import arStudents from '../locales/ar/students.json'
 import arTeachers from '../locales/ar/teachers.json'
 import arParents from '../locales/ar/parents.json'
 import arReports from '../locales/ar/reports.json'
+import arFiles from '../locales/ar/files.json'
 import arMessages from '../locales/ar/messages.json'
 import arSettings from '../locales/ar/settings.json'
 import enCommon from '../locales/en/common.json'
@@ -22,6 +23,7 @@ import enStudents from '../locales/en/students.json'
 import enTeachers from '../locales/en/teachers.json'
 import enParents from '../locales/en/parents.json'
 import enReports from '../locales/en/reports.json'
+import enFiles from '../locales/en/files.json'
 import enMessages from '../locales/en/messages.json'
 import enSettings from '../locales/en/settings.json'
 
@@ -59,6 +61,7 @@ export const namespaces = [
   'teachers',
   'parents',
   'reports',
+  'files',
   'messages',
   'settings',
 ] as const
@@ -100,6 +103,7 @@ void i18n.use(initReactI18next).init({
       teachers: arTeachers,
       parents: arParents,
       reports: arReports,
+      files: arFiles,
       messages: arMessages,
       settings: arSettings,
     },
@@ -114,6 +118,7 @@ void i18n.use(initReactI18next).init({
       teachers: enTeachers,
       parents: enParents,
       reports: enReports,
+      files: enFiles,
       messages: enMessages,
       settings: enSettings,
     },

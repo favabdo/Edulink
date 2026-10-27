@@ -23,9 +23,21 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
     public DbSet<EduConversationMember> ConversationMembers => Set<EduConversationMember>();
     public DbSet<EduMessage> Messages => Set<EduMessage>();
     public DbSet<EduToken> Tokens => Set<EduToken>();
+    public DbSet<EduFile> Files => Set<EduFile>();
+    public DbSet<EduTenant> Tenants => Set<EduTenant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // ---- Edu_Tenants (الشركات — قسم 11: كل صف في كل جدول يحمل tenantId) ----
+        var tenant = modelBuilder.Entity<EduTenant>();
+        tenant.ToTable("Edu_Tenants");
+        tenant.HasKey(x => x.Id);
+        tenant.Property(x => x.Id).HasColumnName("id");
+        tenant.Property(x => x.Name).HasColumnName("name").HasMaxLength(120);
+        tenant.Property(x => x.States).HasColumnName("states");
+        tenant.Property(x => x.CreatedAt).HasColumnName("created_at");
+        tenant.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
         var user = modelBuilder.Entity<EduUser>();
 
         // اسم الجدول بحالة أحرف محفوظة كما في db/schema.sql
@@ -33,6 +45,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         user.HasKey(x => x.Id);
 
         user.Property(x => x.Id).HasColumnName("id");
+        user.Property(x => x.TenantId).HasColumnName("tenantId");
         user.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
         user.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
         user.Property(x => x.Password).HasColumnName("password").HasMaxLength(255).IsRequired();
@@ -47,15 +60,19 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         user.Property(x => x.CreatedAt).HasColumnName("created_at");
         user.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
+        // البريد فريد عالميًا (توحيد الدخول بين الشركات) والهاتف فريد داخل الشركة
         user.HasIndex(x => x.Email).IsUnique().HasDatabaseName("uq_edu_users_email");
+        user.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique().HasDatabaseName("uq_edu_users_phone_tenant");
         user.HasIndex(x => x.Token).HasDatabaseName("ix_Edu_Users_token");
         user.HasIndex(x => x.Role).HasDatabaseName("ix_Edu_Users_role");
+        user.HasIndex(x => x.TenantId).HasDatabaseName("ix_Edu_Users_tenant");
 
         // ---- Edu_Sessions ----
         var session = modelBuilder.Entity<EduSession>();
         session.ToTable("Edu_Sessions");
         session.HasKey(x => x.Id);
         session.Property(x => x.Id).HasColumnName("id");
+        session.Property(x => x.TenantId).HasColumnName("tenantId");
         session.Property(x => x.Code).HasColumnName("code").HasMaxLength(16);
         session.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(120);
         session.Property(x => x.TeacherId).HasColumnName("teacherId");
@@ -74,6 +91,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         session.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
         session.HasIndex(x => x.Code).HasDatabaseName("uq_edu_sessions_code");
+        session.HasIndex(x => x.TenantId).HasDatabaseName("ix_Edu_Sessions_tenant");
         session.HasIndex(x => x.TeacherId).HasDatabaseName("ix_Edu_Sessions_teacher");
         session.HasIndex(x => x.StudentId).HasDatabaseName("ix_Edu_Sessions_student");
         session.HasIndex(x => x.Status).HasDatabaseName("ix_Edu_Sessions_status");
@@ -88,6 +106,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         student.ToTable("Edu_Students");
         student.HasKey(x => x.Id);
         student.Property(x => x.Id).HasColumnName("id");
+        student.Property(x => x.TenantId).HasColumnName("tenantId");
         student.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
         student.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
         student.Property(x => x.Password).HasColumnName("password").HasMaxLength(255).IsRequired();
@@ -100,11 +119,15 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         student.Property(x => x.CreatedAt).HasColumnName("created_at");
         student.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
+        student.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique().HasDatabaseName("uq_edu_students_phone_tenant");
+        student.HasIndex(x => x.TenantId).HasDatabaseName("ix_Edu_Students_tenant");
+
         // ---- Edu_SessionAttendance ----
         var sa = modelBuilder.Entity<EduSessionAttendance>();
         sa.ToTable("Edu_SessionAttendance");
         sa.HasKey(x => x.Id);
         sa.Property(x => x.Id).HasColumnName("id");
+        sa.Property(x => x.TenantId).HasColumnName("tenantId");
         sa.Property(x => x.SessionId).HasColumnName("sessionId");
         sa.Property(x => x.StudentId).HasColumnName("studentId");
         sa.Property(x => x.Mark).HasColumnName("mark").HasMaxLength(16);
@@ -130,6 +153,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         parent.ToTable("Edu_Parents");
         parent.HasKey(x => x.Id);
         parent.Property(x => x.Id).HasColumnName("id");
+        parent.Property(x => x.TenantId).HasColumnName("tenantId");
         parent.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
         parent.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
         parent.Property(x => x.Password).HasColumnName("password").HasMaxLength(255).IsRequired();
@@ -142,11 +166,15 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         parent.Property(x => x.CreatedAt).HasColumnName("created_at");
         parent.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
+        parent.HasIndex(x => new { x.TenantId, x.Phone }).IsUnique().HasDatabaseName("uq_edu_parents_phone_tenant");
+        parent.HasIndex(x => x.TenantId).HasDatabaseName("ix_Edu_Parents_tenant");
+
         // ---- Edu_Relations ----
         var rel = modelBuilder.Entity<EduRelation>();
         rel.ToTable("Edu_Relations");
         rel.HasKey(x => x.Id);
         rel.Property(x => x.Id).HasColumnName("id");
+        rel.Property(x => x.TenantId).HasColumnName("tenantId");
         rel.Property(x => x.StudentId).HasColumnName("student_id");
         rel.Property(x => x.ParentId).HasColumnName("parent_id");
         rel.Property(x => x.Relation).HasColumnName("relation");
@@ -166,6 +194,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         notif.ToTable("Edu_Notifications");
         notif.HasKey(x => x.Id);
         notif.Property(x => x.Id).HasColumnName("id");
+        notif.Property(x => x.TenantId).HasColumnName("tenantId");
         notif.Property(x => x.RecipientKind).HasColumnName("recipientKind").HasMaxLength(16);
         notif.Property(x => x.RecipientId).HasColumnName("recipientId");
         notif.Property(x => x.Kind).HasColumnName("kind").HasMaxLength(32);
@@ -182,6 +211,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         conv.ToTable("Edu_Conversations");
         conv.HasKey(x => x.Id);
         conv.Property(x => x.Id).HasColumnName("id");
+        conv.Property(x => x.TenantId).HasColumnName("tenantId");
         conv.Property(x => x.Subject).HasColumnName("subject").HasMaxLength(255);
         conv.Property(x => x.CreatedAt).HasColumnName("created_at");
         conv.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -191,6 +221,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         cm.ToTable("Edu_ConversationMembers");
         cm.HasKey(x => x.Id);
         cm.Property(x => x.Id).HasColumnName("id");
+        cm.Property(x => x.TenantId).HasColumnName("tenantId");
         cm.Property(x => x.ConversationId).HasColumnName("conversationId");
         cm.Property(x => x.MemberKind).HasColumnName("memberKind").HasMaxLength(16);
         cm.Property(x => x.MemberId).HasColumnName("memberId");
@@ -207,6 +238,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         msg.ToTable("Edu_Messages");
         msg.HasKey(x => x.Id);
         msg.Property(x => x.Id).HasColumnName("id");
+        msg.Property(x => x.TenantId).HasColumnName("tenantId");
         msg.Property(x => x.ConversationId).HasColumnName("conversationId");
         msg.Property(x => x.SenderKind).HasColumnName("senderKind").HasMaxLength(16);
         msg.Property(x => x.SenderId).HasColumnName("senderId");
@@ -221,6 +253,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         tok.ToTable("Edu_Tokens");
         tok.HasKey(x => x.Id);
         tok.Property(x => x.Id).HasColumnName("id");
+        tok.Property(x => x.TenantId).HasColumnName("tenantId");
         tok.Property(x => x.Kind).HasColumnName("kind").HasMaxLength(16);
         tok.Property(x => x.AccountId).HasColumnName("accountId");
         tok.Property(x => x.Value).HasColumnName("token").HasMaxLength(200);
@@ -228,6 +261,23 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
         tok.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         tok.HasIndex(x => x.Value).IsUnique().HasDatabaseName("uq_edu_tokens_token");
         tok.HasIndex(x => new { x.Kind, x.AccountId }).HasDatabaseName("ix_Edu_Tokens_account");
+
+        // ---- Edu_Files ----
+        var file = modelBuilder.Entity<EduFile>();
+        file.ToTable("Edu_Files");
+        file.HasKey(x => x.Id);
+        file.Property(x => x.Id).HasColumnName("id");
+        file.Property(x => x.TenantId).HasColumnName("tenantId");
+        file.Property(x => x.OwnerId).HasColumnName("ownerId");
+        file.Property(x => x.FileName).HasColumnName("fileName").HasMaxLength(255);
+        file.Property(x => x.Mime).HasColumnName("mime").HasMaxLength(120);
+        file.Property(x => x.SizeBytes).HasColumnName("sizeBytes");
+        file.Property(x => x.StoragePath).HasColumnName("storagePath");
+        file.Property(x => x.CreatedAt).HasColumnName("created_at");
+        file.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+        file.HasIndex(x => x.OwnerId).HasDatabaseName("ix_Edu_Files_owner");
+        file.HasOne(f => f.Owner).WithMany().HasForeignKey(f => f.OwnerId);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

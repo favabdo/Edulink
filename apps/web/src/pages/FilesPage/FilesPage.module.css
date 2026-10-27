@@ -1,0 +1,266 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: calc(20 * var(--u));
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(16 * var(--u));
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: calc(24 * var(--u));
+  font-weight: 700;
+  color: var(--dash-heading);
+}
+
+.subtitle {
+  margin: calc(6 * var(--u)) 0 0;
+  font-size: calc(14 * var(--u));
+  color: var(--dash-muted);
+  max-inline-size: calc(560 * var(--u));
+}
+
+.count {
+  flex-shrink: 0;
+  padding: calc(6 * var(--u)) calc(14 * var(--u));
+  border-radius: var(--radius-control);
+  background: var(--dash-active-bg);
+  color: var(--dash-active-fg);
+  font-size: calc(13 * var(--u));
+  font-weight: 600;
+}
+
+.uploadCard {
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: calc(14 * var(--u));
+  box-shadow: var(--dash-shadow);
+  padding: calc(20 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(10 * var(--u));
+}
+
+.hiddenInput {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.uploadZone {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  padding: calc(12 * var(--u)) calc(28 * var(--u));
+  border-radius: var(--radius-control);
+  background: var(--accent);
+  color: #ffffff;
+  font-size: calc(14 * var(--u));
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.uploadZone:hover {
+  filter: brightness(1.06);
+}
+
+.uploadZone:focus-visible {
+  outline: calc(2 * var(--u)) solid var(--accent);
+  outline-offset: calc(2 * var(--u));
+}
+
+.uploadIcon {
+  display: inline-flex;
+}
+
+.uploadText {
+  white-space: nowrap;
+}
+
+.uploadHint {
+  margin: 0;
+  font-size: calc(12 * var(--u));
+  color: var(--text-placeholder);
+}
+
+.spinner {
+  animation: filesSpin 0.9s linear infinite;
+}
+
+@keyframes filesSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+  border-radius: calc(10 * var(--u));
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, var(--dash-card));
+  color: var(--danger);
+  font-size: calc(13 * var(--u));
+}
+
+.placeholder {
+  margin: 0;
+  font-size: calc(14 * var(--u));
+  color: var(--dash-muted);
+}
+
+.empty {
+  background: var(--dash-card);
+  border: 1px dashed var(--dash-border);
+  border-radius: calc(14 * var(--u));
+  padding: calc(40 * var(--u)) calc(20 * var(--u));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(8 * var(--u));
+  color: var(--dash-muted);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: calc(15 * var(--u));
+  font-weight: 600;
+  color: var(--dash-heading);
+}
+
+.emptySub {
+  margin: 0;
+  font-size: calc(13 * var(--u));
+}
+
+.card {
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: calc(14 * var(--u));
+  box-shadow: var(--dash-shadow);
+  overflow-x: auto;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: calc(14 * var(--u));
+}
+
+.table th {
+  text-align: start;
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+  font-size: calc(12 * var(--u));
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dash-muted);
+  border-block-end: 1px solid var(--dash-border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: calc(12 * var(--u)) calc(16 * var(--u));
+  border-block-end: 1px solid var(--dash-border);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-block-end: none;
+}
+
+.table tbody tr:hover {
+  background: var(--dash-hover);
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--u));
+  min-inline-size: 0;
+}
+
+.extBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: calc(40 * var(--u));
+  padding: calc(4 * var(--u)) calc(6 * var(--u));
+  border-radius: calc(6 * var(--u));
+  background: var(--dash-tint-blue);
+  color: var(--dash-icon-blue);
+  font-size: calc(11 * var(--u));
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.fileName {
+  font-weight: 600;
+  color: var(--dash-heading);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--dash-muted);
+  white-space: nowrap;
+}
+
+.actionsCol {
+  white-space: nowrap;
+  inline-size: 1%;
+  text-align: end;
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--u));
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: calc(32 * var(--u));
+  block-size: calc(32 * var(--u));
+  border-radius: calc(8 * var(--u));
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--dash-hover);
+}
+
+.iconButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.iconButton:focus-visible {
+  outline: calc(2 * var(--u)) solid var(--accent);
+  outline-offset: calc(1 * var(--u));
+}
+
+.danger {
+  color: var(--danger);
+}
+
+@media (max-width: 768px) {
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    display: none;
+  }
+}

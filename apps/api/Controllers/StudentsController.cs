@@ -24,6 +24,9 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
     private long CurrentUserId =>
         long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : -1;
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(Auth.TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     private bool IsTeacher => CurrentRole == UserRoles.Teacher;
 
     /// <summary>قوائم الطلاب للموظفين فقط — الطالب وولي الأمر لا يقرآن بيانات غيرهم.</summary>
@@ -50,7 +53,8 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
         if (IsStudent || IsParent)
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "هذه القائمة للإدارة والمدرسين." });
 
-        var query = db.Students.AsNoTracking().AsQueryable();
+        // عزل الشركة (قسم 11): لا طالب من شركة أخرى يظهر هنا إطلاقًا
+        var query = db.Students.AsNoTracking().Where(s => s.TenantId == CurrentTenantId);
 
         // المدرس: طلاب حصصه هو فقط — لا إيميلات طلاب مدرسين آخرين في المؤسسة
         if (IsTeacher)
@@ -71,7 +75,8 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(long id)
     {
-        var student = await db.Students.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
+        // عكس القاعدة: طالب شركة أخرى = غير موجود
+        var student = await db.Students.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (student is null) return NotFound(new { message = "الطالب غير موجود." });
         // الطالب لا يقرأ إلا سجله هو
         if (IsStudent)
@@ -107,11 +112,12 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
 
         var phone = PhoneNormalizer.NormalizeRequired(request.Phone, out var phoneError);
         if (phoneError is not null) return BadRequest(new { message = phoneError });
-        if (await db.Students.AnyAsync(s => s.Phone == phone))
-            return Conflict(new { message = "رقم الهاتف مسجَّل لطالب آخر — الرقم لا يتكرّر في المنصة." });
+        if (await db.Students.AnyAsync(s => s.Phone == phone && s.TenantId == CurrentTenantId))
+            return Conflict(new { message = "رقم الهاتف مسجَّل لطالب آخر — الرقم لا يتكرّر داخل الشركة." });
 
         var student = new EduStudent
         {
+            TenantId = CurrentTenantId,
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name!.Trim(),
             Email = email,
             Password = passwords.Hash(password),
@@ -133,7 +139,7 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
         if (CurrentRole < UserRoles.Supervisor)
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "المشرف فأعلى فقط يعدّل الطلاب." });
 
-        var student = await db.Students.FindAsync(id);
+        var student = await db.Students.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (student is null) return NotFound(new { message = "الطالب غير موجود." });
 
         if (!string.IsNullOrWhiteSpace(request.Name)) student.Name = request.Name!.Trim();
@@ -151,8 +157,8 @@ public class StudentsController(EduDbContext db, PasswordService passwords) : Co
         {
             var phone = PhoneNormalizer.Normalize(request.Phone, out var phoneError);
             if (phoneError is not null) return BadRequest(new { message = phoneError });
-            if (phone is not null && await db.Students.AnyAsync(s => s.Phone == phone && s.Id != id))
-                return Conflict(new { message = "رقم الهاتف مسجَّل لطالب آخر — الرقم لا يتكرّر في المنصة." });
+            if (phone is not null && await db.Students.AnyAsync(s => s.Phone == phone && s.TenantId == CurrentTenantId && s.Id != id))
+                return Conflict(new { message = "رقم الهاتف مسجَّل لطالب آخر — الرقم لا يتكرّر داخل الشركة." });
             student.Phone = phone;
         }
 

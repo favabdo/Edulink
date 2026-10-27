@@ -20,6 +20,9 @@ public class TokenAuthenticationHandler : AuthenticationHandler<AuthenticationSc
     /// <summary>يميّز توكن الموظفين (staff) عن توكن الطلاب (student) — المعرّفات رقمية في جدولين.</summary>
     public const string AudClaim = "edu:aud";
 
+    /// <summary>شركة صاحب التوكن — كل قراءة/كتابة تُفلتر عليها (قسم 11).</summary>
+    public const string TenantClaim = "edu:tenant";
+
     private readonly EduDbContext _db;
 
     public TokenAuthenticationHandler(
@@ -49,14 +52,14 @@ public class TokenAuthenticationHandler : AuthenticationHandler<AuthenticationSc
         List<Claim>? claims = session.Kind switch
         {
             Models.AccountKinds.Staff => (await _db.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == session.AccountId))is { } u && u.Access == 1
+                .FirstOrDefaultAsync(u => u.Id == session.AccountId && u.TenantId == session.TenantId))is { } u && u.Access == 1
                 ? StaffClaims(u) : null,
             Models.AccountKinds.Student => (await _db.Students.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == session.AccountId)) is { } st && st.Access == 1
-                ? AccountClaims(st.Id, st.Name ?? st.Email, st.Email, "student") : null,
+                .FirstOrDefaultAsync(s => s.Id == session.AccountId && s.TenantId == session.TenantId)) is { } st && st.Access == 1
+                ? AccountClaims(st.Id, st.TenantId, st.Name ?? st.Email, st.Email, "student") : null,
             Models.AccountKinds.Parent => (await _db.Parents.AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == session.AccountId)) is { } pa && pa.Access == 1
-                ? AccountClaims(pa.Id, pa.Name ?? pa.Email, pa.Email, "parent") : null,
+                .FirstOrDefaultAsync(p => p.Id == session.AccountId && p.TenantId == session.TenantId)) is { } pa && pa.Access == 1
+                ? AccountClaims(pa.Id, pa.TenantId, pa.Name ?? pa.Email, pa.Email, "parent") : null,
             _ => null,
         };
 
@@ -72,15 +75,17 @@ public class TokenAuthenticationHandler : AuthenticationHandler<AuthenticationSc
         new(ClaimTypes.Email, u.Email),
         new(ClaimTypes.Role, u.Role.ToString()),
         new(AudClaim, "staff"),
+        new(TenantClaim, u.TenantId.ToString()),
     ];
 
-    private static List<Claim> AccountClaims(long id, string name, string email, string aud) =>
+    private static List<Claim> AccountClaims(long id, long tenantId, string name, string email, string aud) =>
     [
         new(ClaimTypes.NameIdentifier, id.ToString()),
         new(ClaimTypes.Name, name),
         new(ClaimTypes.Email, email),
         new(ClaimTypes.Role, aud),
         new(AudClaim, aud),
+        new(TenantClaim, tenantId.ToString()),
     ];
 
     private AuthenticateResult Success(List<Claim> claims)

@@ -11,7 +11,7 @@ namespace EduspaceApi.Services;
 public class NotificationService(EduDbContext db)
 {
     public async Task NotifyAsync(
-        string recipientKind, long recipientId, string kind, string title,
+        string recipientKind, long recipientId, long tenantId, string kind, string title,
         string? body = null, string? link = null, CancellationToken ct = default)
     {
         if (!AccountKinds.IsValid(recipientKind) || recipientId <= 0) return;
@@ -20,6 +20,7 @@ public class NotificationService(EduDbContext db)
         {
             RecipientKind = recipientKind,
             RecipientId = recipientId,
+            TenantId = tenantId,
             Kind = kind,
             Title = title,
             Body = body,
@@ -30,16 +31,16 @@ public class NotificationService(EduDbContext db)
 
     /// <summary>إشعار ولي أمر الطالب (كل المرتبطين به) + الطالب نفسه.</summary>
     public async Task NotifyStudentAndParentsAsync(
-        long studentId, string kind, string title, string? body = null,
+        long studentId, long tenantId, string kind, string title, string? body = null,
         string? link = null, CancellationToken ct = default)
     {
-        await NotifyAsync(AccountKinds.Student, studentId, kind, title, body, link, ct);
+        await NotifyAsync(AccountKinds.Student, studentId, tenantId, kind, title, body, link, ct);
 
         var parentIds = await db.Relations
-            .Where(r => r.StudentId == studentId && r.States == 1)
+            .Where(r => r.StudentId == studentId && r.States == 1 && r.TenantId == tenantId)
             .Select(r => r.ParentId)
             .ToListAsync(ct);
         foreach (var pid in parentIds)
-            await NotifyAsync(AccountKinds.Parent, pid, kind, title, body, link, ct);
+            await NotifyAsync(AccountKinds.Parent, pid, tenantId, kind, title, body, link, ct);
     }
 }

@@ -23,6 +23,9 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     private long CurrentUserId =>
         long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0L;
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(Auth.TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     /// <summary>توكن من Edu_Students — الطالب يرى حصصه فقط ولا ينفذ عمليات الإدارة.</summary>
     private bool IsStudent =>
         User.FindFirstValue(Auth.TokenAuthenticationHandler.AudClaim) == "student";
@@ -33,7 +36,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
 
     private Task<List<long>> ChildIdsAsync() =>
         db.Relations.AsNoTracking()
-            .Where(r => r.ParentId == CurrentUserId && r.States == 1)
+            .Where(r => r.ParentId == CurrentUserId && r.States == 1 && r.TenantId == CurrentTenantId)
             .Select(r => r.StudentId)
             .ToListAsync();
 
@@ -46,6 +49,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     {
         var query = db.Sessions
             .AsNoTracking()
+            .Where(s => s.TenantId == CurrentTenantId)
             .Include(s => s.Teacher)
             .Include(s => s.Student)
             .AsQueryable();
@@ -92,12 +96,12 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         if (request.DurationMin is < 15 or > 240)
             return BadRequest(new { message = "مدة الحصة يجب أن تكون بين 15 و240 دقيقة." });
 
-        var studentExists = await db.Students.AnyAsync(st => st.Id == request.StudentId);
+        var studentExists = await db.Students.AnyAsync(st => st.Id == request.StudentId && st.TenantId == CurrentTenantId);
         if (!studentExists)
             return BadRequest(new { message = "الطالب غير موجود في قاعدة البيانات." });
 
         var teacherId = request.TeacherId;
-        var teacherExists = await db.Users.AnyAsync(u => u.Id == teacherId && u.Role == UserRoles.Teacher);
+        var teacherExists = await db.Users.AnyAsync(u => u.Id == teacherId && u.Role == UserRoles.Teacher && u.TenantId == CurrentTenantId);
         if (!teacherExists)
             return BadRequest(new { message = "المدرس غير موجود في قاعدة البيانات." });
 
@@ -112,6 +116,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
             Status = SessionStatuses.Scheduled,
             StartsAt = request.StartsAt.UtcDateTime,
             Metadata = string.IsNullOrWhiteSpace(request.Metadata) ? "{}" : request.Metadata!,
+            TenantId = CurrentTenantId,
         };
 
         db.Sessions.Add(session);
@@ -127,7 +132,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         await NotifyStudentAndParentsAsync(session, "session_scheduled",
             "حصة جديدة مجدولة", $"{session.Subject} — {session.StartsAt:yyyy-MM-dd HH:mm} UTC");
         if (teacherId != CurrentUserId)
-            await notifications.NotifyAsync("staff", teacherId, "session_scheduled",
+            await notifications.NotifyAsync("staff", teacherId, session.TenantId, "session_scheduled",
                 "حصة جديدة في جدولك", $"{session.Subject} — {session.StartsAt:yyyy-MM-dd HH:mm} UTC",
                 link: $"/schedule");
 
@@ -135,7 +140,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     }
 
     private Task NotifyStudentAndParentsAsync(EduSession session, string kind, string title, string? body = null) =>
-        notifications.NotifyStudentAndParentsAsync(session.StudentId, kind, title, body, link: $"/sessions/{session.Id}");
+        notifications.NotifyStudentAndParentsAsync(session.StudentId, session.TenantId, kind, title, body, link: $"/sessions/{session.Id}");
 
     /// <summary>تفاصيل حصة واحدة مع سجل الحضور.</summary>
     [HttpGet("{id}")]
@@ -145,7 +150,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
             .AsNoTracking()
             .Include(s => s.Teacher)
             .Include(s => s.Student)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
 
         // الطالب لا يرى غير حصصه
@@ -172,7 +177,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     [HttpPatch("{id}")]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateSessionRequest request)
     {
-        var session = await db.Sessions.FindAsync(id);
+        var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
 
         if (IsStudent || IsParent)
@@ -218,7 +223,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     [HttpPost("{id}/cancel")]
     public async Task<IActionResult> Cancel(long id, [FromBody] CancelSessionRequest request)
     {
-        var session = await db.Sessions.FindAsync(id);
+        var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
 
         if (CurrentRole < UserRoles.Supervisor)
@@ -236,7 +241,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
 
         await NotifyStudentAndParentsAsync(session, "session_cancelled",
             "إلغاء حصة", request.Reason);
-        await notifications.NotifyAsync("staff", session.TeacherId, "session_cancelled",
+        await notifications.NotifyAsync("staff", session.TeacherId, session.TenantId, "session_cancelled",
             "إلغاء حصة في جدولك", request.Reason, link: "/schedule");
 
         return Ok(session.ToDto());
@@ -246,7 +251,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     [HttpPost("{id}/attendance")]
     public async Task<IActionResult> MarkAttendance(long id, [FromBody] MarkAttendanceRequest request)
     {
-        var session = await db.Sessions.FindAsync(id);
+        var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
         if (session.Status is not (SessionStatuses.Live or SessionStatuses.Scheduled))
             return BadRequest(new { message = "لا يمكن تسجيل الحضور إلا لحصة مجدولة أو جارية." });
@@ -274,6 +279,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
                 StudentId = request.StudentId,
                 Mark = mark,
                 JoinedAt = now,
+                TenantId = session.TenantId,
             };
             db.SessionAttendances.Add(existing);
         }
@@ -303,7 +309,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     public async Task<IActionResult> LeaveAttendance(long id, long studentId)
     {
         var attendance = await db.SessionAttendances
-            .FirstOrDefaultAsync(a => a.SessionId == id && a.StudentId == studentId);
+            .FirstOrDefaultAsync(a => a.SessionId == id && a.StudentId == studentId && a.TenantId == CurrentTenantId);
         if (attendance is null)
             return NotFound(new { message = "لا يوجد سجل حضور لهذا الطالب في هذه الحصة." });
 
@@ -331,7 +337,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         var session = await db.Sessions
             .Include(s => s.Teacher)
             .Include(s => s.Student)
-            .FirstOrDefaultAsync(s => s.Id == id);
+            .FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
 
         if (IsStudent || IsParent)
@@ -356,6 +362,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
                     SessionId = id,
                     StudentId = session.StudentId,
                     Mark = "absent",
+                    TenantId = session.TenantId,
                 });
                 session.Attendance = "absent";
             }
@@ -373,7 +380,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         await NotifyStudentAndParentsAsync(session, "session_ended",
             "انتهت الحصة", request.DurationMinutes is { } m ? $"مدتها {m} دقيقة" : null);
         if (CurrentRole != UserRoles.Teacher || session.TeacherId != CurrentUserId)
-            await notifications.NotifyAsync("staff", session.TeacherId, "session_ended",
+            await notifications.NotifyAsync("staff", session.TeacherId, session.TenantId, "session_ended",
                 "انتهت حصة في جدولك", null, link: "/sessions");
 
         return Ok(session.ToDto());
@@ -391,7 +398,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
             ? DateTime.UtcNow.AddDays(-weeks.Value * 7)
             : (DateTime?)null;
 
-        var query = db.Sessions.AsNoTracking().AsQueryable();
+        var query = db.Sessions.AsNoTracking().Where(s => s.TenantId == CurrentTenantId);
         if (IsStudent) studentId = CurrentUserId; // الطالب لا يقرأ إحصائيات غيره
         if (IsParent)
         {
@@ -434,7 +441,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     [HttpPost("{id}/reschedule")]
     public async Task<IActionResult> Reschedule(long id, [FromBody] RescheduleSessionRequest request)
     {
-        var session = await db.Sessions.FindAsync(id);
+        var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
 
         if (CurrentRole < UserRoles.Supervisor)
@@ -455,6 +462,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         var newEnd = startsAt.AddMinutes(durationMin);
         var clash = await db.Sessions.AnyAsync(s =>
             s.Id != session.Id && s.Status != SessionStatuses.Cancelled &&
+            s.TenantId == session.TenantId &&
             (s.TeacherId == session.TeacherId || s.StudentId == session.StudentId) &&
             s.StartsAt < newEnd && startsAt < s.StartsAt.AddMinutes(s.DurationMin));
         if (clash)
@@ -466,7 +474,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
 
         var when = startsAt.ToString("yyyy-MM-dd HH:mm");
         await NotifyStudentAndParentsAsync(session, "session_rescheduled", "تأجيل حصة", $"الموعد الجديد: {when} UTC");
-        await notifications.NotifyAsync("staff", session.TeacherId, "session_rescheduled",
+        await notifications.NotifyAsync("staff", session.TeacherId, session.TenantId, "session_rescheduled",
             "تأجيل حصة في جدولك", $"الموعد الجديد: {when} UTC", link: "/schedule");
 
         return Ok(session.ToDto());

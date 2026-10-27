@@ -20,6 +20,7 @@ public static class SessionStatuses
 public class EduSession : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public required string Code { get; set; }
     public required string Subject { get; set; }
     public long TeacherId { get; set; }
@@ -47,6 +48,7 @@ public class EduSession : EduTimestamped
 public class EduStudent : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public string? Name { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }
@@ -67,6 +69,7 @@ public class EduStudent : EduTimestamped
 public class EduSessionAttendance : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public long SessionId { get; set; }
     public long StudentId { get; set; }
     public string Mark { get; set; } = "absent";

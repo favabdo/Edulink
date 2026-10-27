@@ -22,6 +22,10 @@ public static class UserRoles
 public class EduUser
 {
     public long Id { get; set; }
+
+    /// <summary>الشركة التي ينتمي لها الحساب — كل استعلاماته مقيّدة عليها (قسم 11).</summary>
+    public long TenantId { get; set; } = 1;
+
     public string? Name { get; set; }
     public required string Email { get; set; }
 

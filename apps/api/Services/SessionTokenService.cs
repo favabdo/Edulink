@@ -25,10 +25,10 @@ public class SessionTokenService(EduDbContext db)
             .TrimEnd('=');
     }
 
-    public async Task<string> IssueAsync(string kind, long accountId, CancellationToken ct = default)
+    public async Task<string> IssueAsync(string kind, long accountId, long tenantId, CancellationToken ct = default)
     {
         var token = CreateToken();
-        db.Tokens.Add(new EduToken { Kind = kind, AccountId = accountId, Value = token });
+        db.Tokens.Add(new EduToken { Kind = kind, AccountId = accountId, TenantId = tenantId, Value = token });
 
         var stale = await db.Tokens
             .Where(t => t.Kind == kind && t.AccountId == accountId)

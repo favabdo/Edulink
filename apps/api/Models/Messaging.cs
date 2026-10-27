@@ -22,6 +22,7 @@ public static class AccountKinds
 public class EduNotification : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public required string RecipientKind { get; set; }
     public long RecipientId { get; set; }
     public string Kind { get; set; } = "system";
@@ -37,6 +38,7 @@ public class EduNotification : EduTimestamped
 public class EduConversation : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public string? Subject { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -46,6 +48,7 @@ public class EduConversation : EduTimestamped
 public class EduConversationMember : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public long ConversationId { get; set; }
     public required string MemberKind { get; set; }
     public long MemberId { get; set; }
@@ -61,6 +64,7 @@ public class EduConversationMember : EduTimestamped
 public class EduMessage : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public long ConversationId { get; set; }
     public required string SenderKind { get; set; }
     public long SenderId { get; set; }
@@ -78,6 +82,7 @@ public class EduMessage : EduTimestamped
 public class EduToken : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public required string Kind { get; set; }
     public long AccountId { get; set; }
     public required string Value { get; set; }

@@ -24,6 +24,9 @@ public class MessagesController(EduDbContext db, NotificationService notificatio
 
     private string Aud => User.FindFirstValue(TokenAuthenticationHandler.AudClaim) ?? "staff";
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     private record ConversationRow(
         long ConversationId,
         IReadOnlyList<Counterpart> With,
@@ -182,12 +185,12 @@ public class MessagesController(EduDbContext db, NotificationService notificatio
             if (!await CanInitiateAsync(kind, rid))
                 return StatusCode(403, new { message = "لا تملك صلاحية بدء محادثة مع هذا الحساب." });
 
-            var conversation = new EduConversation();
+            var conversation = new EduConversation { TenantId = CurrentTenantId };
             db.Conversations.Add(conversation);
             await db.SaveChangesAsync();
             db.ConversationMembers.AddRange(
-                new EduConversationMember { ConversationId = conversation.Id, MemberKind = Aud, MemberId = CurrentUserId },
-                new EduConversationMember { ConversationId = conversation.Id, MemberKind = kind, MemberId = rid });
+                new EduConversationMember { ConversationId = conversation.Id, MemberKind = Aud, MemberId = CurrentUserId, TenantId = CurrentTenantId },
+                new EduConversationMember { ConversationId = conversation.Id, MemberKind = kind, MemberId = rid, TenantId = CurrentTenantId });
             conversationId = conversation.Id;
             recipient = (kind, rid);
         }
@@ -198,6 +201,7 @@ public class MessagesController(EduDbContext db, NotificationService notificatio
             SenderKind = Aud,
             SenderId = CurrentUserId,
             Body = body,
+            TenantId = CurrentTenantId,
         };
         db.Messages.Add(message);
         await db.SaveChangesAsync();
@@ -205,7 +209,7 @@ public class MessagesController(EduDbContext db, NotificationService notificatio
         if (!(recipient.Kind == Aud && recipient.Id == CurrentUserId))
         {
             var myName = await NameOfAsync(Aud, CurrentUserId);
-            await notifications.NotifyAsync(recipient.Kind, recipient.Id, "message",
+            await notifications.NotifyAsync(recipient.Kind, recipient.Id, CurrentTenantId, "message",
                 $"رسالة جديدة من {myName}", body.Length > 120 ? body[..120] + "…" : body,
                 link: $"/messages?conversation={conversationId}");
         }
@@ -219,9 +223,9 @@ public class MessagesController(EduDbContext db, NotificationService notificatio
         if (Aud == AccountKinds.Staff)
             return recipientKind switch
             {
-                AccountKinds.Staff => await db.Users.AnyAsync(u => u.Id == recipientId),
-                AccountKinds.Student => await db.Students.AnyAsync(s => s.Id == recipientId),
-                _ => await db.Parents.AnyAsync(p => p.Id == recipientId),
+                AccountKinds.Staff => await db.Users.AnyAsync(u => u.Id == recipientId && u.TenantId == CurrentTenantId),
+                AccountKinds.Student => await db.Students.AnyAsync(s => s.Id == recipientId && s.TenantId == CurrentTenantId),
+                _ => await db.Parents.AnyAsync(p => p.Id == recipientId && p.TenantId == CurrentTenantId),
             };
 
         var teacherIds = await TeacherIdsForMeAsync();
@@ -238,15 +242,15 @@ public class MessagesController(EduDbContext db, NotificationService notificatio
         if (Aud == AccountKinds.Student)
         {
             return await db.Sessions.AsNoTracking()
-                .Where(s => s.StudentId == CurrentUserId)
+                .Where(s => s.StudentId == CurrentUserId && s.TenantId == CurrentTenantId)
                 .Select(s => s.TeacherId).Distinct().ToListAsync();
         }
 
         var childIds = await db.Relations.AsNoTracking()
-            .Where(r => r.ParentId == CurrentUserId && r.States == 1)
+            .Where(r => r.ParentId == CurrentUserId && r.States == 1 && r.TenantId == CurrentTenantId)
             .Select(r => r.StudentId).ToListAsync();
         return await db.Sessions.AsNoTracking()
-            .Where(s => childIds.Contains(s.StudentId))
+            .Where(s => childIds.Contains(s.StudentId) && s.TenantId == CurrentTenantId)
             .Select(s => s.TeacherId).Distinct().ToListAsync();
     }
 

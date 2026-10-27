@@ -24,12 +24,16 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
     private long CurrentUserId =>
         long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0L;
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(Auth.TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] short? role, [FromQuery] string? search)
     {
         if (CurrentRole < UserRoles.Supervisor) return Forbid();
 
-        var query = db.Users.AsNoTracking().AsQueryable();
+        // عزل الشركة (قسم 11): لا موظف من شركة أخرى يظهر هنا إطلاقًا
+        var query = db.Users.AsNoTracking().Where(u => u.TenantId == CurrentTenantId);
 
         if (role is not null) query = query.Where(u => u.Role == role);
 
@@ -68,11 +72,12 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
 
         var phone = PhoneNormalizer.NormalizeRequired(request.Phone, out var phoneError);
         if (phoneError is not null) return BadRequest(new { message = phoneError });
-        if (await db.Users.AnyAsync(u => u.Phone == phone))
-            return Conflict(new { message = "رقم الهاتف مسجَّل لحساب آخر — الرقم لا يتكرّر في المنصة." });
+        if (await db.Users.AnyAsync(u => u.Phone == phone && u.TenantId == CurrentTenantId))
+            return Conflict(new { message = "رقم الهاتف مسجَّل لحساب آخر — الرقم لا يتكرّر داخل الشركة." });
 
         var user = new EduUser
         {
+            TenantId = CurrentTenantId,
             Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name!.Trim(),
             Email = email,
             Password = passwords.Hash(password),
@@ -97,7 +102,8 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
     {
         if (CurrentRole < UserRoles.Supervisor) return Forbid();
 
-        var user = await db.Users.FindAsync(id);
+        // عكس القاعدة: حساب شركة أخرى = غير موجود، بلا أي معلومة عن وجوده
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id && u.TenantId == CurrentTenantId);
         if (user is null) return NotFound(new { message = "الحساب غير موجود." });
 
         // المشرف (1) لا يمس غير المدرسين (0)؛ المدير فأعلى لا يمس من يساويه أو يعلوه
@@ -132,8 +138,8 @@ public class UsersController(EduDbContext db, PasswordService passwords) : Contr
         {
             var phone = PhoneNormalizer.Normalize(request.Phone, out var phoneError);
             if (phoneError is not null) return BadRequest(new { message = phoneError });
-            if (phone is not null && await db.Users.AnyAsync(u => u.Phone == phone && u.Id != id))
-                return Conflict(new { message = "رقم الهاتف مسجَّل لحساب آخر — الرقم لا يتكرّر في المنصة." });
+            if (phone is not null && await db.Users.AnyAsync(u => u.Phone == phone && u.TenantId == CurrentTenantId && u.Id != id))
+                return Conflict(new { message = "رقم الهاتف مسجَّل لحساب آخر — الرقم لا يتكرّر داخل الشركة." });
             user.Phone = phone;
         }
 

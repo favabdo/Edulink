@@ -366,6 +366,32 @@ if (app.Configuration.GetValue("Database:ProbeOnStartup", true))
 // يجب أن يعمل قبل أي Middleware يقرأ عنوان العميل (محدّدات المعدل أعلاه تعتمد عليه)
 if (useForwardedHeaders) app.UseForwardedHeaders();
 
+// ---------------------------------------------------------------------------
+// مكتبة الملفات (Edu_Files): مجلد التخزين يُنشأ عند الإقلاع، وسقف حجم الطلب
+// يُرفَع لمسار /api/files فقط — سقف Kestrel الافتراضي 30MB أقل من حد الملف
+// (Files:MaxFileMb، افتراضي 50) فكان الرفع سيفشل قبل وصوله للكنترولر.
+// ---------------------------------------------------------------------------
+var filesMaxMb = Math.Clamp(app.Configuration.GetValue("Files:MaxFileMb", 50), 1, 500);
+var filesStoragePath = app.Configuration["Files:StoragePath"];
+if (string.IsNullOrWhiteSpace(filesStoragePath)) filesStoragePath = "App_Data/files";
+var filesRoot = Path.IsPathRooted(filesStoragePath)
+    ? filesStoragePath
+    : Path.Combine(app.Environment.ContentRootPath, filesStoragePath);
+Directory.CreateDirectory(filesRoot);
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api/files"))
+    {
+        var sizeFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
+        if (sizeFeature?.MaxRequestBodySize is not null)
+        {
+            sizeFeature.MaxRequestBodySize = (filesMaxMb + 1) * 1024L * 1024L;
+        }
+    }
+    await next();
+});
+
 app.UseRateLimiter();
 app.UseCors();
 app.UseAuthentication();

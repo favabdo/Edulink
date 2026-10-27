@@ -95,8 +95,8 @@ public class MissedSessionWatcher(
             var body = $"{session.Subject} — {when} UTC — انتهى الموعد دون أن تُفتح الغرفة";
             var link = $"/sessions/{session.Id}";
 
-            await notifications.NotifyStudentAndParentsAsync(session.StudentId, "session_missed", title, body, link, ct);
-            await notifications.NotifyAsync(AccountKinds.Staff, session.TeacherId, "session_missed", title, body, link, ct);
+            await notifications.NotifyStudentAndParentsAsync(session.StudentId, session.TenantId, "session_missed", title, body, link, ct);
+            await notifications.NotifyAsync(AccountKinds.Staff, session.TeacherId, session.TenantId, "session_missed", title, body, link, ct);
 
             await db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);

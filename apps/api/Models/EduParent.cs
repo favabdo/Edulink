@@ -4,6 +4,7 @@ namespace EduspaceApi.Models;
 public class EduParent : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public string? Name { get; set; }
     public required string Email { get; set; }
     public required string Password { get; set; }
@@ -27,6 +28,7 @@ public class EduParent : EduTimestamped
 public class EduRelation : EduTimestamped
 {
     public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
     public long StudentId { get; set; }
     public long ParentId { get; set; }
     public short Relation { get; set; }

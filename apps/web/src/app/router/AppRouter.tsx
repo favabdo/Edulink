@@ -3,6 +3,7 @@ import { useAuth } from '../../features/auth/authContext'
 import { AppDataProvider } from '../../features/sessions/DataProvider'
 import { DashboardLayout } from '../../layouts/DashboardLayout'
 import { ClassroomPage } from '../../pages/ClassroomPage/ClassroomPage'
+import { FilesPage } from '../../pages/FilesPage/FilesPage'
 import { HomePage } from '../../pages/HomePage/HomePage'
 import { LoginPage } from '../../pages/LoginPage/LoginPage'
 import { MessagesPage } from '../../pages/MessagesPage/MessagesPage'
@@ -72,6 +73,7 @@ export function AppRouter() {
         <Route path={ROUTES.teachers} element={<TeachersPage />} />
         <Route path={ROUTES.parents} element={<ParentsPage />} />
         <Route path={ROUTES.reports} element={<ReportsPage />} />
+        <Route path={ROUTES.files} element={<FilesPage />} />
         <Route path={ROUTES.messages} element={<MessagesPage />} />
         <Route path={ROUTES.settings} element={<SettingsPage />} />
       </Route>

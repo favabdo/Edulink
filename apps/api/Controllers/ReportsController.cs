@@ -23,6 +23,9 @@ public class ReportsController(EduDbContext db) : ControllerBase
     private string Aud =>
         User.FindFirstValue(Auth.TokenAuthenticationHandler.AudClaim) ?? "staff";
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(Auth.TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     /// <param name="from">Unix ms لبداية الفترة (اختياري).</param>
     /// <param name="to">Unix ms لنهايتها (اختياري).</param>
     [HttpGet("overview")]
@@ -47,7 +50,7 @@ public class ReportsController(EduDbContext db) : ControllerBase
         var sessions = await db.Sessions.AsNoTracking()
             .Include(s => s.Teacher)
             .Include(s => s.Student)
-            .Where(s => s.StartsAt >= fromUtc && s.StartsAt <= toUtc)
+            .Where(s => s.TenantId == CurrentTenantId && s.StartsAt >= fromUtc && s.StartsAt <= toUtc)
             .ToListAsync();
 
         if (teacherId.HasValue) sessions = sessions.Where(s => s.TeacherId == teacherId.Value).ToList();
@@ -59,7 +62,7 @@ public class ReportsController(EduDbContext db) : ControllerBase
         // الفترة السابقة بنفس الطول — للمقارنة (نمو/انكماش)
         var span = toUtc - fromUtc;
         var prev = await db.Sessions.AsNoTracking()
-            .Where(s => s.StartsAt >= fromUtc - span && s.StartsAt < fromUtc)
+            .Where(s => s.TenantId == CurrentTenantId && s.StartsAt >= fromUtc - span && s.StartsAt < fromUtc)
             .ToListAsync();
         if (teacherId.HasValue) prev = prev.Where(s => s.TeacherId == teacherId.Value).ToList();
         if (studentId.HasValue) prev = prev.Where(s => s.StudentId == studentId.Value).ToList();
@@ -121,7 +124,8 @@ public class ReportsController(EduDbContext db) : ControllerBase
         if (Aud != AccountKinds.Staff || CurrentRole < UserRoles.Supervisor)
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "لإدارة المنصة فقط." });
 
-        var teacher = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id && u.Role == UserRoles.Teacher);
+        var teacher = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id && u.Role == UserRoles.Teacher && u.TenantId == CurrentTenantId);
         if (teacher is null) return NotFound(new { message = "المدرس غير موجود." });
 
         var toUtc = to is null ? DateTime.UtcNow : DateTimeOffset.FromUnixTimeMilliseconds(to.Value).UtcDateTime;
@@ -129,7 +133,7 @@ public class ReportsController(EduDbContext db) : ControllerBase
 
         var mine = await db.Sessions.AsNoTracking()
             .Include(s => s.Student)
-            .Where(s => s.TeacherId == id && s.StartsAt >= fromUtc && s.StartsAt <= toUtc)
+            .Where(s => s.TeacherId == id && s.TenantId == CurrentTenantId && s.StartsAt >= fromUtc && s.StartsAt <= toUtc)
             .ToListAsync();
 
         var now = DateTime.UtcNow;

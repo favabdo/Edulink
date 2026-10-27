@@ -18,12 +18,15 @@ public class NotificationsController(EduDbContext db) : ControllerBase
 
     private string Aud => User.FindFirstValue(TokenAuthenticationHandler.AudClaim) ?? "staff";
 
+    private long CurrentTenantId =>
+        long.TryParse(User.FindFirstValue(TokenAuthenticationHandler.TenantClaim), out var t) ? t : 1L;
+
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int unreadOnly, [FromQuery] int take = 30)
     {
         take = Math.Clamp(take, 1, 100);
         var query = db.Notifications.AsNoTracking()
-            .Where(n => n.RecipientKind == Aud && n.RecipientId == CurrentUserId);
+            .Where(n => n.TenantId == CurrentTenantId && n.RecipientKind == Aud && n.RecipientId == CurrentUserId);
         if (unreadOnly == 1) query = query.Where(n => n.ReadAt == null);
 
         var rows = await query
@@ -51,7 +54,7 @@ public class NotificationsController(EduDbContext db) : ControllerBase
     public async Task<IActionResult> Read(long id)
     {
         var n = await db.Notifications
-            .FirstOrDefaultAsync(x => x.Id == id && x.RecipientKind == Aud && x.RecipientId == CurrentUserId);
+            .FirstOrDefaultAsync(x => x.Id == id && x.TenantId == CurrentTenantId && x.RecipientKind == Aud && x.RecipientId == CurrentUserId);
         if (n is null) return NotFound();
         n.ReadAt ??= DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -62,7 +65,7 @@ public class NotificationsController(EduDbContext db) : ControllerBase
     public async Task<IActionResult> ReadAll()
     {
         var rows = await db.Notifications
-            .Where(n => n.RecipientKind == Aud && n.RecipientId == CurrentUserId && n.ReadAt == null)
+            .Where(n => n.TenantId == CurrentTenantId && n.RecipientKind == Aud && n.RecipientId == CurrentUserId && n.ReadAt == null)
             .ToListAsync();
         var now = DateTime.UtcNow;
         foreach (var n in rows) n.ReadAt = now;
