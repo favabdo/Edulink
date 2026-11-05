@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom'
 import { sessionLivePath } from '../../app/router/paths'
 import { useAuth } from '../../features/auth/authContext'
 import { useAppData } from '../../features/sessions/DataProvider'
+import { canJoin, joinHint } from '../../features/sessions/joinAccess'
 import { useLanguage } from '../../i18n/useLanguage'
 import {
   sessionsOn,
@@ -28,6 +29,7 @@ import {
   subjectDisplayName,
   type AttendanceMark,
   type ClassSession,
+  type HoursBasis,
   type SessionStatus,
   type Student,
   type SubjectKey,
@@ -77,11 +79,6 @@ const ATTENDANCE_CLASS: Record<AttendanceMark, string> = {
   present: 'attPresent',
   late: 'attLate',
   absent: 'attAbsent',
-}
-
-/** قاعدة الانضمام: الغرفة مفتوحة طول مدة الحصة (المدرس/الطالب يدخل مبكرًا زي Zoom)؛ المنتهية والملغاة لا */
-function canJoin(session: ClassSession, _now: number): boolean {
-  return session.status === 'live' || session.status === 'scheduled'
 }
 
 function StatusBadge({ status }: { status: SessionStatus }) {
@@ -136,11 +133,11 @@ function SessionRow({
   const student = lookup.studentById(session.studentId)
   const subjectStyle = SUBJECT_STYLE[session.subject]
   const SubjectIcon = subjectStyle.Icon
-  const joinable = canJoin(session, now)
+  const joinable = canJoin(session)
   const minutesToStart = Math.max(0, Math.round((session.startsAt.getTime() - now) / 60_000))
   const makeupOf = session.makeupOfId ? lookup.sessionById(session.makeupOfId) : null
   const isPast = session.status === 'completed' || session.status === 'cancelled' || session.status === 'no_show'
-  const observeAllowed = isStaff && (session.status === 'live' || session.status === 'scheduled')
+  const observeAllowed = isStaff && joinable
 
   return (
     <li className={styles.row}>
@@ -184,7 +181,7 @@ function SessionRow({
             type="button"
             className={styles.joinButton}
             disabled={!joinable}
-            title={joinable ? t('sessions:actions.joinHint') : t('sessions:actions.joinLocked')}
+            title={joinHint(t, session)}
             onClick={() => onJoin(session)}
           >
             <Video size={16} aria-hidden="true" />
@@ -319,22 +316,27 @@ export function SessionsPage() {
   }, [base, tab])
 
   const stats = useMemo(() => {
+    // نفس أساس عدّ التقارير: الطالب/ولي الأمر يري جلوس الطالب، والموظف يري ما دُرِّس
+    const basis: HoursBasis = role === 'student' || role === 'parent' ? 'attended' : 'delivered'
     const today = sessionsOn(base, new Date())
-    const full = statsForSessions(base)
+    const full = statsForSessions(base, basis)
     const week = full.weekly[full.weekly.length - 1]
     const month = new Date()
     const monthList = base.filter(
       (s) => s.startsAt.getFullYear() === month.getFullYear() && s.startsAt.getMonth() === month.getMonth(),
     )
+    // الحدّ الأعلى للأسبوع لازم: بدونه حصة مكتملة في الأسبوع القادم تُعدّ هذه الأسبوع
+    const weekEnd = week ? new Date(week.weekStart.getTime() + 7 * 86_400_000) : null
     const completedThisWeek = week
-      ? base.filter((s) => s.status === 'completed' && s.startsAt >= week.weekStart).length
+      ? base.filter((s) => s.status === 'completed' && s.startsAt >= week.weekStart && s.startsAt < weekEnd!).length
       : 0
     return {
       today: today.length,
       completedThisWeek,
-      monthHours: Math.round(statsForSessions(monthList).completedHours),
+      // عشرية واحدة مثل التقارير: التدوير لعدد صحيح كان يجعل هذا الكارت يخالف الشاشة الأخرى
+      monthHours: Math.round(statsForSessions(monthList, basis).completedHours * 10) / 10,
     }
-  }, [base])
+  }, [base, role])
 
   const dateFmt = useMemo(
     () => new Intl.DateTimeFormat(language, { weekday: 'long', day: 'numeric', month: 'long' }),

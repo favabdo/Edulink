@@ -39,6 +39,12 @@ export type ApiSession = {
   createdAt: string
   teacherName: string | null
   studentName: string | null
+  actualMinutes: number
+  studentMinutes: number
+  joinState: 'open' | 'tooEarly' | 'windowClosed' | 'finished'
+  joinOpensAt: string
+  joinClosesAt: string
+  minutesUntilOpen: number | null
 }
 
 export type ApiStudent = {
@@ -127,7 +133,11 @@ export function markLeave(id: number, studentId: number): Promise<unknown> {
   return apiFetch<unknown>(`/api/sessions/${id}/attendance/${studentId}/leave`, { method: 'POST' })
 }
 
-export function endSession(id: number, by: string, durationMinutes: number): Promise<ApiSession> {
+/**
+ * `durationMinutes` اختياري: الخادم يقيس الزمن من أشرطة الحضور ويكتبه،
+ * والشاشة التي لا تعرف كم قُضِّي في الغرفة (درج الجدول مثلًا) لا تختلق رقمًا.
+ */
+export function endSession(id: number, by: string, durationMinutes?: number): Promise<ApiSession> {
   return apiFetch<ApiSession>(`/api/sessions/${id}/end`, { method: 'POST', body: { by, durationMinutes } })
 }
 
@@ -251,6 +261,12 @@ export function toClassSession(dto: ApiSession): ClassSession {
     subjectText: dto.subject?.trim() || undefined,
     startsAt: new Date(dto.startsAt),
     durationMin: dto.durationMin,
+    actualMinutes: dto.actualMinutes ?? 0,
+    studentMinutes: dto.studentMinutes ?? 0,
+    joinState: dto.joinState ?? 'open',
+    joinOpensAt: new Date(dto.joinOpensAt),
+    joinClosesAt: new Date(dto.joinClosesAt),
+    minutesUntilOpen: dto.minutesUntilOpen ?? null,
     status: toSessionStatus(dto.status),
     attendance: toAttendanceMark(dto.attendance),
     makeupOfId: dto.makeupOfId,

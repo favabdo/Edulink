@@ -63,15 +63,38 @@ export type ClassSession = {
   subjectText?: string
   startsAt: Date
   durationMin: number
+  /**
+   * الدقائق المقيسة داخل الغرفة — المصدر الوحيد لأي «ساعات» على الشاشة.
+   * ليست `durationMin`: تلك مدة مكتوبة في الجدول قبل أن يجلس فيها أحد.
+   */
+  actualMinutes: number
+  /**
+   * دقائق جلوس الطالب المجدول وحده. تختلف عن `actualMinutes` لأن المدرس
+   * والطالب يدخلان ويخرجان في وقتين — وصف الطالب يجب أن يجمع هذا لا ذاك،
+   * وهو مصدر الاختلاف الذي أعطى روان 1.5 في الرئيسية و3.2 في شاشتها.
+   */
+  studentMinutes: number
   status: SessionStatus
   attendance: AttendanceMark | null
+  /** حالة النافذة كما حسبتها الخادم بساعته هو، لا بساعة جهاز الطالب */
+  joinState: JoinState
+  joinOpensAt: Date
+  joinClosesAt: Date
+  /** كم دقيقة وتُفتح — null ما دامت مفتوحة أو مغلقة نهائيًا */
+  minutesUntilOpen: number | null
   /** حصة تعويضية عن حصة ملغاة */
   makeupOfId: number | null
   /** سبب الإلغاء كما أدخلته الإدارة */
   cancelReason?: string | null
 }
 
+/** open | tooEarly | windowClosed | finished — نفس قيم `ToWire` في الخادم */
+export type JoinState = 'open' | 'tooEarly' | 'windowClosed' | 'finished'
+
 const DAY_MS = 86_400_000
+
+/** عدد الأسابيع في رسم «الساعات الأسبوعية» — 12 (w = 11..0) كما في تقارير الخادم */
+export const WEEKS_BACK = 11
 
 /**
  * مفاتيح الصفوف المعروفة — قائمة ترجمة لا بيانات مؤسسة: institution حقيقية قد
@@ -236,28 +259,47 @@ export type HoursStats = {
   completedHours: number
   attendanceRate: number
   commitmentRate: number
-  /** آخر 8 أسابيع: عدد الساعات المكتملة لكل أسبوع */
+  /** آخر 12 أسبوعًا: عدد الساعات المكتملة لكل أسبوع (مثل رسم التقارير) */
   weekly: Array<{ weekStart: Date; hours: number }>
   bySubject: Record<string, number>
 }
 
-export function statsForSessions(list: ClassSession[]): HoursStats {
+/**
+ * أساس الساعات: «ما دَرَّس» غير «ما حضَر». المدرس والطالب يدخلان الغرفة ويخرجان
+ * في وقتين مختلفين، فصف الطالب يجمع `studentMinutes` وصف المدرس يجمع
+ * `actualMinutes` — والخلط بينهما كان أحد أرقام روان المتضاربة.
+ */
+export type HoursBasis = 'delivered' | 'attended'
+
+const hoursOf = (s: ClassSession, basis: HoursBasis): number =>
+  basis === 'attended' ? s.studentMinutes : s.actualMinutes
+
+/**
+ * التجميع المحلي — **يجب أن يُطابق** `ReportsController.Summarize` حرفيًا،
+ * وإلا خرج نفس الطالب برقمين (وهو ما كان يحدث: الرئيسية 1.5 وشاشة الطلاب 3.2).
+ * لذلك: الساعات مقيسة من داخل الغرفة لا من `durationMin`، والغياب بنفس تعريف
+ * الخادم، واثنا عشر أسبوعًا مثل رسم التقارير، والأساس (`basis`) هو أساس عدّ
+ * الخادم في نفس الصف.
+ */
+export function statsForSessions(list: ClassSession[], basis: HoursBasis = 'delivered'): HoursStats {
   const completed = list.filter((s) => s.status === 'completed')
   const cancelled = list.filter((s) => s.status === 'cancelled')
-  const noShow = list.filter((s) => s.status === 'no_show')
+  const noShow = list.filter(
+    (s) => s.status === 'no_show' || (s.status !== 'scheduled' && s.attendance === 'absent'),
+  )
   const scheduled = list.filter((s) => s.status === 'scheduled' || s.status === 'live')
   const attended = completed.filter((s) => s.attendance !== 'absent').length
 
   const weekly: Array<{ weekStart: Date; hours: number }> = []
   const now = new Date()
-  for (let w = 7; w >= 0; w--) {
+  for (let w = WEEKS_BACK; w >= 0; w--) {
     const weekStart = new Date(now.getTime() - (w * 7 + now.getDay()) * DAY_MS)
     weekStart.setHours(0, 0, 0, 0)
     const weekEnd = new Date(weekStart.getTime() + 7 * DAY_MS)
     const hours =
       completed
         .filter((s) => s.startsAt >= weekStart && s.startsAt < weekEnd)
-        .reduce((acc, s) => acc + s.durationMin, 0) / 60
+        .reduce((acc, s) => acc + hoursOf(s, basis), 0) / 60
     weekly.push({ weekStart, hours })
   }
 
@@ -274,7 +316,7 @@ export function statsForSessions(list: ClassSession[]): HoursStats {
     cancelled: cancelled.length,
     noShow: noShow.length,
     scheduled: scheduled.length,
-    completedHours: completed.reduce((acc, s) => acc + s.durationMin, 0) / 60,
+    completedHours: completed.reduce((acc, s) => acc + hoursOf(s, basis), 0) / 60,
     attendanceRate: completed.length ? attended / completed.length : 0,
     commitmentRate: list.length ? 1 - (cancelled.length + noShow.length) / list.length : 0,
     weekly,
@@ -283,7 +325,8 @@ export function statsForSessions(list: ClassSession[]): HoursStats {
 }
 
 export const teacherStats = (teacherId: number) => statsForSessions(sessionsForTeacher(teacherId))
-export const studentStats = (studentId: number) => statsForSessions(sessionsForStudent(studentId))
+export const studentStats = (studentId: number) =>
+  statsForSessions(sessionsForStudent(studentId), 'attended')
 export const institutionStats = () => statsForSessions(sessions)
 
 export function nextSessionFor(list: ClassSession[], from: Date = new Date()): ClassSession | null {

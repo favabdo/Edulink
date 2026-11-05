@@ -39,6 +39,8 @@ public class MeetingController(IConfiguration config) : ControllerBase
         servers.Add(new { urls = stun.Length > 0 ? stun : DefaultStun });
 
         var turnUrls = ReadList("Meeting:TurnUrls");
+        // سطر فارغ في الإعداد (`Meeting__TurnUrls__0=`) كان يصل للمتصفح كـ `[""]`
+        // فيرفض بناء RTCPeerConnection أصلًا — والقائمة الفارغة لا تُرسل أبدًا.
         if (turnUrls.Length > 0)
         {
             var secret = config["Meeting:TurnSecret"];
@@ -61,9 +63,19 @@ public class MeetingController(IConfiguration config) : ControllerBase
         return Ok(new { iceServers = servers });
     }
 
-    /// <summary>يقبل مصفوفة JSON أو سلسلة مفصولة بفواصل — الإعدادان صالحان.</summary>
-    private string[] ReadList(string key) =>
-        config.GetSection(key).Get<string[]>()
-        ?? (config[key]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        ?? [];
+    /// <summary>
+    /// يقبل مصفوفة JSON أو سلسلة مفصولة بفواصل — والإعدادان صالحان.
+    /// القيم الفارغة تُستبعد هنا لا في الشاشة: سطر معلَّق فارغ في ملف البيئة
+    /// يبقى عنصرًا `""`، وهو السم الذي كان يُسقط الغرفة.
+    /// </summary>
+    private string[] ReadList(string key)
+    {
+        var rows = config.GetSection(key).Get<string[]>()
+            ?? config[key]?.Split(',')
+            ?? [];
+        return rows
+            .Where((row) => !string.IsNullOrWhiteSpace(row))
+            .Select((row) => row.Trim())
+            .ToArray();
+    }
 }

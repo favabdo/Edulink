@@ -21,6 +21,11 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
+# Windows stdout = cp1252: التقرير العربي و✓/✗ كانا يُسقطان الأداة عند آخر طباعة
+# بعد أن تكون كل الحسابات كُتبت — أي أن المشغّل يفقد الخلاصة لا أكثر.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 BASE = os.environ.get("EDULINK_API_URL", "http://localhost:5279").rstrip("/")
 OUT = os.path.join("tools", "out-real-accounts.txt")
 

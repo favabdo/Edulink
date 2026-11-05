@@ -92,7 +92,17 @@ public record SessionDto(
     string Metadata,
     DateTimeOffset CreatedAt,
     string? TeacherName,
-    string? StudentName);
+    string? StudentName,
+    /// <summary>الدقائق التي قُضِّيت فعلًا داخل الغرفة — مصدر كل «ساعات» في المنصة.</summary>
+    double ActualMinutes,
+    /// <summary>دقائق جلوس الطالب المجدول وحده — مصدر صفوف الطلاب وأرقام أولياء الأمور.</summary>
+    double StudentMinutes,
+    /// <summary>open | tooEarly | windowClosed | finished — محسوبة من ساعة الخادم.</summary>
+    string JoinState,
+    DateTimeOffset JoinOpensAt,
+    DateTimeOffset JoinClosesAt,
+    /// <summary>كم دقيقة وتُفتح (null ما دامت مفتوحة أو منتهية).</summary>
+    int? MinutesUntilOpen);
 
 public record SessionAttendanceDto(
     long Id,
@@ -150,7 +160,7 @@ public static class SessionMapping
     private static DateTimeOffset? ToUtc(DateTime? value) =>
         value.HasValue ? ToUtc(value.Value) : null;
 
-    public static SessionDto ToDto(this EduSession s) => new(
+    public static SessionDto ToDto(this EduSession s, EduspaceApi.Services.SessionView view) => new(
         s.Id,
         s.Code,
         s.Subject,
@@ -168,7 +178,23 @@ public static class SessionMapping
         s.Metadata,
         ToUtc(s.CreatedAt),
         s.Teacher?.Name,
-        s.Student?.Name);
+        s.Student?.Name,
+        view.ActualMinutes,
+        view.StudentMinutes,
+        ToWire(view.State),
+        view.OpensAt,
+        view.ClosesAt,
+        view.MinutesUntilOpen);
+
+    /// <summary>اسم الحالة على السلك camelCase — يقرأه الزرار الباهت كما هو بلا ترجمة.</summary>
+    private static string ToWire(EduspaceApi.Services.JoinState state) => state switch
+    {
+        EduspaceApi.Services.JoinState.Open => "open",
+        EduspaceApi.Services.JoinState.TooEarly => "tooEarly",
+        EduspaceApi.Services.JoinState.WindowClosed => "windowClosed",
+        EduspaceApi.Services.JoinState.Finished => "finished",
+        _ => "finished",
+    };
 
     public static SessionAttendanceDto ToDto(this EduSessionAttendance a) => new(
         a.Id,

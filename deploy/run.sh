@@ -113,12 +113,16 @@ if [ "${PROVIDER,,}" = "sqlserver" ]; then
     sqlcmd "${SQLCMD_AUTH[@]}" -Q "IF DB_ID(N'$DB') IS NULL BEGIN CREATE DATABASE [$DB]; SELECT 'created'; END ELSE SELECT 'exists';" | tail -2
     # الأعلام ليست ترفًا: 65001 للعربية، -I للفهارس المفلترة، -b يوقف الصمت عند الخطأ
     sqlcmd "${SQLCMD_AUTH[@]}" -d "$DB" -f 65001 -I -b -i "$SQL_FILE"
+    # البصمة محصورة في جداول Edu_ عمدًا: قاعدة العميل قد تكون مشتركة مع تطبيق آخر
+    # (قيس 2026-11-05 على nile-old: 637 جدولًا و8657 عمودًا) فالعدّ على مستوى السيرفر كاذب.
     sqlcmd "${SQLCMD_AUTH[@]}" -d "$DB" -Q "SET NOCOUNT ON;
-      SELECT tables=(SELECT COUNT(*) FROM sys.tables),
-             triggers=(SELECT COUNT(*) FROM sys.triggers),
-             checks=(SELECT COUNT(*) FROM sys.check_constraints),
-             fks=(SELECT COUNT(*) FROM sys.foreign_keys);" | tail -4
-    ok "البصمة المتوقعة: tables=11 · triggers=0 · checks=21 · fks=9"
+      DECLARE @edu table (object_id int PRIMARY KEY);
+      INSERT INTO @edu SELECT object_id FROM sys.tables WHERE name LIKE 'Edu[_]%';
+      SELECT tables=(SELECT COUNT(*) FROM @edu),
+             triggers=(SELECT COUNT(*) FROM sys.triggers t WHERE t.parent_id IN (SELECT object_id FROM @edu)),
+             checks=(SELECT COUNT(*) FROM sys.check_constraints c WHERE c.parent_object_id IN (SELECT object_id FROM @edu)),
+             fks=(SELECT COUNT(*) FROM sys.foreign_keys f WHERE f.parent_object_id IN (SELECT object_id FROM @edu));" | tail -4
+    ok "البصمة المتوقعة (جداول Edu_ فقط): tables=14 · triggers=0 · checks=25 · fks=24"
   else
     warn "لم يُنفَّذ المخطط تلقائيًا (لا sqlcmd). نفّذه بنفس الأعلام المطلوبة:"
     printf '    sqlcmd -S "%s" -d %s -f 65001 -I -b -i %s   (# أو -U/-P)\n' "$SERVER" "$DB" "$SQL_FILE"

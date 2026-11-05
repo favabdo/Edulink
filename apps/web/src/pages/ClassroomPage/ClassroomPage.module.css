@@ -164,29 +164,6 @@
   display: flex;
 }
 
-.grid {
-  flex: 1;
-  display: grid;
-  gap: 12px;
-  justify-content: center;
-  align-content: center;
-  min-width: 0;
-  grid-template-columns: min(92%, calc(58dvh * 16 / 9));
-}
-
-/* minmax(0، سقف) عمدًا: السقف بالارتفاع (dvh) كما هو، لكن المسار ينكمش حين
-   تأخذ اللوحة الجانبية عرضًا — بـ vw كانت البلاطات تفيض من المسرح وترسم
-   تحت اللوحة (قيس على الإنتاج: بلاطة المدرس مقطوعة خلف المحادثة). */
-.grid[data-count='2'] {
-  grid-template-columns: repeat(2, minmax(0, calc(42dvh * 16 / 9)));
-}
-
-.grid[data-count='3'],
-.grid[data-count='4'] {
-  grid-template-columns: repeat(2, minmax(0, calc(30dvh * 16 / 9)));
-  grid-template-rows: repeat(2, auto);
-}
-
 .emptyTile {
   display: grid;
   place-items: center;
@@ -247,6 +224,19 @@
   font-size: 12.5px;
   font-weight: 600;
   max-width: calc(100% - 20px);
+  white-space: nowrap;
+}
+
+.tileLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tileRole,
+.linkTag {
+  flex: none;
+  white-space: nowrap;
 }
 
 .tileMic {
@@ -296,12 +286,13 @@
 }
 
 /* ---------------- السبورة ---------------- */
-.boardWrap {
+.board {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  min-height: 0;
 }
 
 .boardTools {
@@ -314,6 +305,10 @@
 .boardTitle {
   font-weight: 700;
   font-size: 15px;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .boardColors {
@@ -347,15 +342,325 @@
   cursor: pointer;
 }
 
-.boardCanvas {
+.boardSpacer {
   flex: 1;
-  width: 100%;
+}
+
+.pageNav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageNav button {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  border-radius: var(--radius-control);
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.pageNav button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pageNow {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+  min-width: 46px;
+  text-align: center;
+}
+
+.docMissing {
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+/* السطح: المستند تحت والقلم فوق — نفس الصندوق وإحداثيات نسبية واحدة، فيتطابق ما
+   يكتبه المدرس مع ما يراه الطالب مهما اختلف مقاس النافذة */
+.boardStage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.boardBox {
+  position: relative;
+  /* flex:none عمدًا: بلاط الصفحة يأخذ مقاسه المحسوب بالبيكسل، والسبورة الفارغة تملأ المسرح */
+  flex: none;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   background: var(--dash-card);
   border: 1px solid var(--dash-border);
   border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.boardDoc,
+.boardInk {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.boardDoc {
+  pointer-events: none;
+}
+
+.boardInk {
   touch-action: none;
   cursor: crosshair;
+}
+
+/* ---------------- المسرح: البلاطات + السبورة في شبكة واحدة ----------------
+   السبورة **لا تُنقل بين الأبوين** أبدًا: التكبير يغيّر `data-layout` والصف/العمود
+   فقط. لو انتقل العنصر إلى أب مختلف في الشجرة لَأعاد React تركيب الـ canvas من
+   الصفر، فتمحُو الضربات التي لم تُرسم بعد — وهذا بالضبط العيب الذي شكا منه المدرس. */
+.stageGrid {
+  flex: 1;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  justify-content: center;
+  align-content: center;
+  justify-items: center;
+  /* minmax(0، سقف) عمدًا: السقف بالارتفاع (dvh) كما هو، لكن المسار ينكمش حين
+     تأخذ اللوحة الجانبية عرضًا — بـ vw كانت البلاطات تفيض من المسرح وترسم
+     تحت اللوحة (قيس على الإنتاج: بلاطة المدرس مقطوعة خلف المحادثة). */
+  grid-template-columns: repeat(2, minmax(0, calc(32dvh * 16 / 9)));
+}
+
+.boardCell {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-column: 1 / -1;
+}
+
+.stageGrid[data-layout='grid'] .boardCell {
+  height: clamp(180px, 30dvh, 360px);
+}
+
+.stageGrid[data-layout='board'],
+.stageGrid[data-layout='peer'] {
+  /* auto-fit لا auto-fill: الفارغ يُطوى فلا تلصق البلاطات في ركن المسرح */
+  grid-template-columns: repeat(auto-fit, minmax(clamp(110px, 15vw, 190px), 240px));
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+  justify-content: center;
+  justify-items: stretch;
+}
+
+.stageGrid[data-layout='board'] .boardCell {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  height: auto;
+}
+
+.stageGrid[data-layout='board'] .tile,
+.stageGrid[data-layout='peer'] .tile {
+  grid-row: 2;
+  width: 100%;
+}
+
+.stageGrid[data-layout='peer'] .tileLarge {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  width: 100%;
+  max-height: 100%;
+}
+
+.stageGrid[data-layout='peer'] .boardCell {
+  grid-row: 2;
+  height: clamp(140px, 22dvh, 260px);
+}
+
+.tileCompact {
+  width: 100%;
+}
+
+.tileLarge {
+  width: 100%;
+}
+
+.tileEnlarge {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--dash-border);
+  background: rgba(5, 10, 25, 0.6);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tile:hover .tileEnlarge,
+.tile:focus-within .tileEnlarge,
+.tileEnlarge[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.tileProblem {
+  position: absolute;
+  inset-block-start: 44px;
+  inset-inline-start: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: var(--radius-control);
+  background: var(--dash-tint-pink);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tileWaiting {
+  position: absolute;
+  inset-block-start: 44px;
+  inset-inline-start: 8px;
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.tileProblem button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.linkTag {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.noticeClose {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  padding: 2px;
+}
+
+.unpin {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline-end: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+/* ---------------- منتقي الملف داخل الحصة ---------------- */
+.dialogHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fileNotice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: var(--dash-tint-pink);
+  color: var(--danger);
+  font-size: 12.5px;
+}
+
+.fileList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 40dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fileEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--dash-muted);
+  font-size: 13px;
+  padding: 10px 4px;
+}
+
+.fileRow {
+  display: block;
+}
+
+.fileOpen {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--dash-border);
+  background: var(--dash-card);
+  color: var(--dash-heading);
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileMeta {
+  flex-shrink: 0;
+  color: var(--dash-muted);
+  font-size: 12px;
 }
 
 /* ---------------- اللوحة الجانبية ---------------- */
@@ -775,14 +1080,44 @@
 
 /* ---------------- التجاوب ---------------- */
 @media (max-width: 980px) {
-  .grid,
-  .grid[data-count='2'],
-  .grid[data-count='3'],
-  .grid[data-count='4'] {
+  .stageGrid {
     grid-template-columns: min(92%, calc(38dvh * 16 / 9));
     grid-template-rows: none;
     grid-auto-rows: auto;
+    align-content: start;
     overflow-y: auto;
+  }
+
+  .stageGrid[data-layout='board'],
+  .stageGrid[data-layout='peer'] {
+    grid-template-columns: min(94%, calc(52dvh * 16 / 9));
+    grid-template-rows: minmax(0, 1fr);
+    grid-auto-rows: minmax(96px, 22dvh);
+  }
+
+  .stageGrid[data-layout='board'] .boardCell,
+  .stageGrid[data-layout='peer'] .boardCell {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: min(52dvh, 340px);
+    order: -1;
+  }
+
+  .stageGrid[data-layout='board'] .tile,
+  .stageGrid[data-layout='peer'] .tile,
+  .stageGrid[data-layout='peer'] .tileLarge {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  /* لا hover على اللمس: الزر يجب أن يُرى وإلا لا يعرف اللمس أن البلاطة قابلة للتكبير */
+  .tileEnlarge {
+    opacity: 1;
+  }
+
+  .unpin {
+    inset-block-end: 10px;
+    inset-block-start: auto;
   }
 
   .panel {

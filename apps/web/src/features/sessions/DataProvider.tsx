@@ -69,7 +69,7 @@ type AppData = {
   rescheduleSessionAction: (id: number, startsAt: Date, durationMin?: number) => Promise<void>
   markAttendanceAction: (sessionId: number, studentId: number, mark?: AttendanceMark) => Promise<void>
   markLeaveAction: (sessionId: number, studentId: number) => Promise<void>
-  endSessionAction: (sessionId: number, durationMinutes: number) => Promise<void>
+  endSessionAction: (sessionId: number, durationMinutes?: number) => Promise<void>
   addStudent: (input: { name: string; email: string; password: string; phone?: string }) => Promise<Student>
   addParent: (input: {
     name: string

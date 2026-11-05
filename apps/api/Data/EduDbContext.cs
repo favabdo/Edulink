@@ -18,6 +18,7 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
     public DbSet<EduRelation> Relations => Set<EduRelation>();
     public DbSet<EduSession> Sessions => Set<EduSession>();
     public DbSet<EduSessionAttendance> SessionAttendances => Set<EduSessionAttendance>();
+    public DbSet<EduSessionPresence> SessionPresences => Set<EduSessionPresence>();
     public DbSet<EduNotification> Notifications => Set<EduNotification>();
     public DbSet<EduConversation> Conversations => Set<EduConversation>();
     public DbSet<EduConversationMember> ConversationMembers => Set<EduConversationMember>();
@@ -147,6 +148,27 @@ public class EduDbContext(DbContextOptions<EduDbContext> options) : DbContext(op
 
         // فهرس فريد لجلسة+طالب
         sa.HasIndex(a => new { a.SessionId, a.StudentId }).IsUnique();
+
+        // ---- Edu_SessionPresence (قسم 12 — شريط لكل دخول/خروج داخل الغرفة) ----
+        var presence = modelBuilder.Entity<EduSessionPresence>();
+        presence.ToTable("Edu_SessionPresence");
+        presence.HasKey(x => x.Id);
+        presence.Property(x => x.Id).HasColumnName("id");
+        presence.Property(x => x.TenantId).HasColumnName("tenantId");
+        presence.Property(x => x.SessionId).HasColumnName("sessionId");
+        presence.Property(x => x.AccountKind).HasColumnName("accountKind").HasMaxLength(16);
+        presence.Property(x => x.AccountId).HasColumnName("accountId");
+        presence.Property(x => x.RoomRole).HasColumnName("roomRole").HasMaxLength(16);
+        presence.Property(x => x.JoinedAt).HasColumnName("joinedAt");
+        presence.Property(x => x.LeftAt).HasColumnName("leftAt");
+        presence.Property(x => x.DurationMs).HasColumnName("durationMs");
+        presence.Property(x => x.CreatedAt).HasColumnName("created_at");
+        presence.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+
+        presence.HasIndex(x => new { x.SessionId, x.AccountId }).HasDatabaseName("ix_Edu_SessionPresence_session");
+        presence.HasIndex(x => x.TenantId).HasDatabaseName("ix_Edu_SessionPresence_tenant");
+        presence.HasIndex(x => x.LeftAt).HasDatabaseName("ix_Edu_SessionPresence_open");
+        presence.HasOne(p => p.Session).WithMany().HasForeignKey(p => p.SessionId);
 
         // ---- Edu_Parents ----
         var parent = modelBuilder.Entity<EduParent>();

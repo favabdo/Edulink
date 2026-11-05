@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../features/auth/authContext'
 import { useAppData } from '../../features/sessions/DataProvider'
+import { canJoin } from '../../features/sessions/joinAccess'
 import { useLanguage } from '../../i18n/useLanguage'
 import { ROUTES, sessionLivePath, studentDetailPath } from '../../app/router/paths'
 import { effectiveRoleFor, seesAllSchedule, type EffectiveRole } from '../../lib/roles'
@@ -206,7 +207,7 @@ function SessionRow({
       </span>
 
       <span className={styles.sessionAction}>
-        {isLive ? (
+        {canJoin(session) ? (
           <Link to={sessionLivePath(session.id)} className={styles.joinButton}>
             <Video size={16} aria-hidden="true" />
             <span>{t('dashboard:actions.join')}</span>

@@ -6,6 +6,10 @@
     "title": "Session not found",
     "back": "Back to sessions"
   },
+  "locked": {
+    "back": "Back to sessions",
+    "opensAt": "It opens at {{time}}"
+  },
   "noRecording": "No recording",
   "noRecordingHint": "Session recording is prohibited by platform policy — only metadata is saved (duration and attendance)",
   "status": {
@@ -25,8 +29,10 @@
     "desc": "The session room is open — video starts as soon as the teacher joins"
   },
   "screen": {
-    "you": "You are sharing your screen",
-    "peer": "{{name}} is sharing their screen"
+    "you": "You are sharing your screen"
+  },
+  "camera": {
+    "you": "Rear camera is being shared"
   },
   "tabs": {
     "chat": "Chat",
@@ -40,7 +46,24 @@
   "board": {
     "title": "Shared whiteboard",
     "clear": "Clear",
-    "color": "Pen color"
+    "color": "Pen color",
+    "file": "Show a file",
+    "closeFile": "Close file",
+    "page": "Page",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "enlarge": "Enlarge the board",
+    "shrink": "Shrink the board",
+    "docMissing": "The shared file could not be loaded"
+  },
+  "link": {
+    "host": "Same network",
+    "srflx": "Direct over internet",
+    "relay": "Via relay server",
+    "unknown": "Path unknown",
+    "waiting": "Connecting media…",
+    "noMedia": "No video or audio from this participant",
+    "retry": "Retry"
   },
   "controls": {
     "mic": "Mute",
@@ -49,8 +72,10 @@
     "cameraOff": "Stop camera",
     "hand": "Raise hand",
     "screen": "Share screen",
+    "cameraShare": "Share camera",
     "board": "Whiteboard",
     "boardClose": "Video",
+    "backToStage": "Back to the teacher's stage",
     "chat": "Chat",
     "panelClose": "Close panel",
     "leave": "Leave"
@@ -88,6 +113,29 @@
   },
   "notice": {
     "iceFailed": "Could not load the connection settings from the server — the room is using public STUN only, so audio and video may fail on strict NAT networks.",
-    "iceEmpty": "The server returned an empty ICE server list — check the Meeting settings on the server."
+    "iceEmpty": "The server returned an empty ICE server list — check the Meeting settings on the server.",
+    "noMedia": "No camera or microphone available — you joined as a viewer only; check the browser permission and re-enter.",
+    "stageRejected": "The server refused to change what is on the stage.",
+    "docRejected": "The server refused to show this file in the session.",
+    "endFailed": "The session could not be ended from the room — it can be ended from the sessions page.",
+    "dismiss": "Dismiss notice"
+  },
+  "share": {
+    "unsupported": "This browser cannot capture the screen — use Camera to film paper, or Show a file to present from your library.",
+    "denied": "Camera or screen permission is blocked — allow it in site settings and try again.",
+    "busy": "The camera or screen is busy in another app (a call or another broadcast).",
+    "error": "Sharing failed on this device."
+  },
+  "file": {
+    "title": "A file shown inside the session",
+    "desc": "Pick a file from your library or from this device. Students see it under your pen immediately, and your writing stays on their screen even if they join late.",
+    "close": "Close",
+    "fromDevice": "Upload from device",
+    "uploading": "Uploading…",
+    "uploadFailed": "The upload failed.",
+    "onlyImagesPdf": "Inside a session only images and PDF files can be shown.",
+    "libraryEmpty": "Your file library is empty.",
+    "retry": "Retry",
+    "loadFailed": "The file list could not be loaded."
   }
 }

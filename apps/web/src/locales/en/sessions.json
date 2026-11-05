@@ -62,7 +62,9 @@
   "actions": {
     "join": "Join",
     "joinHint": "Open the preview screen then enter the session",
-    "joinLocked": "Joining is available during the session or within 60 minutes before it starts",
+    "lockTooEarly": "Not yet — it opens in {{minutes}} minutes",
+    "lockWindowClosed": "This session's window has closed; it is the next one's turn",
+    "lockFinished": "This session has ended or was cancelled",
     "observe": "Observe",
     "observeHint": "Enter the session as an observer without participating",
     "details": "Details",

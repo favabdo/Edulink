@@ -8,6 +8,7 @@ import {
   teacherById,
   teachers,
   type ClassSession,
+  type HoursBasis,
   type HoursStats,
 } from '../../lib/data/eduStore'
 import type { EffectiveRole } from '../../lib/roles'
@@ -178,8 +179,9 @@ function rowFromStats(
   label: string,
   subjectKey: string,
   list: ClassSession[],
+  basis: HoursBasis,
 ): ReportRow {
-  const stats: HoursStats = statsForSessions(list)
+  const stats: HoursStats = statsForSessions(list, basis)
   return {
     id,
     label,
@@ -195,7 +197,7 @@ function rowFromStats(
 export function rowsForScope(scope: ReportScope, range: DateRange): ReportRow[] {
   if (scope === 'staff') {
     const rows = teachers.map((teacher) =>
-      rowFromStats(`t${teacher.id}`, teacher.name, subjectGroupKey(teacher.subject, teacher.subjectText), sessionsOfTeacher(teacher.id, range)),
+      rowFromStats(`t${teacher.id}`, teacher.name, subjectGroupKey(teacher.subject, teacher.subjectText), sessionsOfTeacher(teacher.id, range), 'delivered'),
     )
     return rows.filter((row) => row.sessions > 0)
   }
@@ -204,7 +206,7 @@ export function rowsForScope(scope: ReportScope, range: DateRange): ReportRow[] 
     const { teacherId } = getSelfScope()
     const teacher = teacherId === null ? null : teacherById(teacherId)
     if (!teacher) return []
-    return [rowFromStats(`t${teacher.id}`, teacher.name, subjectGroupKey(teacher.subject, teacher.subjectText), sessionsOfTeacher(teacher.id, range))]
+    return [rowFromStats(`t${teacher.id}`, teacher.name, subjectGroupKey(teacher.subject, teacher.subjectText), sessionsOfTeacher(teacher.id, range), 'delivered')]
   }
 
   const { studentId: selfStudentId } = getSelfScope()
@@ -214,7 +216,7 @@ export function rowsForScope(scope: ReportScope, range: DateRange): ReportRow[] 
     const student = studentById(studentId)
     if (!student) continue
     rows.push(
-      rowFromStats(`s${student.id}`, student.name, subjectGroupKey(student.subject, student.subjectText), sessionsOfStudent(student.id, range)),
+      rowFromStats(`s${student.id}`, student.name, subjectGroupKey(student.subject, student.subjectText), sessionsOfStudent(student.id, range), 'attended'),
     )
   }
   return rows

@@ -174,16 +174,16 @@ curl http://localhost:5279/api/health/db
 | `GET` | `/api/students/{id}` | موظف (أو الطالب نفسه) | تفاصيل طالب — **المدرس خارج حصصه ⇒ 403** |
 | `POST` | `/api/students` | مشرف فأعلى | إضافة طالب — **`phone` مطلوب** (400 بلا رقم · 409 لرقم مسجَّل لطالب آخر) |
 | `PATCH` | `/api/students/{id}` | مشرف فأعلى | تعديل اسم/`phone`/`states`/`access`/كلمة مرور طالب — `phone` **غائب = لا يُمَس** و**`""` = مسح الرقم** |
-| `GET` | `/api/sessions` | توكن | الحصص — المدرس حصصه، الطالب حصصه، الإدارة الكل |
+| `GET` | `/api/sessions` | توكن | الحصص — المدرس حصصه، الطالب حصصه، الإدارة الكل. **كل صف يحمل** `actualMinutes` (دقائق الحصة المقاسة من أشرطة الحضور) و`studentMinutes` (دقائق هذا الطالب نفسه) و`joinState` = `open`/`tooEarly`/`windowClosed`/`finished` مع `joinOpensAt`/`joinClosesAt`/`minutesUntilOpen` — **من ساعة الخادم**، فلا ساعة جهاز تُفتح بها حصة |
 | `POST` | `/api/sessions` | **مشرف فأعلى** | إنشاء حصة لأي مدرس/طالب (كود غرفة فريد تلقائيًا) — المدرس يُرفض 403 |
 | `GET` | `/api/sessions/{id}` | التوكن المناسب | حصة + سجل حضورها |
-| `PATCH` | `/api/sessions/{id}` | موظف | تغيير حالة الحصة — المدرس في حصته فقط، والإلغاء للإدارة |
+| `PATCH` | `/api/sessions/{id}` | موظف | تغيير حالة الحصة — المدرس في حصته فقط، والإلغاء للإدارة. **`status=live` يُرفض (400) خارج النافذة** (قبل الموعد بـ `Sessions:JoinEarlyMinutes` ولا بعد نهايتها بـ `Sessions:JoinGraceMinutes`) |
 | `POST` | `/api/sessions/{id}/cancel` | **مشرف فأعلى** | إلغاء مع سبب (قرار إداري) |
 | `POST` | `/api/sessions/{id}/reschedule` | **مشرف فأعلى** | تأجيل حصة مجدولة (`startsAt`, `durationMin?`) — يرفض الماضي والتعارض على الخادم ويُشعر الطالب وأولياءه والمدرس |
-| `POST` | `/api/sessions/{id}/end` | مدرس حصته / إدارة | إنهاء + حفظ الغياب وملخص metadata — **يجب إرسال جسم JSON ولو `{}`** مع `Content-Type: application/json`، وإلا يرجّع `415` |
-| `POST` | `/api/sessions/{id}/attendance` | توكن | تسجيل حضور (الطالب لنفسه فقط) |
+| `POST` | `/api/sessions/{id}/end` | مدرس حصته / إدارة | إنهاء + حفظ الغياب + **قياس المدة الفعلية** من `Edu_SessionPresence` وتثبيتها في `metadata.durationMinutes` (مع `reportedMinutes` و`endedBy` للمقارنة) — **الأرقام التي يرسلها العميل لا تُقرأ أصلاً**. يُرفض خارج النافذة ما لم تكن الحصة `live`. **يجب إرسال جسم JSON ولو `{}`** مع `Content-Type: application/json`، وإلا يرجّع `415` |
+| `POST` | `/api/sessions/{id}/attendance` | توكن | تسجيل حضور (الطالب لنفسه فقط) — **يُرفض خارج نافذة الحصة** |
 | `POST` | `/api/sessions/{id}/attendance/{studentId}/leave` | توكن | تسجيل مغادرة (الطالب لنفسه فقط) |
-| `GET` | `/api/sessions/stats` | توكن | إحصائيات ساعات/التزام (الطالب: نفسه فقط · **المدرس: حصصه فقط — أي `teacherId` آخر يتجاهله الخادم**) |
+| `GET` | `/api/sessions/stats` | توكن | إحصائيات ساعات/التزام — **الساعات من الوقت المقيس لا من الموعد المسجَّل**، مع تراجع للبيانات القديمة (أشرطة ⇒ `metadata.durationMinutes` ⇒ `endsAt − joinedAt` ⇒ `durationMin`). الطالب: نفسه فقط · **المدرس: حصصه فقط — أي `teacherId` آخر يتجاهله الخادم** |
 | `GET` | `/api/reports/overview` | **مشرف فأعلى** | إحصائيات المؤسسة: `?from&to` (unix ms، default 90 يومًا) `&teacherId&studentId&gradeKey&subject` ← `{range, filters, totals, previous, teachers[], students[], subjects[], grades[], weekly[], weekdayHours[], alerts[]}` — النسب `0..100` |
 | `GET` | `/api/reports/teachers/{id}` | **مشرف فأعلى** | بطاقة مدرس داخل الفترة نفسها (طلابُه، حضوره، تأخّر البداية، القادم) |
 | `POST` | `/api/auth/parents/login` | عام | دخول ولي الأمر (Edu_Parents) |
@@ -202,8 +202,9 @@ curl http://localhost:5279/api/health/db
 | `GET` | `/api/files` | موظف | مكتبة ملفات الحساب (`?take` ≤ 200) — **ملفاته هو فقط** |
 | `POST` | `/api/files` | موظف | رفع ملف — `multipart/form-data` بحقل `file`، سقف `Files:MaxFileMb` (افتراضي 50MB ⇒ **413**)، المحتوى على القرص والقاعدة ميتاداتا |
 | `GET` | `/api/files/{id}/download` | مالك الملف | تنزيل — معرّف غريب ⇒ **404** بلا أي معلومة عن وجوده |
+| `GET` | `/api/files/{id}/shared?session=CODE` | مشارك نشط في الغرفة | قراءة الملف **المعروض الآن** في الحصة (`inline` + `Range`) — بلا منح نشط ⇒ **404**، وغير مشارك ⇒ **404**، وبلا `session` ⇒ **400/404** |
 | `DELETE` | `/api/files/{id}` | مالك الملف | حذف الصف + الملف من القرص — معرّف غريب ⇒ **404** |
-| `WS` | `/hubs/meetings?access_token=…&room=…` | توكن | غرفة الحصة — الدور يُحدَّد من القاعدة، والانضمام يسجّل الحضور |
+| `WS` | `/hubs/meetings?access_token=…&room=…` | توكن | غرفة الحصة — الدور يُحدَّد من القاعدة، والانضمام يسجّل الحضور. **يُرفض الاتصال بـ `HubException` خارج نافذة الحصة** (`start − Sessions:JoinEarlyMinutes` … `end + Sessions:JoinGraceMinutes`، و`live` تبقى مفتوحة) فمعرفة كود الغرفة لا تفتحها |
 | `GET` | `/api/health/db` | عام | حالة الاتصال بالقاعدة |
 
 ### المصادقة
@@ -255,7 +256,30 @@ Authorization: Bearer <token>
 5. ~~لا يوجد Rate limiting~~ — **مُطبَّق بثلاث حصص من `RateLimit:*`**: الدخول `LoginPermitPerMinute=120` لكل IP، وباقي `/api` `ApiPermitPerMinute=600` لكل جلسة (والمجهول بالـ IP)، واتصالات الغرف `/hubs` `HubPermitPerMinute=3000` **لكل جهاز** (مفتاحه `access_token`)، **وقفل لكل حساب** بعد `LoginFailuresPerAccount=8` محاولات داخل `LoginLockoutMinutes=5` (`LoginAttemptTracker`، يرفض `429 + Retry-After` حتى بالكلمة الصحيحة أثناء القفل). **خلف nginx يجب** `Network:UseForwardedHeaders=true` مع تحديد الوسيط، وإلا تُحسب المؤسسة كلها IPًا واحدًا — التفاصيل والقياس في `docs/11` §6. **والحارس الفعلي ضد التزوير هو `Network:ForwardedHeadersLimit`** (= عدد الوسائط المأمونة: 1 لخطة `deploy/nginx.conf`، 2 فقط خلف CDN): به تُقرأ القيمة التي أضافها الوسيط وحدها، فيبقى تزوير `X-Forwarded-For` بلا أثر — `python tools/verify-xff-spoof.py green` يقيس ذلك (حدّ 1 ⇒ 429 عند المحاولة 121 رغم ترويسة مزوَّرة مختلفة كل مرة؛ حدّ 4 ⇒ صفر 429 أي الحدّ متجاوَز).
 6. ~~الطلاب وأولياء الأمر بلا نقاط نهاية~~ — **مُطبَّق**: دخول/عزل/حضور للطلاب، ودخول/أبناء/ربط لأولياء الأمور، ورسائل وإشعارات للأدوار الثلاثة (`docs/11` §6).
 7. **إعداد الخطة الباردة (`GET /api/meeting/ice`، يتطلب توكنًا):** يعيد `iceServers`؛ ومع `Meeting:TurnSecret` يوقّع لكل مستخدم `username = "<unix expiry>:<userId>"` (القيمة **مطلقة** لا مدة) و`credential = base64(HMAC-SHA1(secret, username))` — نفس ما يفحصه coturn بوضع `use-auth-secret`. لا أسرار ثابتة في المتصفح، والتوكن ينتهي بعد `Meeting:TurnTtlSeconds` (افتراضي 86400). **مقيس بـ** `python tools/verify-ice-turn.py green` (إعادة حساب مستقلة للتوقيع + صيغة username + العمر = TTL + `401` بلا توكن) و`red` لإثبات أن الفحص يرفض عند اختلاف السرّ؛ و`deploy/run.sh` يشغّلها ويقاطع `Meeting__TurnSecret` مع `static-auth-secret` في `deploy/turnserver.conf`. إن تعذّرت قراءة الإعداد لا تسقط الواجهة بصمت: تعرض تنبيهًا أن الغرفة تعمل بـ STUN العام فقط.
-8. **عقد الانضمام في الغرفة (`join`):** الوسيط `participantRole` الذي يرسله المتصفح **لا يُقرأ للترخيص إطلاقًا** — الخادم يحسب الدور من القاعدة (طالب الحصة = `student`، ولي الأمر المرتبط = `observer`، مدرّس الحصة = `teacher`، وكل من `supervisor` فأعلى = `observer`، وغير هؤلاء `HubException`). و`RoomInfo` المُرجعة **تحتوي الآخرين فقط** (لا نفس المشارك)، فالدور المحسوب لا يُقرأ من نتيجة `join` بل يصل بقية الغرفة من رسالة `peer-joined` التي يكتبها الخادم بنفسه؛ وكل تطبيق داخلي (إنهاء الحصة، الحالة، الحضور) يستخدم الدور المحسوب المخزَّن على الاتصال. `tools/hub-through-proxy-check.mjs` يقيس الاتجاهين: مطالعة `'teacher'` من مالك ⇒ `'observer'`، ومطالبة `'student'` من مدرّس الحصة ⇒ `'teacher'`.
+8. **عقد الانضمام في الغرفة (`join`):** الوسيط `participantRole` الذي يرسله المتصفح **لا يُقرأ للترخيص إطلاقًا** — الخادم يحسب الدور من القاعدة (طالب الحصة = `student`، ولي الأمر المرتبط = `observer`، مدرّس الحصة = `teacher`، وكل من `supervisor` فأعلى = `observer`، وغير هؤلاء `HubException`). و`RoomInfo` المُرجعة **تحتوي الآخرين فقط** (لا نفس المشارك)، فالدور المحسوب لا يُقرأ من نتيجة `join` بل يصل بقية الغرفة من رسالة `peer-joined` التي يكتبها الخادم بنفسه؛ وكل تطبيق داخلي (إنهاء الحصة، الحالة، الحضور) يستخدم الدور المحسوب المخزَّن على الاتصال. `tools/hub-through-proxy-check.mjs` يقيس الاتجاهين: مطالعة `'teacher'` من مالك ⇒ `'observer'`، ومطالبة `'student'` من مدرّس الحصة ⇒ `'teacher'`. **وبالإضافة إلى الدور، النافذة تُفرض داخل الـ Hub نفسه** (`SessionWindow.Evaluate` بساعة **الخادم**) قبل أي تسجيل: خارجها `HubException` برسول يفهمه المستخدم (لم يحن موعدها / انتهت دورتها) — فالغرفة لا تُفتح بمعرفة كودها ولا بساعة جهاز. **والوقت الفعلي يُقاس لا يُبلَّغ:** كل اتصال يفتح شريطًا في `Edu_SessionPresence` (`accountKind/accountId/roomRole/joinedAt`) ويختمه عند `OnDisconnectedAsync` بـ `leftAt/durationMs`، فمجموع أشرطة الحساب = دقائقه هو (**الخروج المؤقت ثم العودة يُحسبان معًا**، لا يُمحى الأول كما كان يحدث مع `attendance.LeftAt = null`)، ومجموع كل الأشرطة = `actualMinutes` للحصة. البوابة: `python tools/verify-session-window-and-hours.py` (27 بندًا، وجهان مقيسان).
 9. **إبطال الجلسات عند تغيير كلمة السر — غير مطبَّق (مقيس 2026-10-01):** `PATCH /api/users/{id}` (ومسارا الطالب وولي الأمر) يستبدل تجزئة كلمة السر وحدها، وصفوف `Edu_Tokens` لذلك الحساب تبقى كما هي، والتوكن لا ينتهي بالزمن ⇒ **جهاز مسجَّل دخولًا قبل التغيير يبقى يعمل** حتى الخروج أو بلوغ حدّ 10 أجهزة. عند التسليم: دوِّر كلمات السر ثم `DELETE FROM dbo.[Edu_Tokens];` (أو بـ `userId`) واختبر دخولًا حقيقيًا من كل جهاز. جعل ذلك أوتوماتيكيًا قرار مؤجَّل من صاحب المشروع. **والخطوة البديلة مُثبتة:** بعد `DELETE FROM dbo.[Edu_Tokens];` رجع التوكن القديم **401** على `/api/auth/me` (كان 200 قبله). و`tools/verify-default-credentials.py` بوابة آلية تقيس البند: تخرج 1 إن قبل النظام أي كلمة افتراضية موثّقة (كشفت 24 حسابًا على قاعدة مزروعة)، و0 بعد التدوير — موصولة في خطوة الحالة بـ`deploy/run.sh`.
 10. **البريد/Push للإشعارات** غير مُنفَّذ — `Edu_Notifications` داخلي فقط.
 11. **بصمات بيانات التطوير تُقاس قبل التسليم (`tools/verify-no-dev-data.py`):** لا تعتمد على عدد صفوف، بل تقرأ بريد الزرع من `apps/api/seed_dev.py` (وتُوسّع سلسلة `seed.student{i:02d}@…` المُولَّدة من نص المصدر) ثم تعدّ `/api/users|students|parents` وتخرج **1** على أي حساب مزروع أو أي بريد `@edulink.test` عدا بريد من شغّل الفحص. **مقيس (2026-10-01):** على قاعدة LocalDB مزروعة (`users=8 · students=12 · parents=4 · sessions=80 · notifications=403`) كشفت **23 بصمة** وخرجت 1؛ وبعد الحذف بالترتيب الذي أُقرأ من `sys.foreign_keys` (لا ترتيبًا مُخمَّنًا — `Edu_Sessions` مقيدة بـ `Edu_Users` و`Edu_Students`، و`Edu_Relations` بـ `Edu_Students` و`Edu_Parents`، بينما `Edu_Notifications`/`Edu_Tokens` بلا قيود فتُحذف للوقاية من اليتيم) صارت `users=1` والبقية صفرًا فخرجت **0**. تعذّر الدخول (`401`) أو أصل غير reachable أو شكل استجابة مجهول ⇒ **خروج 1**، فلا يُحسب «لم أُتحقق» نجاحًا. موصولة في خطوة الحالة بـ`deploy/run.sh`، والإجراء الكامل في `docs/11` §7.
+12. **حالة الغرفة المشتركة (الخطوة 62) — في ذاكرة الخادم لا في القاعدة:** `join` يرجع
+    `RoomInfo(Room, Self, Peers[], Board{ IsOn, Stage, Segments[], Doc })` — و`Self` هو
+    `Context.ConnectionId` لأن عميل SignalR في المتصفح لا يستطيع قراءة معرّف اتصاله.
+    لكل غرفة `RoomState`: ضربات السبورة FIFO بسقف **400 ضربة و48KB** (الأقدم يسقط أولًا —
+    بلا سقف كانت الحصة الطويلة تُنمّي ذاكرة الخادم بلا حدّ)، و`stage` (`video|board|doc`)
+    و`boardOn` و`doc` المعروض. **مفروض في الخادم بـ `IsHost()`** (مدرس الحصة أو `supervisor`
+    فأعلى — من القاعدة لا من مطالعة المتصفح): `setStage` و`shareDocument` و
+    `clearWhiteboard` و`endRoom`؛ و`sendStroke` والكتابة متاحان للطالب. كانت `endRoom`
+    تقبل أي `observer` فيقدر **ولي أمر مراقب** أن يُنهي حصة مدرّس ابنه، وكانت `sendChat`
+    تُرسل للمجموعة فترجع للكاتب **مرتين** — صارا `OthersInGroup` و`IsHost()`.
+    **منح الملف:** `shareDocument` يقبل **ملف المرسل نفسه** في `Edu_Files` (غيره ⇒
+    `HubException`) ويفتح منحة قراءة في `RoomSharedDocs` تُغلق عند تبديل الملف أو إغلاقه
+    أو مغادرة آخر مشارك أو إنهاء الحصة؛ و`GET /api/files/{id}/shared?session=` يقيّم
+    المشاركة النشطة في الخادم (`MayAttend`) فيعيد **404** للغريب أو لملف غير معروض.
+    ⚠️ **الحالة زائلة بقصد:** إعادة تشغيل الـ API (أو نشر نسخة) تُمحو ضربات الغرفة
+    والمستند المعروض — الحصة الجارية تحتاج إعادة رسم/عرض، ولا شيء من هذا يُنتظر منه النسخ
+    الاحتياطي (التسجيل ممنوع أصلًا، والوصف والحضور في القاعدة).
+    **البوابة:** `node tools/verify-room-state.mjs` — 12 بندًا على SignalR خام (لقطة
+    الانضمام، تطابق البتّات، المتأخر، السقف، صدى الشات، تحكم المدرس، ملكية الملف، منح
+    التنزيل، المسح، شكل ICE، دالة التنقية، الإنهاء)؛ تكتب حسابات وحصصًا وملفات بنطاق
+    `@tila.test` فتُشغَّل على **قاعدة اختبار** ثم `deploy/cleanup-verification-data.sql`
+    (الذي صار يحذف `Edu_Files` أيضًا). الحالات الحمراء المقيسة: تعطيل `IsHost()` ⇒ 3 بنود
+    حمراء؛ شات للمجموعة + سقف 100000 + مرشّح ICE معطّل ⇒ 4؛ تعطيل مرشّح `iceConfig.ts` ⇒ 1.

@@ -18,7 +18,7 @@ namespace EduspaceApi.Controllers;
 [ApiController]
 [Route("api/parents")]
 [Authorize]
-public class ParentsController(EduDbContext db, PasswordService passwords) : ControllerBase
+public class ParentsController(EduDbContext db, PasswordService passwords, IConfiguration config) : ControllerBase
 {
     private long CurrentUserId =>
         long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0L;
@@ -221,10 +221,12 @@ public class ParentsController(EduDbContext db, PasswordService passwords) : Con
             .Take(500)
             .ToListAsync();
 
+        var views = await Services.SessionViews.BuildAsync(db, sessions, config);
+
         return Ok(students.Select(s => new
         {
             student = s.ToDto(),
-            sessions = sessions.Where(x => x.StudentId == s.Id).Select(x => x.ToDto()),
+            sessions = sessions.Where(x => x.StudentId == s.Id).Select(x => x.ToDto(views[x.Id])),
         }));
     }
 

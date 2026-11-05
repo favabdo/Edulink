@@ -18,8 +18,9 @@
 --  -b يجعل أي خطأ خروجًا غير صفري بدل الصمت، والمعاملة تُرجَع كلها عند الخطأ.
 --
 --  الترتيب من sys.foreign_keys فعليًا لا من الذاكرة: رسائل → أعضاء المحادثة →
---  المحادثات → الحضور → الحصص → الإشعارات → التوكنات → Relations → أولياء الأمور
---  → الطلاب → الموظفون. صف المالك مُستثنى صراحةً (لا يُحذف ولا يُمَس).
+--  المحادثات → الحضور → أشرطة الحضور داخل الغرفة (Edu_SessionPresence) → الحصص →
+--  الإشعارات → التوكنات → ملفات المكتبة → Relations → أولياء الأمور → الطلاب → الموظفون.
+--  صف المالك مُستثنى صراحةً (لا يُحذف ولا يُمَس من هذا الملف إطلاقًا).
 -- ============================================================================
 
 SET NOCOUNT ON;
@@ -62,6 +63,14 @@ DELETE a FROM dbo.[Edu_SessionAttendance] a
       WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE st.[email] LIKE N'%' + d.pattern)
          OR EXISTS (SELECT 1 FROM @devDomains d WHERE tu.[email] LIKE N'%' + d.pattern));
 
+DELETE p FROM dbo.[Edu_SessionPresence] p
+ WHERE p.[sessionId] IN (
+     SELECT s.[id] FROM dbo.[Edu_Sessions] s
+       JOIN dbo.[Edu_Students] st ON st.[id] = s.[studentId]
+       LEFT JOIN dbo.[Edu_Users]  tu ON tu.[id] = s.[teacherId]
+      WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE st.[email] LIKE N'%' + d.pattern)
+         OR EXISTS (SELECT 1 FROM @devDomains d WHERE tu.[email] LIKE N'%' + d.pattern));
+
 DELETE s FROM dbo.[Edu_Sessions] s
   JOIN dbo.[Edu_Students] st ON st.[id] = s.[studentId]
   LEFT JOIN dbo.[Edu_Users] tu ON tu.[id] = s.[teacherId]
@@ -79,6 +88,20 @@ DELETE t FROM dbo.[Edu_Tokens] t
     OR (t.[kind] = N'student' AND t.[accountId] IN (SELECT s.[id] FROM dbo.[Edu_Students] s WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE s.[email] LIKE N'%' + d.pattern)))
     OR (t.[kind] = N'parent'  AND t.[accountId] IN (SELECT p.[id] FROM dbo.[Edu_Parents]  p WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE p.[email] LIKE N'%' + d.pattern)));
 
+-- 3-ب) مكتبة الملفات: الصفوف تُحذف من القاعدة، لكن **محتوى القرص لا يُحذف من هنا**
+--     لذلك تُطبع مساراته أولًا (تُحذف يدويًا من Files:StoragePath بنفس الترتيب).
+DECLARE @devFiles TABLE (id BIGINT NOT NULL PRIMARY KEY, storagePath NVARCHAR(400) NOT NULL);
+
+INSERT INTO @devFiles (id, storagePath)
+SELECT f.[id], f.[storagePath]
+  FROM dbo.[Edu_Files] f
+ WHERE f.[ownerId] IN (SELECT u.[id] FROM dbo.[Edu_Users] u WHERE u.[role] <> 3
+                        AND EXISTS (SELECT 1 FROM @devDomains d WHERE u.[email] LIKE N'%' + d.pattern));
+
+SELECT [id], [storagePath], N'← احذف هذا الملف من القرص بعد COMMIT' AS note FROM @devFiles ORDER BY [id];
+
+DELETE f FROM dbo.[Edu_Files] f WHERE f.[id] IN (SELECT id FROM @devFiles);
+
 -- 4) الربط ثم أولياء الأمور ثم الطلاب ثم الموظفون (المالك مُستثنى)
 DELETE r FROM dbo.[Edu_Relations] r
  WHERE r.[student_id] IN (SELECT s.[id] FROM dbo.[Edu_Students] s WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE s.[email] LIKE N'%' + d.pattern))
@@ -94,11 +117,15 @@ DELETE u FROM dbo.[Edu_Users] u
  WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE u.[email] LIKE N'%' + d.pattern)
    AND u.[role] <> 3;   -- الأدوار الأعلى (المالك) لا تُمَس من هذا الملف إطلاقًا
 
--- 5) الإثبات: لا بصمة باقية، والمالك ما زال موجودًا — وإلا تُرجَع المعاملة كلها
+-- 5) الإثبات: لا بصمة باقية **ممن يحذفهم هذا الملف**، والمالك ما زال موجودًا — وإلا تُرجَع المعاملة كلها
+--    ⚠️ الحصر بـ `role <> 3` إلزامي لا تجميل: الخطوة 4 تترك المالك عمدًا، فلو عدّ الإثبات
+--    المالك ضمن البصمة لَرُفضت كل جولة على قاعدة مالكها على نطاق نموذجي (مقيس: قاعدة
+--    تطوير مالكها `owner@tila.test` ⇒ `Msg 50000` و`ROLLBACK` كامل مع أن الحذف نجح).
 IF EXISTS (
-     SELECT 1 FROM dbo.[Edu_Users]   u WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE u.[email] LIKE N'%' + d.pattern)
+     SELECT 1 FROM dbo.[Edu_Users]   u WHERE u.[role] <> 3 AND EXISTS (SELECT 1 FROM @devDomains d WHERE u.[email] LIKE N'%' + d.pattern)
      UNION ALL SELECT 1 FROM dbo.[Edu_Students] s WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE s.[email] LIKE N'%' + d.pattern)
-     UNION ALL SELECT 1 FROM dbo.[Edu_Parents]  p WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE p.[email] LIKE N'%' + d.pattern))
+     UNION ALL SELECT 1 FROM dbo.[Edu_Parents]  p WHERE EXISTS (SELECT 1 FROM @devDomains d WHERE p.[email] LIKE N'%' + d.pattern)
+     UNION ALL SELECT 1 FROM dbo.[Edu_Files]    f WHERE f.[ownerId] IN (SELECT u.[id] FROM dbo.[Edu_Users] u WHERE u.[role] <> 3 AND EXISTS (SELECT 1 FROM @devDomains d WHERE u.[email] LIKE N'%' + d.pattern)))
 BEGIN
    ROLLBACK TRANSACTION;
    RAISERROR (N'بقيت بصمات نموذجية بعد الحذف — أُلغيت العملية كلها', 16, 1);

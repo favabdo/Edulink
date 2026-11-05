@@ -68,12 +68,17 @@ public class ReportsController(EduDbContext db) : ControllerBase
         if (studentId.HasValue) prev = prev.Where(s => s.StudentId == studentId.Value).ToList();
 
         var upcomingUtc = DateTime.UtcNow;
+
+        // استعلام حضور واحد لكل الحصص في الفترتين: الأرقام كلها تُقاس من نفس اللقطة
+        var factIds = sessions.Select(s => s.Id).Concat(prev.Select(s => s.Id)).Distinct().ToList();
+        var facts = await Services.SessionFacts.LoadAsync(db, factIds);
+
         return Ok(new
         {
             range = new { from = fromUtc, to = toUtc },
             filters = new { teacherId, studentId, gradeKey, subject },
-            totals = Summarize(sessions, upcomingUtc),
-            previous = Summarize(prev, upcomingUtc),
+            totals = Summarize(sessions, upcomingUtc, facts),
+            previous = Summarize(prev, upcomingUtc, facts),
             teachers = sessions.GroupBy(s => s.TeacherId)
                 .Select(g =>
                 {
@@ -83,7 +88,7 @@ public class ReportsController(EduDbContext db) : ControllerBase
                         id = g.Key,
                         name = t?.Name ?? t?.Email ?? $"#{g.Key}",
                         email = t?.Email ?? "",
-                        rows = Summarize(g.ToList(), upcomingUtc),
+                        rows = Summarize(g.ToList(), upcomingUtc, facts),
                     };
                 })
                 .OrderByDescending(x => x.rows.CompletedHours)
@@ -97,21 +102,21 @@ public class ReportsController(EduDbContext db) : ControllerBase
                         id = g.Key,
                         name = st?.Name ?? st?.Email ?? $"#{g.Key}",
                         grade = g.First().GradeKey,
-                        rows = Summarize(g.ToList(), upcomingUtc),
+                        rows = Summarize(g.ToList(), upcomingUtc, facts, g.Key),
                     };
                 })
                 .OrderByDescending(x => x.rows.CompletedHours)
                 .ToList(),
             subjects = sessions.GroupBy(s => s.Subject.Trim())
-                .Select(g => new { subject = g.Key, sessions = g.Count(), hours = Hours(g) })
+                .Select(g => new { subject = g.Key, sessions = g.Count(), hours = Hours(g, facts, upcomingUtc) })
                 .OrderByDescending(x => x.sessions)
                 .ToList(),
             grades = sessions.GroupBy(s => s.GradeKey)
-                .Select(g => new { grade = g.Key, sessions = g.Count(), hours = Hours(g) })
+                .Select(g => new { grade = g.Key, sessions = g.Count(), hours = Hours(g, facts, upcomingUtc) })
                 // g7 قبل g10: الترتيب بالحروف يجعل g10 يسبق g7
                 .OrderBy(x => x.grade.Length).ThenBy(x => x.grade)
                 .ToList(),
-            weekly = Weekly(sessions),
+            weekly = Weekly(sessions, facts, upcomingUtc),
             weekdayHours = WeekdayHours(sessions),
             alerts = Alerts(sessions, upcomingUtc),
         });
@@ -137,16 +142,17 @@ public class ReportsController(EduDbContext db) : ControllerBase
             .ToListAsync();
 
         var now = DateTime.UtcNow;
+        var facts = await Services.SessionFacts.LoadAsync(db, mine.Select(s => s.Id).ToList());
         return Ok(new
         {
             teacher = new { id = teacher.Id, name = teacher.Name ?? teacher.Email, email = teacher.Email, states = teacher.States, access = teacher.Access },
-            totals = Summarize(mine, now),
-            weekly = Weekly(mine),
+            totals = Summarize(mine, now, facts),
+            weekly = Weekly(mine, facts, now),
             subjects = mine.GroupBy(s => s.Subject.Trim())
-                .Select(g => new { subject = g.Key, sessions = g.Count(), hours = Hours(g) })
+                .Select(g => new { subject = g.Key, sessions = g.Count(), hours = Hours(g, facts, now) })
                 .OrderByDescending(x => x.sessions).ToList(),
             students = mine.GroupBy(s => s.StudentId)
-                .Select(g => new { id = g.Key, name = g.First().Student?.Name ?? $"#{g.Key}", rows = Summarize(g.ToList(), now) })
+                .Select(g => new { id = g.Key, name = g.First().Student?.Name ?? $"#{g.Key}", rows = Summarize(g.ToList(), now, facts, g.Key) })
                 .OrderByDescending(x => x.rows.CompletedHours).ToList(),
             upcoming = mine.Where(s => s.StartsAt >= now && s.Status == SessionStatuses.Scheduled)
                 .OrderBy(s => s.StartsAt).Take(20)
@@ -156,16 +162,35 @@ public class ReportsController(EduDbContext db) : ControllerBase
 
     // ──────────── تجميع ────────────
 
-    private static double Hours(IEnumerable<EduSession> g) =>
-        Math.Round(g.Where(s => s.Status == SessionStatuses.Completed).Sum(s => (double)s.DurationMin) / 60.0, 1);
+    /// <summary>
+    /// كل الساعات هنا **مقيسة من داخل الغرفة** (<see cref="Services.SessionFacts"/>)،
+    /// لا من <c>durationMin</c> المكتوب في الجدول — وهذا جوهر طلب صاحب المشروع:
+    /// «وقت الحصة الفعلي بيتاخد على معاد الحصة المسجل».
+    /// </summary>
+    private static double Hours(IEnumerable<EduSession> g, Services.SessionFacts facts, DateTime now, long? studentId = null) =>
+        Math.Round(g.Sum(s => Minutes(s, facts, now, studentId)) / 60.0, 1);
 
-    private static Metrics Summarize(List<EduSession> list, DateTime now)
+    private static double Minutes(EduSession s, Services.SessionFacts facts, DateTime now, long? studentId) =>
+        studentId is { } id ? facts.StudentMinutes(s, id, now) : facts.ActualMinutes(s, now);
+
+    /// <summary>
+    /// <c>studentId</c> لا يعني «فلتر» بل **عدّاد**: صف الطالب في التقارير هو زمن
+    /// جلوس هذا الطالب في الغرفة، وزمن المدرس هو زمن المدرس — وإلا خرج رقم
+    /// الطالبة في الرئيسية غير رقمها في شاشة الطلاب.
+    /// </summary>
+    private static Metrics Summarize(
+        List<EduSession> list,
+        DateTime now,
+        Services.SessionFacts facts,
+        long? studentId = null)
     {
         var completed = list.Where(s => s.Status == SessionStatuses.Completed).ToList();
         var cancelled = list.Where(s => s.Status == SessionStatuses.Cancelled).ToList();
-        var noShow = list.Where(s => s.Status == SessionStatuses.NoShow || (s.Status != SessionStatuses.Scheduled && s.Attendance == "absent")).ToList();
+        var noShow = list.Where(Services.SessionFacts.IsNoShow).ToList();
         var upcoming = list.Where(s => s.StartsAt >= now && s.Status == SessionStatuses.Scheduled).ToList();
-        var attended = completed.Count(s => s.Attendance is "present" or "late");
+        var attended = completed.Count(s => studentId is { } id
+            ? facts.Attended(s, id)
+            : s.Attendance is "present" or "late");
         var late = completed.Count(s => s.Attendance == "late");
 
         // الانضباط: المدرس بدأ في الوقت؟ (JoinedAt لا يتأخر عن الموعد بأكثر من 5 دقائق)
@@ -177,7 +202,7 @@ public class ReportsController(EduDbContext db) : ControllerBase
             cancelled.Count,
             noShow.Count,
             upcoming.Count,
-            Math.Round(completed.Sum(s => (double)s.DurationMin) / 60.0, 1),
+            Math.Round(completed.Sum(s => Minutes(s, facts, now, studentId)) / 60.0, 1),
             Math.Round(upcoming.Sum(s => (double)s.DurationMin) / 60.0, 1),
             completed.Count == 0 ? 0.0 : Math.Round((double)attended / completed.Count * 100, 1),
             completed.Count == 0 ? 0.0 : Math.Round((double)late / completed.Count * 100, 1),
@@ -186,11 +211,15 @@ public class ReportsController(EduDbContext db) : ControllerBase
             list.Select(s => s.StudentId).Distinct().Count());
     }
 
-    private static List<object> Weekly(List<EduSession> list)
+    private static List<object> Weekly(
+        List<EduSession> list,
+        Services.SessionFacts facts,
+        DateTime now,
+        long? studentId = null)
     {
         var done = list.Where(s => s.Status == SessionStatuses.Completed).ToList();
-        var now = DateTime.UtcNow;
-        var startOfThisWeek = now.Date.AddDays(-(int)now.DayOfWeek);
+        // أول الأسبوع الأحد: نفس اليوم الذي تعتمده الشاشة (12 أسبوعًا في الاتجاهين)
+        var startOfThisWeek = now.Date.AddDays(-(((int)now.DayOfWeek + 6) % 7));
         var rows = new List<object>();
         for (var w = 11; w >= 0; w--)
         {
@@ -201,7 +230,7 @@ public class ReportsController(EduDbContext db) : ControllerBase
             {
                 weekStart = ws,
                 sessions = inWeek.Count,
-                hours = Math.Round(inWeek.Sum(s => (double)s.DurationMin) / 60.0, 1),
+                hours = Math.Round(inWeek.Sum(s => Minutes(s, facts, now, studentId)) / 60.0, 1),
             });
         }
         return rows;

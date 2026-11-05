@@ -126,7 +126,7 @@ function hoursThisMonth(list: ClassSession[]): number {
           session.startsAt.getFullYear() === now.getFullYear() &&
           session.startsAt.getMonth() === now.getMonth(),
       )
-      .reduce((acc, session) => acc + session.durationMin, 0) / 60
+      .reduce((acc, session) => acc + session.actualMinutes, 0) / 60
   )
 }
 

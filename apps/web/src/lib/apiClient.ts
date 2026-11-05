@@ -63,6 +63,25 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   return data as T
 }
 
+/** جلب bytes خام بنفس التوكن ونفس الأخطاء — لمن يعرض الاستجابة بنفسه (PDF/صورة داخل الحصة) */
+export async function apiFetchBytes(path: string): Promise<ArrayBuffer> {
+  const token = readToken()
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { method: 'GET', headers })
+  } catch {
+    throw new ApiError(0, 'تعذّر الاتصال بالخادم. تأكد من تشغيل خدمة الـ API.')
+  }
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new ApiError(response.status, readErrorMessage(safeJson(text)) || 'تعذّر تحميل الملف.')
+  }
+  return response.arrayBuffer()
+}
+
 /** رفع ملف multipart بحقل `file` — نفس التوكن ونفس معالجة الأخطاء مثل apiFetch */
 export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const token = readToken()

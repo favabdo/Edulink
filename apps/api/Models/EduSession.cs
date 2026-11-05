@@ -83,3 +83,36 @@ public class EduSessionAttendance : EduTimestamped
     public virtual EduSession? Session { get; set; }
     public virtual EduStudent? Student { get; set; }
 }
+
+/// <summary>
+/// شريط حضور واحد داخل غرفة الحصة (قسم 12 في schema.sql): يُفتح عند الانضمام
+/// ويُغلق عند الانفصال أو الإنهاء. الوقت الفعلي لأي حساب = مجموع أشرطته، وهذا
+/// ما يجعل «دخل وخرج ورجع» يُحسب مرة واحدة لا مرتين — وهو المستحيل على
+/// <see cref="EduSessionAttendance"/> لأن صفه واحد تُُمسح leftAt عند كل دخول.
+/// </summary>
+public class EduSessionPresence : EduTimestamped
+{
+    public long Id { get; set; }
+    public long TenantId { get; set; } = 1;
+    public long SessionId { get; set; }
+
+    /// <summary>staff | student | parent — نفس ترميز Edu_Tokens.kind.</summary>
+    public string AccountKind { get; set; } = AccountKinds.Staff;
+    public long AccountId { get; set; }
+
+    /// <summary>teacher | student | observer — الدور المحسوب من القاعدة عند الانضمام.</summary>
+    public string RoomRole { get; set; } = "observer";
+
+    public DateTime JoinedAt { get; set; }
+
+    /// <summary>null = الحساب داخل الغرفة الآن.</summary>
+    public DateTime? LeftAt { get; set; }
+
+    /// <summary>طول الشريط بالميلي ثانية — 0 ما دام مفتوحًا، ويُملأ عند الإغلاق.</summary>
+    public long DurationMs { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+
+    public virtual EduSession? Session { get; set; }
+}

@@ -20,9 +20,11 @@
 -- QUOTED_IDENTIFIER (بلاها يرفض المحرّك INSERT/DELETE على جداول Edu_ لأن عليها فهارس
 -- مفلترة — Msg 1934)، و-b يجعل أي خطأ يخرج بكود غير صفري بدل الصمت.
 --
--- البصمة المتوقعة بعد التشغيل (مقيسة 2026-10-28): 12 جدولًا · صفر تريجر · 22 فحصًا ·
--- 10 مفاتيح خارجية · 45 قيمة افتراضية · 8 قيود تفريد · 115 عمودًا — منها 3 أعمدة `phone`
--- (المدرس/المشرف في Edu_Users، الطالب، ولي الأمر) و3 فهارس تفريد مفلترة
+-- البصمة المتوقعة بعد التشغيل (مقيسة 2026-11-05 على LocalDB، تشغيلان بخروج 0/0):
+-- 14 جدولًا · صفر تريجر · 25 فحصًا · 24 مفتاحًا خارجيًا · 64 قيمة افتراضية ·
+-- 8 قيود تفريد · 143 عمودًا — آخرها جدول `Edu_SessionPresence` (قسم 12: شريط لكل
+-- دخول/خروج داخل الغرفة، وهو مصدر الساعات المقيسة) بأعمدته الأحد عشر. ومنها 3 أعمدة
+-- `phone` (المدرس/المشرف في Edu_Users، الطالب، ولي الأمر) و3 فهارس تفريد مفلترة
 -- uq_edu_users_phone / uq_edu_students_phone / uq_edu_parents_phone (الرقم لا يتكرّر،
 -- وNULL و'' مستثنيان لأن الفهارس مفلترة — لا تدخل في عداد «8 قيود تفريد» لأن نوعها
 -- فهرس لا key constraint).
@@ -37,6 +39,7 @@ IF DB_ID(N'EdulinkDb') IS NULL
 GO
 USE [EdulinkDb];
 GO
+
 
 -- >>> BEGIN SQL SERVER (T-SQL) — نسخة سيرفر الشركة
 -- ============================================================================
@@ -639,6 +642,45 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_students_phone_
     CREATE UNIQUE INDEX [uq_edu_students_phone_tenant] ON [dbo].[Edu_Students] ([tenantId], [phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'uq_edu_parents_phone_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_Parents]'))
     CREATE UNIQUE INDEX [uq_edu_parents_phone_tenant] ON [dbo].[Edu_Parents] ([tenantId], [phone]) WHERE [phone] IS NOT NULL AND [phone] <> N'';
+GO
+
+-- ============================================================================
+--  [2026-11-05] (12) الحضور الفعلي داخل الغرفة — نفس قسم PostgreSQL أعلاه
+--
+--  شريط لكل دخول وخروج، والوقت الفعلي = مجموع الأشرطة. بلا تريجر هنا
+--  (قاعدة «لا تريجرات DML على SQL Server») — updated_at يضبطه EduDbContext.
+-- ============================================================================
+
+IF OBJECT_ID(N'[dbo].[Edu_SessionPresence]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Edu_SessionPresence] (
+        [id]          BIGINT       IDENTITY(1,1) NOT NULL,
+        [tenantId]    BIGINT       NOT NULL CONSTRAINT [df_edu_session_presence_tenant] DEFAULT 1,
+        [sessionId]   BIGINT       NOT NULL,
+        [accountKind] NVARCHAR(16) NOT NULL,
+        [accountId]   BIGINT       NOT NULL,
+        [roomRole]    NVARCHAR(16) NOT NULL,
+        [joinedAt]    DATETIME2    NOT NULL,
+        [leftAt]      DATETIME2    NULL,
+        [durationMs]  BIGINT       NOT NULL CONSTRAINT [df_edu_session_presence_ms] DEFAULT 0,
+        [created_at]  DATETIME2    NOT NULL CONSTRAINT [df_edu_session_presence_created_at] DEFAULT SYSUTCDATETIME(),
+        [updated_at]  DATETIME2    NOT NULL CONSTRAINT [df_edu_session_presence_updated_at] DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT [pk_edu_session_presence]         PRIMARY KEY ([id]),
+        CONSTRAINT [fk_edu_session_presence_sess]    FOREIGN KEY ([sessionId]) REFERENCES [dbo].[Edu_Sessions] ([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_edu_session_presence_tenant]  FOREIGN KEY ([tenantId]) REFERENCES [dbo].[Edu_Tenants] ([id]),
+        CONSTRAINT [ck_edu_session_presence_kind]    CHECK ([accountKind] IN (N'staff', N'student', N'parent')),
+        CONSTRAINT [ck_edu_session_presence_role]    CHECK ([roomRole] IN (N'teacher', N'student', N'observer')),
+        CONSTRAINT [ck_edu_session_presence_ms]      CHECK ([durationMs] >= 0)
+    );
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_SessionPresence_session' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_SessionPresence]'))
+    CREATE INDEX [ix_Edu_SessionPresence_session] ON [dbo].[Edu_SessionPresence] ([sessionId], [accountId]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_SessionPresence_tenant' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_SessionPresence]'))
+    CREATE INDEX [ix_Edu_SessionPresence_tenant] ON [dbo].[Edu_SessionPresence] ([tenantId]);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'ix_Edu_SessionPresence_open' AND [object_id] = OBJECT_ID(N'[dbo].[Edu_SessionPresence]'))
+    CREATE INDEX [ix_Edu_SessionPresence_open] ON [dbo].[Edu_SessionPresence] ([leftAt]) WHERE [leftAt] IS NULL;
 GO
 
 -- ============================================================================

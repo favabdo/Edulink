@@ -15,10 +15,43 @@ namespace EduspaceApi.Controllers;
 [ApiController]
 [Route("api/sessions")]
 [Authorize]
-public class SessionsController(EduDbContext db, Services.NotificationService notifications) : ControllerBase
+public class SessionsController(
+    EduDbContext db,
+    Services.NotificationService notifications,
+    IConfiguration config) : ControllerBase
 {
     private short CurrentRole =>
         short.TryParse(User.FindFirstValue(ClaimTypes.Role), out var role) ? role : (short)-1;
+
+    /// <summary>
+    /// الوقت الفعلي وحالة النافذة لكل حصة في الردّ — من نفس الدالة التي تستخدمها
+    /// التقارير، فلا يظهر رقم على الشاشة لا يوجد في تقرير.
+    /// </summary>
+    private Task<Dictionary<long, Services.SessionView>> ViewsAsync(ICollection<EduSession> sessions) =>
+        Services.SessionViews.BuildAsync(db, sessions, config);
+
+    private async Task<Services.SessionView> ViewAsync(EduSession session)
+    {
+        var views = await ViewsAsync([session]);
+        return views[session.Id];
+    }
+
+    /// <summary>
+    /// ختم كل شريط مفتوح في الحصة عند انتهائها. بدونه يبقى شريط من أغلق نافذته
+    /// بلا اتصال منقطع مفتوحًا، ويُحتسب له زمن لم يجلسه أحد.
+    /// </summary>
+    private async Task CloseOpenSegmentsAsync(long sessionId)
+    {
+        var now = DateTime.UtcNow;
+        var open = await db.SessionPresences
+            .Where(p => p.SessionId == sessionId && p.LeftAt == null)
+            .ToListAsync();
+        foreach (var segment in open)
+        {
+            segment.LeftAt = now;
+            segment.DurationMs = Math.Max(0, (long)(now - segment.JoinedAt).TotalMilliseconds);
+        }
+    }
 
     private long CurrentUserId =>
         long.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0L;
@@ -79,7 +112,8 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
             .OrderByDescending(s => s.StartsAt)
             .ToListAsync();
 
-        return Ok(rows.Select(s => s.ToDto()));
+        var views = await ViewsAsync(rows);
+        return Ok(rows.Select(s => s.ToDto(views[s.Id])));
     }
 
     /// <summary>إنشاء حصة جديدة (مشرف فأعلى — أو مدرس لحصصه هو فقط).</summary>
@@ -136,7 +170,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
                 "حصة جديدة في جدولك", $"{session.Subject} — {session.StartsAt:yyyy-MM-dd HH:mm} UTC",
                 link: $"/schedule");
 
-        return Created($"/api/sessions/{session.Id}", created.ToDto());
+        return Created($"/api/sessions/{session.Id}", created.ToDto(await ViewAsync(created)));
     }
 
     private Task NotifyStudentAndParentsAsync(EduSession session, string kind, string title, string? body = null) =>
@@ -168,7 +202,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
 
         return Ok(new
         {
-            session = session.ToDto(),
+            session = session.ToDto(await ViewAsync(session)),
             attendance = attendance.Select(a => a.ToDto()),
         });
     }
@@ -195,6 +229,12 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         switch (request.Status)
         {
             case SessionStatuses.Live:
+                // نفس النافذة التي يفرضها MeetingHub: لولاها كان PATCH يفتح حصة
+                // بالأمس بطلب واحد بلا غرفة ولا طالب.
+                var state = Services.SessionWindow.Evaluate(session, now, Services.SessionWindowOptions.From(config));
+                if (state != Services.JoinState.Open)
+                    return BadRequest(new { message = Services.SessionWindow.DenyMessage(state, session, now, Services.SessionWindowOptions.From(config)) });
+
                 session.Status = SessionStatuses.Live;
                 session.JoinedAt ??= now;
                 session.RoomCode = string.IsNullOrWhiteSpace(request.RoomCode) ? session.RoomCode : request.RoomCode;
@@ -202,21 +242,24 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
             case SessionStatuses.Completed:
                 session.Status = SessionStatuses.Completed;
                 session.EndsAt = now;
+                await CloseOpenSegmentsAsync(id);
                 break;
             case SessionStatuses.Cancelled:
                 session.Status = SessionStatuses.Cancelled;
                 session.EndsAt = now;
+                await CloseOpenSegmentsAsync(id);
                 break;
             case SessionStatuses.NoShow:
                 session.Status = SessionStatuses.NoShow;
                 session.EndsAt = now;
+                await CloseOpenSegmentsAsync(id);
                 break;
             default:
                 return BadRequest(new { message = "حالة الحصة غير معروفة." });
         }
 
         await db.SaveChangesAsync();
-        return Ok(session.ToDto());
+        return Ok(session.ToDto(await ViewAsync(session)));
     }
 
     /// <summary>إلغاء حصة مع سبب (يُحفظ في metadata).</summary>
@@ -231,6 +274,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
 
         session.Status = SessionStatuses.Cancelled;
         session.EndsAt = DateTime.UtcNow;
+        await CloseOpenSegmentsAsync(id);
         session.Metadata = System.Text.Json.JsonSerializer.Serialize(new
         {
             cancelledBy = string.IsNullOrWhiteSpace(request.By) ? "staff" : request.By!.Trim(),
@@ -244,7 +288,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         await notifications.NotifyAsync("staff", session.TeacherId, session.TenantId, "session_cancelled",
             "إلغاء حصة في جدولك", request.Reason, link: "/schedule");
 
-        return Ok(session.ToDto());
+        return Ok(session.ToDto(await ViewAsync(session)));
     }
 
     /// <summary>تسجيل حضور طالب في الحصة — present إن كان في الوقت، late إذا تأخر.</summary>
@@ -253,8 +297,13 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
     {
         var session = await db.Sessions.FirstOrDefaultAsync(s => s.Id == id && s.TenantId == CurrentTenantId);
         if (session is null) return NotFound(new { message = "الحصة غير موجودة." });
-        if (session.Status is not (SessionStatuses.Live or SessionStatuses.Scheduled))
-            return BadRequest(new { message = "لا يمكن تسجيل الحضور إلا لحصة مجدولة أو جارية." });
+
+        // الحضور خارج النافذة يعني حصة لم تبدأ أو انتهت — وكان هذا النداء وحده
+        // يحوّل أي حصة مجدولة إلى live مهما كان موعدها.
+        var options = Services.SessionWindowOptions.From(config);
+        var windowState = Services.SessionWindow.Evaluate(session, DateTime.UtcNow, options);
+        if (windowState != Services.JoinState.Open)
+            return BadRequest(new { message = Services.SessionWindow.DenyMessage(windowState, session, DateTime.UtcNow, options) });
 
         if (request.StudentId <= 0)
             return BadRequest(new { message = "معرّف الطالب مطلوب." });
@@ -346,8 +395,18 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "هذه الحصة ليست من حصصك." });
 
         var now = DateTime.UtcNow;
+
+        // حصة لم تُفتح أصلاً لا تُقفل «مكتملة»: هذا يكذب على المدرس والطالب معًا.
+        // أما الجارية (live) فيُسمح بإنهائها مهما تجاوزت موعدنها — لأنها غالبًا
+        // الحصة التي طال فيها الشرح، والرفض هنا يتركها معلّقة بلا نهاية.
+        var options = Services.SessionWindowOptions.From(config);
+        var endState = Services.SessionWindow.Evaluate(session, now, options);
+        if (session.Status != SessionStatuses.Live && endState != Services.JoinState.Open)
+            return BadRequest(new { message = Services.SessionWindow.DenyMessage(endState, session, now, options) });
+
         session.Status = SessionStatuses.Completed;
         session.EndsAt = now;
+        await CloseOpenSegmentsAsync(id);
 
         // من لم يُسجَّل حضوره يُعلَّم غائبًا
         var attended = await db.SessionAttendances.AnyAsync(a => a.SessionId == id && a.Mark != "absent");
@@ -377,13 +436,29 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
 
         await db.SaveChangesAsync();
 
+        // القياس بعد الحفظ: الأشرطة التي خُتمت للتوّ لا تُرى في القاعدة قبل ذلك،
+        // والرقم المقيس هو ما يُبلَّغ به الطالب وولي الأمر لا ما أرسلته الشاشة.
+        var facts = await Services.SessionFacts.LoadAsync(db, [id]);
+        var measuredMinutes = (int)Math.Round(facts.ActualMinutes(session, now));
+        if (measuredMinutes > 0)
+        {
+            session.Metadata = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                durationMinutes = measuredMinutes,
+                reportedMinutes = request.DurationMinutes,
+                endedBy = string.IsNullOrWhiteSpace(request.By) ? "teacher" : request.By!.Trim(),
+                endedAt = now,
+            });
+            await db.SaveChangesAsync();
+        }
+
         await NotifyStudentAndParentsAsync(session, "session_ended",
-            "انتهت الحصة", request.DurationMinutes is { } m ? $"مدتها {m} دقيقة" : null);
+            "انتهت الحصة", measuredMinutes > 0 ? $"مدتها الفعلية {measuredMinutes} دقيقة" : null);
         if (CurrentRole != UserRoles.Teacher || session.TeacherId != CurrentUserId)
             await notifications.NotifyAsync("staff", session.TeacherId, session.TenantId, "session_ended",
                 "انتهت حصة في جدولك", null, link: "/sessions");
 
-        return Ok(session.ToDto());
+        return Ok(session.ToDto(await ViewAsync(session)));
     }
 
     /// <summary>إحصائيات الالتزام لمدرس أو لطالب خلال أسابيع.</summary>
@@ -412,20 +487,26 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         if (cutoff.HasValue) query = query.Where(s => s.StartsAt >= cutoff.Value);
 
         var all = await query.ToListAsync();
-        var scheduled = all.Where(s => s.Status != SessionStatuses.Cancelled).ToList();
+        var facts = await Services.SessionFacts.LoadAsync(db, all.Select(s => s.Id).ToList());
+        var nowUtc = DateTime.UtcNow;
+
+        var scheduled = all.Where(Services.SessionFacts.IsCounted).ToList();
         var total = scheduled.Count;
         var present = scheduled.Count(s => s.Attendance == "present");
         var late = scheduled.Count(s => s.Attendance == "late");
-        var noShow = scheduled.Count(s => s.Status == SessionStatuses.NoShow || s.Attendance == "absent");
-        var completed = scheduled.Count(s => s.Status == SessionStatuses.Completed);
-        var hours = Math.Round(scheduled
-            .Where(s => s.Status == SessionStatuses.Completed)
-            .Sum(s => (double)s.DurationMin) / 60.0, 1);
+        var noShow = scheduled.Count(Services.SessionFacts.IsNoShow);
+        var completed = scheduled.Where(s => s.Status == SessionStatuses.Completed).ToList();
+        // إحصاء طالب = جلوسه هو في الغرفة، وإحصاء مدرس/مؤسسة = جلوس المدرس —
+        // نفس العدّادين الذين تستخدمهما التقارير، فلا يتخلف هذا المصدر الثالث.
+        double MinutesOf(EduSession s) => studentId.HasValue
+            ? facts.StudentMinutes(s, studentId.Value, nowUtc)
+            : facts.ActualMinutes(s, nowUtc);
+        var hours = Math.Round(completed.Sum(MinutesOf) / 60.0, 1);
 
         return Ok(new
         {
             totalSessions = total,
-            completed,
+            completed = completed.Count,
             present,
             late,
             noShow,
@@ -477,7 +558,7 @@ public class SessionsController(EduDbContext db, Services.NotificationService no
         await notifications.NotifyAsync("staff", session.TeacherId, session.TenantId, "session_rescheduled",
             "تأجيل حصة في جدولك", $"الموعد الجديد: {when} UTC", link: "/schedule");
 
-        return Ok(session.ToDto());
+        return Ok(session.ToDto(await ViewAsync(session)));
     }
 
     // ──────────── helpers ────────────

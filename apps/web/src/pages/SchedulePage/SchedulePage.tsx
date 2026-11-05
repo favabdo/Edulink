@@ -1336,7 +1336,9 @@ export function SchedulePage() {
     (id: number) => {
       const target = items.find((item) => item.id === id)
       void runAction(t('schedule:results.finished', { code: target?.code ?? '' }), () =>
-        endSessionAction(id, target?.durationMin ?? 45),
+        // لا مدة تُرسل: الخادم يقيس من أشرطة الحضور، وإرسال durationMin هنا
+        // كان يكتب «الحصة طالت مدتها المجدولة» لكل حصة مهما حدث فعلًا.
+        endSessionAction(id),
       )
     },
     [endSessionAction, items, runAction, t],

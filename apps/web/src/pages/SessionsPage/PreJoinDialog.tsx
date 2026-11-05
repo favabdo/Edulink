@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../features/auth/authContext'
 import { useLanguage } from '../../i18n/useLanguage'
 import { writeDevicePrefs } from '../../features/meeting/meetingClient'
+import { canJoin, joinHint } from '../../features/sessions/joinAccess'
 import { subjectDisplayName, type ClassSession } from '../../lib/data/eduStore'
 import { effectiveRoleFor, participantRoleFor } from '../../lib/roles'
 import type { SessionLookup } from './SessionsPage'
@@ -234,7 +235,13 @@ export function PreJoinDialog({
             <BackIcon size={16} aria-hidden="true" />
             <span>{t('sessions:prejoin.cancel')}</span>
           </button>
-          <button type="button" className={styles.joinButton} onClick={confirmJoin}>
+          <button
+            type="button"
+            className={styles.joinButton}
+            onClick={confirmJoin}
+            disabled={!canJoin(session)}
+            title={joinHint(t, session)}
+          >
             <Check size={16} aria-hidden="true" />
             <span>{t('sessions:prejoin.join')}</span>
           </button>

@@ -167,17 +167,22 @@ lines.push(`اللغات: ${langs.join(', ')}  |  مفاتيح مستخدمة: $
 if (orphans.length) lines.push(`\nغير مستخدمة (لا تُفشل الفحص): ${orphans.length}\n${orphans.slice(0, 12).map((o) => `  · ${o}`).join('\n')}`)
 lines.push('')
 
+/**
+ * القرار من الوقائع لا من عدد الأسطر المطبوعة: فحص سابق كان يعدّ الأسطر
+ * (`lines.length > 2 + …`) فتسقط عليه حالة «تفاوت واحد» ويُطبع ✗ ثم «نجح» ويخرج صفرًا.
+ */
 const seen = new Set()
+const errorLines = []
 for (const [lang, key, file, kind] of missing) {
   const id = `${lang}|${key}`
   if (seen.has(id)) continue
   seen.add(id)
-  lines.push(`✗ ${kind} مفقود: [${lang}] ${key}   (من ${file})`)
+  errorLines.push(`✗ ${kind} مفقود: [${lang}] ${key}   (من ${file})`)
 }
-for (const m of mismatches) lines.push(`✗ تفاوت لغات: ${m}`)
+for (const m of mismatches) errorLines.push(`✗ تفاوت لغات: ${m}`)
 
-if (lines.length > 2 + (orphans.length ? 2 : 0)) {
-  console.log(lines.join('\n'))
+if (errorLines.length) {
+  console.log([...lines, ...errorLines].join('\n'))
   console.log(`\nفشل: ${seen.size} مفتاح مفقود، ${mismatches.length} تفاوت بين اللغات.`)
   process.exit(1)
 }

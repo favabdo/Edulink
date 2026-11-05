@@ -67,10 +67,11 @@ sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d EdulinkDb -I -Q "SET NOCOUNT ON; 
   SSMS. **لا تُغيّر شيئًا في نص الملف** ليصير `sqlcmd`؛ الاختلاف في الأداة لا في المخطط.
   وإن أردت السطر من العربة نفسها فالبديل المركَّب فيها: `docker run --rm -i .../mssql-tools18`
   أو `pip install pymssql` — قرار تركيب، لا جزء من التسليم.
-- **البصمة المتوقعة:** 13 جدولًا · صفر تريجر · 22 فحصًا · 22 مفتاحًا خارجيًا · 60 قيمة افتراضية ·
-  8 قيود تفريد · **132 عمودًا** (منها 3 أعمدة `phone` مع 3 فهارس تفريد مفلترة على
-  `Edu_Users`/`Edu_Students`/`Edu_Parents`، وجدول `Edu_Files` لمكتبة الملفات، وجدول `Edu_Tenants`
-  مع عمود `tenantId` على كل جداول `Edu_` ومفاتيحه الخارجية — مقيَس 2026-10-28 بتشغيلين خروج 0/0).
+- **البصمة المتوقعة:** 14 جدولًا · صفر تريجر · 25 فحصًا · 24 مفتاحًا خارجيًا · 64 قيمة افتراضية ·
+  8 قيود تفريد · **143 عمودًا** (منها 3 أعمدة `phone` مع 3 فهارس تفريد مفلترة على
+  `Edu_Users`/`Edu_Students`/`Edu_Parents`، و`Edu_Files` لمكتبة الملفات، و`Edu_Tenants`
+  مع عمود `tenantId` على كل جداول `Edu_`، و`Edu_SessionPresence` لأشرطة الحضور داخل
+  الغرفة — مقيس 2026-11-05 بتشغيلين خروج 0/0 على LocalDB).
 - **مقيس (2026-10-21):** الملف المُسلَّم نفسه (لا مقتطف منه) شُغِّل **مرتين متتاليتين** على
   SQL Server بخروج **0 ثم 0**، والبصمة طابقت العدد كله ما عدا الأعمدة (كانت **104** قبل الهواتف)،
   ثم أُقفلت الحلقة في §4 بتشغيل الـ API على القاعدة التي أنشأها الملف وحده.
@@ -263,6 +264,7 @@ python tools/verify-ice-turn.py green            # توقيع TURN مطابق ل
 python tools/verify-default-credentials.py       # كل كلمة سر موثّقة في المستودع ⇒ مرفوضة
 python tools/verify-no-dev-data.py               # لا بصمات زرع (@edulink.test / seed_dev)
 node tools/hub-through-proxy-check.mjs --proxy $BASE
+node tools/verify-room-state.mjs                  # حالة الغرفة: سبورة لايف + سقف الضربات + تحكم المدرس + منح الملف + تنقية ICE
 ```
 
 ثم الترتيب المُسلَّم للتسليم النهائي (مقيس في الخطوة 45 — جولة التحقق تترك **14 حساب
@@ -271,7 +273,7 @@ node tools/hub-through-proxy-check.mjs --proxy $BASE
 1. البوابات أعلاه ⇒ كلها خضراء.
 2. **احذف** حسابات التحقق بـ **`deploy/cleanup-verification-data.sql`** (الترتيب اليدوي عبر
    `sys.foreign_keys` صار داخل الملف: رسائل ⇒ أعضاء ⇒ محادثات ⇒ حضور ⇒ حصص ⇒ إشعارات ⇒ توكنات
-   ⇒ علاقات ⇒ أولياء ⇒ طلاب ⇒ موظفون) ثم `DELETE FROM dbo.[Edu_Tokens];`:
+   ⇒ **ملفات المكتبة** ⇒ علاقات ⇒ أولياء ⇒ طلاب ⇒ موظفون) ثم `DELETE FROM dbo.[Edu_Tokens];`:
    ```bash
    sqlcmd -S "SERVER,1433" -U sa -P "PASSWORD" -d EdulinkDb -f 65001 -I -b \
           -i deploy/cleanup-verification-data.sql

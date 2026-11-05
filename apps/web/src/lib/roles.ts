@@ -128,6 +128,14 @@ export function canObserveSessions(role: EffectiveRole): boolean {
   return role === 'owner' || role === 'manager' || role === 'supervisor'
 }
 
+/**
+ * من يقود السبورة والمستند والمسرح داخل الحصة — نفس قاعدة `host` في MeetingHub:
+ * مدرس الحصة أو مشرف فأعلى. الطالب وولي الأمر المراقب لا يقودان.
+ */
+export function canHostRoom(role: EffectiveRole): boolean {
+  return role === 'teacher' || canObserveSessions(role)
+}
+
 export function seesAllSchedule(role: EffectiveRole): boolean {
   return role === 'owner' || role === 'manager' || role === 'supervisor'
 }
