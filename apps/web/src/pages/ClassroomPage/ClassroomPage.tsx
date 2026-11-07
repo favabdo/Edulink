@@ -3,23 +3,27 @@ import {
   Ban,
   Check,
   Circle,
+  Expand,
   Hand,
   LayoutGrid,
+  Lock,
   LogOut,
   Maximize2,
   MessageSquare,
+  Mic,
+  MicOff,
   Minimize2,
   Monitor,
   Pen,
+  PenOff,
   PhoneOff,
   RotateCcw,
   ShieldQuestion,
-  Smartphone,
+  SwitchCamera,
+  Unlock,
   Users,
   Video as VideoIcon,
   VideoOff as VideoOffIcon,
-  Mic,
-  MicOff,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -32,23 +36,30 @@ import {
   MeetingClient,
   readJoinFlags,
   takePreJoinStream,
+  type CameraFacing,
   type ChatMessage,
   type IceDegradation,
   type MeetingStatus,
   type Peer,
   type PeerLink,
+  type SelfPerms,
   type StageKind,
-  type Stroke,
 } from '../../features/meeting/meetingClient'
-import { acquireVisualShare, screenCaptureSupported, type ShareMode } from '../../features/meeting/mediaShare'
+import { acquireVisualShare, screenCaptureSupported } from '../../features/meeting/mediaShare'
 import type { SharedDoc } from '../../features/meeting/documents'
 import { useLanguage } from '../../i18n/useLanguage'
 import { canHostRoom, effectiveRoleFor, participantRoleFor, roleLabelKey } from '../../lib/roles'
 import { subjectDisplayName } from '../../lib/data/eduStore'
 import { useAppData } from '../../features/sessions/DataProvider'
 import { canJoin, joinHint } from '../../features/sessions/joinAccess'
-import { BoardTile, type BoardHandle } from './BoardTile'
-import { BOARD_COLORS } from '../../features/meeting/whiteboard'
+import { BoardTile, type BoardHandle, type RemotePointer } from './BoardTile'
+import {
+  DEFAULT_COLOR,
+  DEFAULT_TOOL,
+  DEFAULT_WIDTH,
+  type Annotation,
+  type BoardTool,
+} from '../../features/meeting/whiteboard'
 import { FilePickerDialog } from './FilePickerDialog'
 import styles from './ClassroomPage.module.css'
 
@@ -84,6 +95,8 @@ export function ClassroomPage() {
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [peers, setPeers] = useState<Peer[]>([])
+  /** نفس القائمة في ref: معالج المؤشر يُسجَّل مرة واحدة لكل غرفة، فلا لقطة إغلاق قديمة */
+  const peersRef = useRef<Peer[]>([])
   const [streams, setStreams] = useState<Record<string, MediaStream>>({})
   const [links, setLinks] = useState<Record<string, PeerLink>>({})
   const [chat, setChat] = useState<ChatMessage[]>([])
@@ -96,12 +109,19 @@ export function ClassroomPage() {
   const [elapsed, setElapsed] = useState(0)
   const [micOn, setMicOn] = useState(true)
   const [camOn, setCamOn] = useState(true)
+  /** قرار الخادم فيّ: يُبهت أزراري ويمنع نداءاتي قبل أن تُرفض بلا سبب على الشاشة */
+  const [perms, setPerms] = useState<SelfPerms>({ canSpeak: true, canVideo: true, canWrite: true, canShare: false })
+  const [facing, setFacing] = useState<CameraFacing>('user')
   const [handRaised, setHandRaised] = useState(false)
-  const [shareMode, setShareMode] = useState<ShareMode | null>(null)
+  const [sharingScreen, setSharingScreen] = useState(false)
   const [panelOpen, setPanelOpen] = useState(true)
   const [panelTab, setPanelTab] = useState<PanelTab>('chat')
   const [draft, setDraft] = useState('')
-  const [boardColor, setBoardColor] = useState<string>(BOARD_COLORS[0])
+  const [boardTool, setBoardTool] = useState<BoardTool>(DEFAULT_TOOL)
+  const [boardColor, setBoardColor] = useState<string>(DEFAULT_COLOR)
+  const [boardWidth, setBoardWidth] = useState<number>(DEFAULT_WIDTH)
+  /** مؤشرات المشاركين الحيّة: معرّف الاتصال → آخر نقطة، وتُرمى بعد ثانية ونصف بلا حركة */
+  const [pointers, setPointers] = useState<Record<string, RemotePointer>>({})
   const [attendance, setAttendance] = useState<'present' | 'late' | 'absent'>('present')
   const [note, setNote] = useState('')
   // قرار المدرس على المسرح (يُبثّ للجميع) + تكبير محلي لا يغيّر شاشة أحد غيره
@@ -109,6 +129,22 @@ export function ClassroomPage() {
   const [pin, setPin] = useState<'auto' | 'board' | string>('auto')
   const [doc, setDoc] = useState<SharedDoc | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  // المؤشر الساكت يجب أن يختفي (زووم يفعل نفس الشيء): وإلا بقيت أيدٍ مجمّدة على اللوحة
+  // بعد أن غادر صاحبها أو أُغلق قلمه بقرار المدرس.
+  useEffect(() => {
+    if (Object.keys(pointers).length === 0) return
+    const timer = window.setTimeout(() => {
+      setPointers((prev) => {
+        const next: Record<string, RemotePointer> = {}
+        for (const [connId, value] of Object.entries(prev)) {
+          if (Date.now() - value.at < 1600) next[connId] = value
+        }
+        return next
+      })
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [pointers])
 
   const showNotice = useCallback((message: string) => {
     setNotice(message)
@@ -143,7 +179,12 @@ export function ClassroomPage() {
       startedAtRef.current = Date.now()
 
       client = new MeetingClient(code, participantRole, selfName, {
-        onPeers: (list) => !disposed && setPeers(list),
+        onPeers: (list) => {
+          if (disposed) return
+          peersRef.current = list
+          setPeers(list)
+        },
+        onSelfPerms: (next) => !disposed && setPerms(next),
         onStream: (connId, stream) => {
           if (disposed) return
           setStreams((prev) => {
@@ -156,11 +197,17 @@ export function ClassroomPage() {
         onLink: (connId, link) => !disposed && setLinks((prev) => ({ ...prev, [connId]: link })),
         onChat: (msg) => !disposed && setChat((prev) => [...prev, msg]),
         // المخزن والرسم داخل BoardTile عبر ref ثابت — لا لقطة إغلاق قديمة
-        onStroke: (stroke: Stroke) => boardRef.current?.addStroke(stroke),
+        onAnnotation: (annotation: Annotation) => boardRef.current?.add(annotation),
+        onAnnotationsRemove: (ids: string[]) => boardRef.current?.remove(ids),
+        onPointer: (connId, x, y, tool) => {
+          if (disposed) return
+          const name = peersRef.current.find((p) => p.connId === connId)?.name ?? ''
+          setPointers((prev) => ({ ...prev, [connId]: { connId, name, x, y, tool, at: Date.now() } }))
+        },
         onBoardClear: () => boardRef.current?.clear(),
         onBoardInit: (init) => {
           if (disposed) return
-          boardRef.current?.applySnapshot(init.segments)
+          boardRef.current?.applySnapshot(init.annotations)
           setDoc(init.doc)
           setStage(init.doc ? 'doc' : init.stage)
         },
@@ -239,8 +286,17 @@ export function ClassroomPage() {
   }, [])
 
   // ---------------- التحكم ----------------
+  /** ممنوع من المدرس: الزر لا يتصرّف كأنه يعمل، وإلا صارت الشاشة تكذب على صاحها.
+   *  والمراقب لا صوت ولا كاميرا له بحكم دوره في الخادم — فليس «ممنوعًا بأمر المدرس». */
+  const micBlocked = !isObserver && !perms.canSpeak
+  const camBlocked = !isObserver && !perms.canVideo
+
   const toggleMic = () => {
     if (isObserver) return
+    if (micBlocked) {
+      showNotice(t('classroom:notice.blockedMic'))
+      return
+    }
     const next = !micOn
     setMicOn(next)
     localStream?.getAudioTracks().forEach((tr) => (tr.enabled = next))
@@ -249,6 +305,10 @@ export function ClassroomPage() {
 
   const toggleCam = () => {
     if (isObserver) return
+    if (camBlocked) {
+      showNotice(t('classroom:notice.blockedCamera'))
+      return
+    }
     const next = !camOn
     setCamOn(next)
     localStream?.getVideoTracks().forEach((tr) => (tr.enabled = next))
@@ -264,21 +324,18 @@ export function ClassroomPage() {
   const stopShare = () => {
     shareTrackRef.current?.stop()
     shareTrackRef.current = null
-    setShareMode(null)
+    setSharingScreen(false)
     void clientRef.current?.publishVideoTrack(null)
   }
 
-  /**
-   * مشاركة بصرية حسب ما يدعمه الجهاز فعلًا: شاشة على الحاسوب، وكاميرا خلفية على
-   * الموبايل (لا متصفح جوال يلتقط الشاشة — كان الزر يضغط ولا يحدث شيء بلا رسالة).
-   */
-  const startShare = async (mode: ShareMode) => {
+  /** مشاركة شاشة حقيقية (حاسوب فقط): مسار منفصل يُستبدل في كل الاتصالات */
+  const startScreenShare = async () => {
     if (isObserver) return
-    if (shareMode === mode) {
+    if (sharingScreen) {
       stopShare()
       return
     }
-    const result = await acquireVisualShare(mode)
+    const result = await acquireVisualShare()
     if ('failure' in result) {
       const { reason, detail } = result.failure
       showNotice(reason === 'error' && detail ? `${t('classroom:share.error')} — ${detail}` : t(`classroom:share.${reason}`))
@@ -286,9 +343,38 @@ export function ClassroomPage() {
     }
     shareTrackRef.current?.stop()
     shareTrackRef.current = result.track
-    setShareMode(result.mode)
+    setSharingScreen(true)
     await clientRef.current?.publishVideoTrack(result.track)
     result.track.onended = () => stopShare()
+  }
+
+  /**
+   * قلب الكاميرا الأمامية/الخلفية. الطريق الوحيد الذي لا يكسر الحصة: لا مسار
+   * ثانٍ ولا إيقاف الأول، لأن إيقاف أحدهما على أندرويد يُنهي الآخر.
+   */
+  const flipCamera = async () => {
+    if (isObserver) return
+    const result = await (clientRef.current?.flipCamera() ?? Promise.resolve({
+      ok: false as const, reason: 'no-camera' as const, detail: '',
+    }))
+    if (!result.ok) {
+      const key = result.reason === 'no-camera'
+        ? 'classroom:notice.noCameraTrack'
+        : result.reason === 'unsupported'
+          ? 'classroom:notice.cameraUnsupported'
+          : 'classroom:notice.cameraSwitchFailed'
+      showNotice(result.detail ? `${t(key)} — ${result.detail}` : t(key))
+      return
+    }
+    setFacing(result.facing)
+    setCamOn(true)
+    showNotice(result.how === 'device' ? t('classroom:notice.cameraDeviceSwitched') : t('classroom:notice.cameraFlipped'))
+  }
+
+  /** قرار المدرس على مشارك: الخادم وحده ينفّذه، والواجهة تعرض النتيجة أو السبب */
+  const setPeerPerms = (target: Peer, patch: Partial<SelfPerms>) => {
+    void clientRef.current?.setPermissions(target.connId, patch)
+      .catch((err) => showNotice(err instanceof Error ? err.message : t('classroom:notice.controlFailed')))
   }
 
   const pushStage = (next: StageKind) => {
@@ -306,9 +392,9 @@ export function ClassroomPage() {
         if (next) setStage('doc')
         setPin('auto')
       })
-      .catch(() => {
+      .catch((err) => {
         setDoc(previous)
-        showNotice(t('classroom:notice.docRejected'))
+        showNotice(err instanceof Error ? err.message : t('classroom:notice.docRejected'))
       })
   }
 
@@ -358,7 +444,7 @@ export function ClassroomPage() {
         roleLabel: t(roleLabelKey(role)),
         stream: localStream,
         self: true,
-        muted: !micOn,
+        muted: !micOn || micBlocked,
         hand: handRaised,
       })
     }
@@ -369,13 +455,13 @@ export function ClassroomPage() {
         roleLabel: t(`classroom:roles.${p.role}`),
         stream: streams[p.connId] ?? null,
         self: false,
-        muted: p.muted,
+        muted: p.muted || !p.canSpeak,
         hand: p.hand,
         link: links[p.connId],
       })
     }
     return list
-  }, [isObserver, localStream, peers, streams, links, micOn, handRaised, selfName, role, t])
+  }, [isObserver, localStream, peers, streams, links, micOn, micBlocked, handRaised, selfName, role, t])
 
   /** التكبير المحلي أولًا، ثم قرار المدرس على المسرح */
   const pinnedPeer = pin !== 'auto' && pin !== 'board' ? pin : null
@@ -477,9 +563,9 @@ export function ClassroomPage() {
         </div>
       )}
 
-      {shareMode && (
+      {(sharingScreen || facing === 'environment') && (
         <div className={styles.shareBanner}>
-          {t(shareMode === 'screen' ? 'classroom:screen.you' : 'classroom:camera.you')}
+          {t(sharingScreen ? 'classroom:screen.you' : 'classroom:camera.rearLive')}
         </div>
       )}
 
@@ -492,6 +578,7 @@ export function ClassroomPage() {
                 {...tileProps}
                 enlarged={pinnedPeer === key}
                 onEnlarge={() => setPin(pinnedPeer === key ? 'auto' : key)}
+                onFullscreenFail={() => showNotice(t('classroom:notice.fullscreenBlocked'))}
                 onRetry={() => clientRef.current?.retryPeer(key)}
               />
             ))}
@@ -500,12 +587,21 @@ export function ClassroomPage() {
                 ref={boardRef}
                 sessionCode={session.code}
                 doc={doc}
-                canDraw={role !== 'parent'}
+                canDraw={perms.canWrite && role !== 'parent'}
+                writeBlocked={!perms.canWrite && participantRole !== 'observer'}
                 canHost={isHost}
                 enlarged={boardLarge}
+                tool={boardTool}
                 color={boardColor}
+                width={boardWidth}
+                remotePointers={Object.values(pointers)}
+                onTool={setBoardTool}
                 onColor={setBoardColor}
-                onStroke={(stroke) => clientRef.current?.sendStroke(stroke)}
+                onWidth={setBoardWidth}
+                onAdd={(annotation) => clientRef.current?.queueAnnotation(annotation)}
+                onErase={(ids) => clientRef.current?.eraseAnnotations(ids)}
+                onUndo={() => void clientRef.current?.undoAnnotation()}
+                onPointerMove={(x, y, tool) => clientRef.current?.sendPointer(x, y, tool)}
                 onClear={() => clientRef.current?.clearBoard()}
                 onPickFile={() => setPickerOpen(true)}
                 onDocPage={(page) => doc && pushDoc({ ...doc, page })}
@@ -520,6 +616,7 @@ export function ClassroomPage() {
                 compact
                 enlarged={false}
                 onEnlarge={() => setPin(key)}
+                onFullscreenFail={() => showNotice(t('classroom:notice.fullscreenBlocked'))}
                 onRetry={() => clientRef.current?.retryPeer(key)}
               />
             ))}
@@ -622,9 +719,59 @@ export function ClassroomPage() {
                           {t(`classroom:link.${links[p.connId].transport}`)}
                         </span>
                       )}
-                      {p.muted ? <MicOff size={14} aria-hidden="true" /> : <Mic size={14} aria-hidden="true" />}
+                      {p.role !== 'observer' && (p.muted || !p.canSpeak
+                        ? <MicOff size={14} aria-hidden="true" />
+                        : <Mic size={14} aria-hidden="true" />)}
                       {p.hand && <Hand size={14} aria-hidden="true" className={styles.handOn} />}
                     </span>
+                    {isHost && (
+                      <span className={styles.personPerms}>
+                        {p.role !== 'observer' && (
+                          <>
+                            <button
+                              type="button"
+                              className={p.canSpeak ? styles.permBtn : `${styles.permBtn} ${styles.permBtnOff}`}
+                              onClick={() => setPeerPerms(p, { canSpeak: !p.canSpeak })}
+                              aria-pressed={!p.canSpeak}
+                              aria-label={`${p.name} — ${t(p.canSpeak ? 'classroom:perms.mute' : 'classroom:perms.unmute')}`}
+                              title={`${p.name}: ${t(p.canSpeak ? 'classroom:perms.mute' : 'classroom:perms.unmute')}`}
+                            >
+                              {p.canSpeak ? <Mic size={14} aria-hidden="true" /> : <MicOff size={14} aria-hidden="true" />}
+                            </button>
+                            <button
+                              type="button"
+                              className={p.canVideo ? styles.permBtn : `${styles.permBtn} ${styles.permBtnOff}`}
+                              onClick={() => setPeerPerms(p, { canVideo: !p.canVideo })}
+                              aria-pressed={!p.canVideo}
+                              aria-label={`${p.name} — ${t(p.canVideo ? 'classroom:perms.stopVideo' : 'classroom:perms.startVideo')}`}
+                              title={`${p.name}: ${t(p.canVideo ? 'classroom:perms.stopVideo' : 'classroom:perms.startVideo')}`}
+                            >
+                              {p.canVideo ? <VideoIcon size={14} aria-hidden="true" /> : <VideoOffIcon size={14} aria-hidden="true" />}
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          className={p.canWrite ? styles.permBtn : `${styles.permBtn} ${styles.permBtnOff}`}
+                          onClick={() => setPeerPerms(p, { canWrite: !p.canWrite })}
+                          aria-pressed={!p.canWrite}
+                          aria-label={`${p.name} — ${t(p.canWrite ? 'classroom:perms.blockWrite' : 'classroom:perms.allowWrite')}`}
+                          title={`${p.name}: ${t(p.canWrite ? 'classroom:perms.blockWrite' : 'classroom:perms.allowWrite')}`}
+                        >
+                          {p.canWrite ? <Pen size={14} aria-hidden="true" /> : <PenOff size={14} aria-hidden="true" />}
+                        </button>
+                        <button
+                          type="button"
+                          className={p.canShare ? styles.permBtn : `${styles.permBtn} ${styles.permBtnOff}`}
+                          onClick={() => setPeerPerms(p, { canShare: !p.canShare })}
+                          aria-pressed={!p.canShare}
+                          aria-label={`${p.name} — ${t(p.canShare ? 'classroom:perms.blockShare' : 'classroom:perms.allowShare')}`}
+                          title={`${p.name}: ${t(p.canShare ? 'classroom:perms.blockShare' : 'classroom:perms.allowShare')}`}
+                        >
+                          {p.canShare ? <Unlock size={14} aria-hidden="true" /> : <Lock size={14} aria-hidden="true" />}
+                        </button>
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -634,29 +781,54 @@ export function ClassroomPage() {
       </div>
 
       <footer className={styles.controls}>
-        <button type="button" className={`${styles.ctrl} ${!micOn ? styles.ctrlOff : ''}`} onClick={toggleMic} disabled={isObserver} aria-pressed={!micOn}>
-          {micOn ? <Mic size={19} aria-hidden="true" /> : <MicOff size={19} aria-hidden="true" />}
-          <span>{t(micOn ? 'classroom:controls.mic' : 'classroom:controls.micOff')}</span>
+        <button
+          type="button"
+          className={`${styles.ctrl} ${!micOn || micBlocked ? styles.ctrlOff : ''}`}
+          onClick={toggleMic}
+          disabled={isObserver}
+          aria-pressed={!micOn || micBlocked}
+          title={micBlocked ? t('classroom:notice.blockedMic') : undefined}
+        >
+          {micOn && !micBlocked ? <Mic size={19} aria-hidden="true" /> : <MicOff size={19} aria-hidden="true" />}
+          <span>{t(micBlocked ? 'classroom:controls.micBlocked' : micOn ? 'classroom:controls.mic' : 'classroom:controls.micOff')}</span>
         </button>
-        <button type="button" className={`${styles.ctrl} ${!camOn ? styles.ctrlOff : ''}`} onClick={toggleCam} disabled={isObserver} aria-pressed={!camOn}>
-          {camOn ? <VideoIcon size={19} aria-hidden="true" /> : <VideoOffIcon size={19} aria-hidden="true" />}
-          <span>{t(camOn ? 'classroom:controls.camera' : 'classroom:controls.cameraOff')}</span>
+        <button
+          type="button"
+          className={`${styles.ctrl} ${!camOn || camBlocked ? styles.ctrlOff : ''}`}
+          onClick={toggleCam}
+          disabled={isObserver}
+          aria-pressed={!camOn || camBlocked}
+          title={camBlocked ? t('classroom:notice.blockedCamera') : undefined}
+        >
+          {camOn && !camBlocked ? <VideoIcon size={19} aria-hidden="true" /> : <VideoOffIcon size={19} aria-hidden="true" />}
+          <span>{t(camBlocked ? 'classroom:controls.cameraBlocked' : camOn ? 'classroom:controls.camera' : 'classroom:controls.cameraOff')}</span>
         </button>
-        <button type="button" className={`${styles.ctrl} ${handRaised ? styles.ctrlHand : ''}`} onClick={toggleHand} aria-pressed={handRaised}>
-          <Hand size={19} aria-hidden="true" />
-          <span>{t('classroom:controls.hand')}</span>
+        {/* القلب على المسار الحيّ لا بمسار ثانٍ: على الموبايل كان الزر يقتل الكاميرتين */}
+        <button
+          type="button"
+          className={styles.ctrl}
+          onClick={() => void flipCamera()}
+          disabled={isObserver || camBlocked}
+          aria-label={t(facing === 'user' ? 'classroom:controls.toRear' : 'classroom:controls.toFront')}
+        >
+          <SwitchCamera size={19} aria-hidden="true" />
+          <span>{t(facing === 'user' ? 'classroom:controls.toRear' : 'classroom:controls.toFront')}</span>
         </button>
         {screenCaptureSupported() ? (
-          <button type="button" className={`${styles.ctrl} ${shareMode === 'screen' ? styles.ctrlHand : ''}`} onClick={() => void startShare('screen')} disabled={isObserver} aria-pressed={shareMode === 'screen'}>
+          <button type="button" className={`${styles.ctrl} ${sharingScreen ? styles.ctrlHand : ''}`} onClick={() => void startScreenShare()} disabled={isObserver} aria-pressed={sharingScreen}>
             <Monitor size={19} aria-hidden="true" />
             <span>{t('classroom:controls.screen')}</span>
           </button>
         ) : (
-          <button type="button" className={`${styles.ctrl} ${shareMode === 'camera' ? styles.ctrlHand : ''}`} onClick={() => void startShare('camera')} disabled={isObserver} aria-pressed={shareMode === 'camera'}>
-            <Smartphone size={19} aria-hidden="true" />
-            <span>{t('classroom:controls.cameraShare')}</span>
+          <button type="button" className={styles.ctrl} onClick={() => showNotice(t('classroom:share.unsupported'))} aria-disabled="true">
+            <Monitor size={19} aria-hidden="true" />
+            <span>{t('classroom:controls.screenUnavailable')}</span>
           </button>
         )}
+        <button type="button" className={`${styles.ctrl} ${handRaised ? styles.ctrlHand : ''}`} onClick={toggleHand} aria-pressed={handRaised}>
+          <Hand size={19} aria-hidden="true" />
+          <span>{t('classroom:controls.hand')}</span>
+        </button>
         {isHost && (
           <button type="button" className={`${styles.ctrl} ${stage !== 'video' ? styles.ctrlHand : ''}`} onClick={() => pushStage(stage === 'video' ? 'board' : 'video')} aria-pressed={stage !== 'video'}>
             {stage === 'video' ? <Pen size={19} aria-hidden="true" /> : <LayoutGrid size={19} aria-hidden="true" />}
@@ -786,6 +958,7 @@ function Tile({
   compact = false,
   enlarged = false,
   onEnlarge,
+  onFullscreenFail,
   onRetry,
 }: {
   name: string
@@ -798,10 +971,12 @@ function Tile({
   compact?: boolean
   enlarged?: boolean
   onEnlarge: () => void
+  onFullscreenFail: () => void
   onRetry: () => void
 }) {
   const { t } = useTranslation()
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const boxRef = useRef<HTMLElement | null>(null)
   const hasVideo = stream !== null && stream.getVideoTracks().some((tr) => tr.enabled && tr.readyState === 'live')
   // «اتصل» لا تكفي: الصامت (صفر بايت بعد أن يستقر المسار) أو الفاشل هو ما يراه المدرس أسود.
   // أما ما زال في new/connecting فهو في الطريق، لا مكسورًا — فلا وسم أحمر كاذب.
@@ -821,7 +996,7 @@ function Tile({
   const initials = name.trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('')
 
   return (
-    <figure className={`${styles.tile} ${compact ? styles.tileCompact : ''} ${enlarged ? styles.tileLarge : ''}`}>
+    <figure ref={boxRef} className={`${styles.tile} ${compact ? styles.tileCompact : ''} ${enlarged ? styles.tileLarge : ''}`}>
       <video
         ref={videoRef}
         className={`${styles.tileVideo} ${hasVideo ? '' : styles.tileVideoIdle}`}
@@ -841,6 +1016,20 @@ function Tile({
       )}
       <button type="button" className={styles.tileEnlarge} onClick={onEnlarge} aria-label={enlarged ? t('classroom:board.shrink') : t('classroom:board.enlarge')} aria-pressed={enlarged}>
         <Maximize2 size={14} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        className={styles.tileFull}
+        onClick={() => {
+          // المتصفح يرفض fullscreen بلا إيماءة مستخدم أو وهو في iframe — فالرفض يجب
+          // أن يُقال، وإلا بقي الزر «ميتًا» في نظر المدرس مثل زر الموبايل من قبل.
+          const request = boxRef.current?.requestFullscreen?.()
+          if (request) request.catch(() => onFullscreenFail())
+          else onFullscreenFail()
+        }}
+        aria-label={t('classroom:board.fullscreen')}
+      >
+        <Expand size={14} aria-hidden="true" />
       </button>
       {waitingMedia && (
         <span className={styles.tileWaiting} role="status">

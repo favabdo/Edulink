@@ -3,7 +3,7 @@ import { apiFetch, readToken } from '../../lib/apiClient'
 import { HUB_BASE_URL } from '../../lib/constants'
 import type { SharedDoc } from './documents'
 import { sanitizeIceServers } from './iceConfig'
-import { parseSegment } from './whiteboard'
+import { parseAnnotation, parseOp, type Annotation } from './whiteboard'
 
 /**
  * عميل الاجتماعات الحقيقي: SignalR للإشارات + WebRTC P2P للوسائط.
@@ -22,7 +22,22 @@ export type Peer = {
   muted: boolean
   camera: boolean
   hand: boolean
+  /** قرار المدرس لا إعلان العميل: `canSpeak=false` يعني مكتوم ولو قال العكس في DevTools */
+  canSpeak: boolean
+  canVideo: boolean
+  canWrite: boolean
+  canShare: boolean
 }
+
+/** صلاحياتي كما يراها الخادم — تُطفئ أدواتي وتمنع نداءاتي قبل أن تُرفض */
+export type SelfPerms = { canSpeak: boolean; canVideo: boolean; canWrite: boolean; canShare: boolean }
+
+export type CameraFacing = 'user' | 'environment'
+
+/** نتيجة قلب الكاميرا: الفشل يحمل سببًا يُعرض على الشاشة، لا استثناءً يذهب للكونسول وحده */
+export type FlipResult =
+  | { ok: true; facing: CameraFacing; how: 'constraints' | 'device' }
+  | { ok: false; reason: 'no-camera' | 'unsupported' | 'failed'; detail: string }
 
 export type ChatMessage = {
   id: string
@@ -34,15 +49,13 @@ export type ChatMessage = {
   mine: boolean
 }
 
-export type Stroke = { x1: number; y1: number; x2: number; y2: number; color: string }
-
 /** ما يضعه المدرس على المسرح: وجوه المشاركين، أو السبورة، أو المستند تحت القلم */
 export type StageKind = 'video' | 'board' | 'doc';
 
 export type BoardInit = {
   boardOn: boolean;
   stage: StageKind;
-  segments: Stroke[];
+  annotations: Annotation[];
   doc: SharedDoc | null;
 };
 
@@ -58,9 +71,16 @@ export type PeerLink = {
 
 export type MeetingEvents = {
   onPeers: (peers: Peer[]) => void
+  /** ما سمح به الخادم لي أنا: يُعطّل أدواتي قبل أن تُرفض نداءاتي */
+  onSelfPerms: (perms: SelfPerms) => void
   onStream: (connId: string, stream: MediaStream | null) => void
   onChat: (message: ChatMessage) => void
-  onStroke: (stroke: Stroke) => void
+  /** كائن شرح وصل من مشارك — أداة ولون وسماكة ونقاطًا نسبية، لا سطرًا واحدًا */
+  onAnnotation: (annotation: Annotation) => void
+  /** الممحاة والتراجع: الخادم هو من يقول أي معرّفات مُسحت فعلًا */
+  onAnnotationsRemove: (ids: string[]) => void
+  /** مؤشر مشارك حيّ فوق اللوحة: عارض، لا يُخزَّن ولا يصل لمن يدخل متأخرًا */
+  onPointer: (connId: string, x: number, y: number, tool: string) => void
   onBoardClear: () => void
   /** قرار المدرس على المسرح يصل للجميع — الطالب لا يضغط شيئًا ليرى السبورة */
   onStage: (stage: StageKind, boardOn: boolean, fromConnId: string) => void
@@ -78,6 +98,26 @@ export type MeetingEvents = {
   /** تعذّر قراءة إعداد ICE من الخادم: الغرفة تعمل على STUN العام فقط، وهذا يسقط على شبكات NAT الصارمة */
   onIceDegraded: (reason: IceDegradation) => void
 }
+
+/**
+ * قيود الكاميرا الحقيقية. بلا `frameRate` وبلا سقف bitrate كان libwebrtc يرمي أقصى
+ * ما تسمح به الشبكة، فيمتلئ طابور الراوتر وتسقط حزم — وهذا معنى «الصورة بتقطع»:
+ * التقطيع على وصلة سليمة غالبًا اختناق إرساع لا ضعف شبكة.
+ */
+const CAMERA_CONSTRAINTS: MediaTrackConstraints = {
+  width: { ideal: 1280 },
+  height: { ideal: 720 },
+  frameRate: { ideal: 30, max: 30 },
+}
+
+/** سقف الفيديو المرسل لكل مشارك — لا يُتجاوز مهما قيست الشبكة من سعة */
+const VIDEO_MAX_BPS = 1_200_000
+
+/** دمج حركة الشرح: رسالة واحدة كل ~50 مللي ثانية بدل نداء لكل `pointermove` */
+const ANNOTATION_FLUSH_MS = 50
+const ANNOTATION_BATCH_MAX = 64
+/** المؤشر الحيّ يُرسل مرة كل ~80 مللي ثانية: أرخص من القلم وأبطأ منه يكفي */
+const POINTER_SEND_MS = 80
 
 const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
@@ -147,11 +187,29 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   ])
 }
 
-/** نص مفيد من خطأ WebRTC — `DOMException` وحدها لا تُعرض لفائدة المستخدم */
+/**
+ * نص مفيد من خطأ WebRTC — `DOMException` وحدها لا تُعرض لفائدة المستخدم.
+ * وSignalR يلفّ رفض الخادم في عبارة إنجليزية عامة، فالسبب العربي الذي كتبه
+ * الخادم — وهو وحده القابل للفعل — يأتي بعد "HubException:" ويُعرض وحده.
+ */
+const HUB_REASON = /HubException:\s*([\s\S]+)$/
+
+/** عنصر من دفعة الخادم: نصّ JSON أو كائن جاهز — والتالف يُترك ولا يرمي داخل معالج SignalR */
+function safeParse(raw: unknown): unknown {
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+  return raw
+}
+
 function errorText(err: unknown): string {
   if (err instanceof DOMException) return `${err.message} (${err.name})`
-  if (err instanceof Error) return err.message
-  return String(err)
+  const raw = err instanceof Error ? err.message : String(err)
+  return HUB_REASON.exec(raw)?.[1]?.trim() || raw
 }
 
 /** طلب الوسائط الحقيقي — يسقط تدريجيًا: كاميرا+صوت → صوت فقط → بلا وسائط (مستقبل فقط).
@@ -163,7 +221,9 @@ export async function acquireLocalMedia(role: ParticipantRole): Promise<MediaStr
     return await withTimeout(
       navigator.mediaDevices.getUserMedia({
         audio: audioId ? { deviceId: { exact: audioId } } : true,
-        video: videoId ? { deviceId: { exact: videoId } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: videoId
+          ? { deviceId: { exact: videoId }, ...CAMERA_CONSTRAINTS }
+          : CAMERA_CONSTRAINTS,
       }),
       10_000,
     )
@@ -182,6 +242,19 @@ export class MeetingClient {
   private readonly pcs = new Map<string, RTCPeerConnection>()
   private readonly pendingIce = new Map<string, RTCIceCandidateInit[]>()
   private readonly renegotiating = new Set<string>()
+  /** كل مسار جُرِّب له ICE restart مرة واحدة قبل أن يُحكم عليه بأنه محتاج TURN */
+  private readonly iceRetried = new Set<string>()
+  /** كائنات الشرح المُجمَّعة بين دفعتين إرسال، ومعرّفات الممحاة والتراجع */
+  private pendingAdds: Annotation[] = []
+  private pendingDeletes: string[] = []
+  private annotationTimer = 0
+  private pointerAt = 0
+  /** ما يقبله الخادم مني الآن — يُطابق حالة الغرفة حتى تُرفض نداءاتي بلا سبب مفهوم */
+  private selfPerms: SelfPerms = { canSpeak: true, canVideo: true, canWrite: true, canShare: false }
+  /** اختيار المستخدم نفسه — المنع يسحب الوسائط، لكن رفع المنع لا يشغّل ما أطفأه هو */
+  private selfMuted = false
+  private selfCameraOff = false
+  private facing: CameraFacing = 'user'
   private local: MediaStream | null = null
   /** MediaStream التي تغلّف مسار المشاركة حتى يقبلها addTrack */
   private shareStream: MediaStream | null = null
@@ -228,6 +301,7 @@ export class MeetingClient {
         await this.applyRemote(pc, from, 'offer', sdp)
         const answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
+        this.capSenders(pc, from)
         await this.hub.invoke('sendAnswer', from, pc.localDescription?.sdp ?? '')
       } catch (err) {
         this.ev.onNotice(`تعذّر قبول عرض من ${this.peers.get(from)?.name ?? 'مشارك'}: ${errorText(err)}`)
@@ -276,13 +350,40 @@ export class MeetingClient {
       }
     })
 
+    /**
+     * صلاحيات مشارك كما يقررها الخادم. تصل **كل** الغرفة بمن فيه المستهدف نفسه:
+     * البقية يجب أن يروا القفل لا أن ينتظروا انقطاع وسائطه، وهو يطبّقه على مساراته.
+     */
+    this.hub.on('perms', (connId: string, canSpeak: boolean, canVideo: boolean, canWrite: boolean,
+      canShare: boolean, muted: boolean, camera: boolean) => {
+      const peer = this.peers.get(connId)
+      if (peer) {
+        this.peers.set(connId, { ...peer, canSpeak, canVideo, canWrite, canShare, muted, camera })
+        this.ev.onPeers(this.snapshot())
+      }
+      if (connId !== this.selfConn) return
+      this.selfPerms = { canSpeak, canVideo, canWrite, canShare }
+      this.ev.onSelfPerms(this.selfPerms)
+      this.enforceSelfPerms()
+    })
+
     this.hub.on('chat', (connId: string, name: string, role: ParticipantRole, text: string, at: string) => {
       this.ev.onChat({ id: `${connId}-${at}-${Math.random()}`, from: connId, name, role, text, at, mine: false })
     })
 
-    this.hub.on('stroke', (_connId: string, seg: string) => {
-      const stroke = parseSegment(seg)
-      if (stroke) this.ev.onStroke(stroke)
+    this.hub.on('annotate', (_connId: string, batch: string[]) => {
+      // دفعة واحدة قد تحمل عشرات العمليات: كل عملية تُفسَّر وحدها فلا يُطير تالفٌ ما بعدها
+      for (const raw of batch ?? []) {
+        const op = parseOp(safeParse(raw))
+        if (!op) continue
+        if (op.op === 'add') this.ev.onAnnotation(op.a)
+        else this.ev.onAnnotationsRemove(op.ids)
+      }
+    })
+
+    this.hub.on('pointer', (connId: string, x: number, y: number, tool: string) => {
+      if (typeof x !== 'number' || typeof y !== 'number') return
+      this.ev.onPointer(connId, x, y, typeof tool === 'string' ? tool : 'pen')
     })
 
     this.hub.on('wb-clear', () => this.ev.onBoardClear())
@@ -337,37 +438,92 @@ export class MeetingClient {
     this.started = true
     this.local = local
     this.ev.onStatus('connecting')
+    // stream شاشة ما قبل الانضمام ملتقط بـ `video: true` الافتراضية، وهو الذي يُرسل
+    // فعلًا — فبلا هذه الخطوة تبقى القيود الحقيقية حبرًا في دالة لا تُستدعى.
+    this.tuneLocalTracks()
     const iceDegraded = await ensureIceServers()
     if (iceDegraded) this.ev.onIceDegraded(iceDegraded)
     try {
       await this.hub.start()
-    } catch {
+    } catch (err) {
       this.ev.onStatus('denied')
-      this.ev.onFatal('تعذّر الوصول إلى خادم الاجتماعات. تأكد أن الـ API يعمل على المنفذ 5279.')
+      // السبب الخام يبقى ظاهرًا: «المنفذ 5279» كانت تُقال حتى حين كان السبب مصافحة مرفوضة
+      this.ev.onFatal(`تعذّر الوصول إلى خادم الاجتماعات. تأكد أن الـ API يعمل على المنفذ 5279. (${errorText(err)})`)
       return
     }
     await this.joinAndSync()
     this.ev.onStatus('connected')
   }
 
-  private async joinAndSync() {
-    // تنظيف أي اتصالات قديمة قبل إعادة الانضمام
-    for (const connId of [...this.pcs.keys()]) this.closePeer(connId)
-    this.peers.clear()
+  /** قيود حقيقية + تلميح المحتوى لكل مسار محلي، وأقصى ما تسمح به الشبكة لا يحدده المسار */
+  private tuneLocalTracks() {
+    for (const track of this.local?.getVideoTracks() ?? []) {
+      track.contentHint = 'motion'
+      track.applyConstraints(CAMERA_CONSTRAINTS).catch(() => {
+        // الـ ideal غير قابل على هذا الجهاز: المقاس الافتراضي يبقى يعمل، ولا يسقط المسار
+      })
+    }
+  }
 
+  /**
+   * سقف الفيديو المرسل لكل مشارك. بلا سقف يقيس libwebrtc سعة أعلى مما يحتمل
+   * الراوتر ويرسله، فيمتلئ الطابور وتُسقط الحزم — والمشاهد يراها «تقطّع» لا «بطء».
+   */
+  private capSenders(pc: RTCPeerConnection, connId: string) {
+    for (const sender of pc.getSenders()) {
+      if (sender.track?.kind !== 'video') continue
+      const params = sender.getParameters()
+      if (!params.encodings || params.encodings.length === 0) params.encodings = [{}]
+      const [first] = params.encodings
+      if (first.maxBitrate === VIDEO_MAX_BPS) continue
+      sender.setParameters({ ...params, encodings: [{ ...first, maxBitrate: VIDEO_MAX_BPS }] })
+        .catch((err) => this.noticeOnce(`تعذّر تقييد معدل الفيديو لـ ${this.peers.get(connId)?.name ?? 'مشارك'}: ${errorText(err)}`))
+    }
+  }
+
+  private async joinAndSync() {
     const info = (await this.hub.invoke('join', this.room, this.role, this.selfName)) as {
       room: string;
       self?: string;
+      me?: Peer;
       peers: Peer[];
-      board?: { isOn?: boolean; stage?: string; segments?: string[]; doc?: string | null };
+      board?: { isOn?: boolean; stage?: string; annotations?: string[]; doc?: string | null };
     }
+
+    /**
+     * الرفّة القصيرة التي يلتهمها SignalR بصمت كانت تُهدم كل الاتصالات وتُبنى من
+     * الصفر: سواد ثانية أو ثلاث عند كل انقطاع جزئي. إن رجع نفس معرّف اتصالي ونفس
+     * قائمة المشاركين فالخادم حافظ اتصالنا (stateful reconnect) — والوسائط تُترك
+     * كما هي. البناء من جديد يبقى لما تتغير المعرّفات فعلًا.
+     */
+    const preserved = !!info.self && info.self === this.selfConn
+      && this.pcs.size > 0
+      && info.peers.every((peer) => this.pcs.has(peer.connId))
+      && info.peers.length === this.pcs.size
+
+    if (!preserved) {
+      for (const connId of [...this.pcs.keys()]) this.closePeer(connId)
+    }
+
     this.selfConn = info.self ?? ''
+    this.peers.clear()
     for (const peer of info.peers) this.peers.set(peer.connId, peer)
     // الوافد الجديد يستقبل العروض من الموجودين — لا يبادر
     this.ev.onPeers(this.snapshot())
 
+    if (info.me) {
+      this.selfPerms = {
+        canSpeak: info.me.canSpeak,
+        canVideo: info.me.canVideo,
+        canWrite: info.me.canWrite,
+        canShare: info.me.canShare,
+      }
+      this.ev.onSelfPerms(this.selfPerms)
+      this.enforceSelfPerms()
+    }
+
     const board = info.board
-    const segments = (board?.segments ?? []).map(parseSegment).filter((s): s is Stroke => s !== null)
+    const annotations = (board?.annotations ?? []).map((raw) => parseAnnotation(safeParse(raw))).filter((a): a is Annotation => a !== null)
     let doc: SharedDoc | null = null
     if (board?.doc) {
       try {
@@ -385,7 +541,7 @@ export class MeetingClient {
       }
     }
     const stage: StageKind = board?.stage === 'board' || board?.stage === 'doc' ? board.stage : 'video'
-    this.ev.onBoardInit({ boardOn: !!board?.isOn || doc !== null, stage, segments, doc })
+    this.ev.onBoardInit({ boardOn: !!board?.isOn || doc !== null, stage, annotations, doc })
   }
 
   private ensurePeer(connId: string): RTCPeerConnection {
@@ -415,12 +571,16 @@ export class MeetingClient {
   }
 
   private createPeer(connId: string, initiator: boolean): RTCPeerConnection {
+    // peer-joined المتكرر لنفس المعرّف كان يبني اتصالًا فوق اتصال مفتوح بلا إغلاقه
+    this.closePeer(connId)
     const pc = this.buildConnection(connId)
     this.pcs.set(connId, pc)
 
     pc.onicecandidate = (e) => {
       if (e.candidate) void this.hub.invoke('sendIce', connId, JSON.stringify(e.candidate.toJSON())).catch(() => undefined)
     }
+
+    pc.onnegotiationneeded = () => this.renegotiate(connId, pc)
 
     pc.onicecandidateerror = (event) => {
       // فشل gathering هو أول ما يجب أن يراه المستخدم (لا صمت ولا زر ميت):
@@ -438,11 +598,21 @@ export class MeetingClient {
 
     pc.onconnectionstatechange = () => {
       this.reportTransport(pc, connId)
+      const name = this.peers.get(connId)?.name ?? 'مشارك'
       if (pc.connectionState === 'failed') {
-        this.noticeOnce(
-          `انقطاع الوسائط مع ${this.peers.get(connId)?.name ?? 'مشارك'} — يحتاج إعادة تفاوض أو خادمًا وسيطًا (TURN) على شبكتين مختلفتين.`,
-        )
+        // أول محاولة: تجميد ICE لا هدم الجلسة. `restartIce` يُطلق onnegotiationneeded
+        // فيُعاد العرض بمسارات جديدة — وهذا ما يفعله زووم عند رفّة الشبكة.
+        if (!this.iceRetried.has(connId)) {
+          this.iceRetried.add(connId)
+          this.noticeOnce(`انقطاع الوسائط مع ${name} — إعادة اختيار مسار بدون قطع الحصة.`)
+          pc.restartIce()
+        } else {
+          this.noticeOnce(
+            `تعذّر مسار الوسائط مع ${name} — يحتاج خادمًا وسيطًا (TURN) على شبكتين خلف NAT صارم، أو إعادة تفاوض بالزر.`,
+          )
+        }
       }
+      if (pc.connectionState === 'connected') this.iceRetried.delete(connId)
       if (pc.connectionState === 'closed') this.closePeer(connId)
     }
 
@@ -454,7 +624,10 @@ export class MeetingClient {
       void pc
         .createOffer()
         .then((offer) => pc.setLocalDescription(offer))
-        .then(() => this.hub.invoke('sendOffer', connId, pc.localDescription?.sdp ?? ''))
+        .then(() => {
+          this.capSenders(pc, connId)
+          return this.hub.invoke('sendOffer', connId, pc.localDescription?.sdp ?? '')
+        })
         .catch((err) => this.noticeOnce(`تعذّر بدء الاتصال بـ ${this.peers.get(connId)?.name ?? 'مشارك'}: ${errorText(err)}`))
     }
     return pc
@@ -529,6 +702,7 @@ export class MeetingClient {
     }
     this.pendingIce.delete(connId)
     this.renegotiating.delete(connId)
+    this.iceRetried.delete(connId)
   }
 
   /**
@@ -581,8 +755,11 @@ export class MeetingClient {
     void pc
       .createOffer()
       .then((offer) => pc.setLocalDescription(offer))
-      .then(() => this.hub.invoke('sendOffer', connId, pc.localDescription?.sdp ?? ''))
-      .catch(() => undefined)
+      .then(() => {
+        this.capSenders(pc, connId)
+        return this.hub.invoke('sendOffer', connId, pc.localDescription?.sdp ?? '')
+      })
+      .catch((err) => this.noticeOnce(`تعذّر إعادة التفاوض مع ${this.peers.get(connId)?.name ?? 'مشارك'}: ${errorText(err)}`))
       .finally(() => this.renegotiating.delete(connId))
   }
 
@@ -592,7 +769,16 @@ export class MeetingClient {
   }
 
   setState(muted: boolean, camera: boolean, hand: boolean) {
-    void this.hub.invoke('setState', muted, camera, hand).catch(() => undefined)
+    this.selfMuted = muted
+    this.selfCameraOff = camera
+    void this.hub.invoke('setState', muted, camera, hand)
+      .catch((err) => this.noticeOnce(`لم يقبل الخادم حالة مشاركتك: ${errorText(err)}`))
+  }
+
+  /** كنترول المدرس على مشارك واحد — أي رقم connectionId مزوَّر يسقط في الخادم */
+  setPermissions(targetConnId: string, patch: Partial<SelfPerms>) {
+    return this.hub.invoke('setPermissions', targetConnId,
+      patch.canSpeak ?? null, patch.canVideo ?? null, patch.canWrite ?? null, patch.canShare ?? null)
   }
 
   sendChat(text: string) {
@@ -604,12 +790,148 @@ export class MeetingClient {
     return { id, from: 'self', name: this.selfName, role: 'self' as const, text: trimmed, at, mine: true } satisfies ChatMessage
   }
 
-  sendStroke(stroke: Stroke) {
-    void this.hub.invoke('sendStroke', JSON.stringify(stroke)).catch(() => undefined)
+  /**
+   * كائن شرح واحد إلى الطابور. كان كل `pointermove` نداءً مستقلًا (60-120 في الثانية)
+   * يُعاد رسمه كاملًا عند الطرفين، فتزدحم نفس قناة WebSocket التي عليها بقية الغرفة.
+   * الآن تُجمع الكائنات وتُرسل دفعة واحدة، والرسم المحلي يعمل فورًا بلا انتظار الشبكة.
+   */
+  queueAnnotation(annotation: Annotation) {
+    this.pendingAdds.push(annotation)
+    this.scheduleFlush()
   }
 
+  /** الممحاة: معرّفات يراها هذا الجهاز، والخادم هو الذي يقرر أيًّا منها مُسح فعلًا */
+  eraseAnnotations(ids: string[]) {
+    if (ids.length === 0) return
+    this.pendingDeletes.push(...ids)
+    this.scheduleFlush()
+  }
+
+  /**
+   * تراجع زووم: الخادم يمسح آخر كائن **كتبه هذا الحساب** ويعيد معرّفه. لا يُكتفى
+   * بذاكرة المتصفح لأن من يرى اللوحة قد يرى كائنًا لم يكتبه هو.
+   */
+  async undoAnnotation(): Promise<void> {
+    this.flushAnnotations()
+    try {
+      const id = await this.hub.invoke<string | null>('undoAnnotation')
+      if (id) this.ev.onAnnotationsRemove([id])
+    } catch (err) {
+      this.noticeOnce(`لم يقبل الخادم التراجع: ${errorText(err)}`)
+    }
+  }
+
+  /** مؤشر حيّ فوق اللوحة — بلا انتظار الردّ، وبلا رسالة كل إطار فأرة */
+  sendPointer(x: number, y: number, tool: string) {
+    const now = Date.now()
+    if (now - this.pointerAt < POINTER_SEND_MS) return
+    this.pointerAt = now
+    void this.hub.invoke('sendPointer', x, y, tool).catch(() => undefined)
+  }
+
+  private scheduleFlush() {
+    if (this.annotationTimer) return
+    this.annotationTimer = window.setTimeout(() => this.flushAnnotations(), ANNOTATION_FLUSH_MS)
+  }
+
+  private flushAnnotations() {
+    if (this.annotationTimer) window.clearTimeout(this.annotationTimer)
+    this.annotationTimer = 0
+    const ops: unknown[] = []
+    for (const a of this.pendingAdds.splice(0, ANNOTATION_BATCH_MAX)) ops.push({ op: 'add', a })
+    const ids = this.pendingDeletes.splice(0, ANNOTATION_BATCH_MAX)
+    if (ids.length > 0) ops.push({ op: 'del', ids })
+    if (ops.length === 0) return
+    void this.hub.invoke('annotate', JSON.stringify(ops)).catch((err) => {
+      // الرفض سببه معروف لا غامض: منع كتابة أو تجاوز السقف. لا نكرّر الرسالة كل 50ms.
+      this.pendingAdds = []
+      this.pendingDeletes = []
+      this.noticeOnce(`لم يقبل الخادم الشرح: ${errorText(err)}`)
+    })
+    if (this.pendingAdds.length > 0 || this.pendingDeletes.length > 0) this.scheduleFlush()
+  }
+
+  /**
+   * المسح قرار على اللوحة كلها، فما لم يُرسَل بعد من طابور هذا الجهاز يخصّ لوحة لم تعد
+   * موجودة: إرساله بعد المسح يعيد حبرًا على شاشة الطرف الآخر بعد أن بيّض صاحبُها لوحته
+   * (مقيس في بوابة المتصفح: المدرس 0 والطالب باقٍ).
+   */
   clearBoard() {
-    void this.hub.invoke('clearWhiteboard').catch(() => undefined)
+    if (this.annotationTimer) window.clearTimeout(this.annotationTimer)
+    this.annotationTimer = 0
+    this.pendingAdds = []
+    this.pendingDeletes = []
+    void this.hub.invoke('clearWhiteboard')
+      .catch((err) => this.noticeOnce(`تعذّر مسح السبورة: ${errorText(err)}`))
+  }
+
+  /**
+   * قرار الخادم يُنفَّذ على مساراتي: مقفول الكلام يطفئ الميكروفون فعلًا لا يُبهت زرارًا،
+   * لأن بقية الغرفة ترى وسائطه لا واجهته.
+   */
+  private enforceSelfPerms() {
+    const speak = this.selfPerms.canSpeak && !this.selfMuted
+    const video = this.selfPerms.canVideo && !this.selfCameraOff
+    this.local?.getAudioTracks().forEach((track) => { track.enabled = speak })
+    this.local?.getVideoTracks().forEach((track) => { track.enabled = video })
+  }
+
+  /** الاتجاه الحيّ الآن — منه يعرف الزر أنه أمامية أم خلفية، لا من نص ثابت */
+  get cameraFacing(): CameraFacing {
+    return this.facing
+  }
+
+  /**
+   * قلب الكاميرا على **نفس المسار الحيّ**.
+   *
+   * كان القلب يعني مسارًا ثانيًا ثم إيقاف الأول، وعلى أندرويد الكاميرا مِلكية واحدة:
+   * إيقاف أحد المسارين يُنهي الآخر، فتموت الكاميرا ولا تعود حتى مع رجوع الأمامية.
+   * هنا `applyConstraints` أولًا (لا يلمس الهاردوير)، وإن كان الجهاز بكاميرا واحدة
+   * لا تقبل `facingMode` يُفتح الجهاز الآخر ويُحقن في كل الاتصالات، ولا يُوقف القديم
+   * إلا **بعد** أن يستقر الجديد.
+   */
+  async flipCamera(): Promise<FlipResult> {
+    const track = this.local?.getVideoTracks()[0]
+    if (!track) return { ok: false, reason: 'no-camera', detail: 'لا مسار كاميرا على هذا الجهاز' }
+
+    const target: CameraFacing = this.facing === 'user' ? 'environment' : 'user'
+
+    try {
+      await track.applyConstraints({ facingMode: { exact: target } })
+      this.facing = target
+      return { ok: true, facing: target, how: 'constraints' }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'NotFoundError') {
+        return { ok: false, reason: 'unsupported', detail: errorText(err) }
+      }
+      // لا كاميرا ثانوية بـ facingMode: تجربة أجهزة الإدخال الأخرى (مكتبية/خارجية)
+    }
+
+    const others = (await navigator.mediaDevices.enumerateDevices())
+      .filter((d) => d.kind === 'videoinput' && d.deviceId && d.deviceId !== track.getSettings().deviceId)
+    if (others.length === 0) {
+      return { ok: false, reason: 'unsupported', detail: 'لا توجد كاميرا أخرى في هذا الجهاز' }
+    }
+
+    let fresh: MediaStreamTrack | null = null
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: others[0]!.deviceId }, ...CAMERA_CONSTRAINTS },
+        audio: false,
+      })
+      fresh = stream.getVideoTracks()[0] ?? null
+    } catch (err) {
+      return { ok: false, reason: 'failed', detail: errorText(err) }
+    }
+    if (!fresh) return { ok: false, reason: 'failed', detail: 'مسار فارغ' }
+
+    fresh.enabled = track.enabled
+    fresh.contentHint = track.contentHint
+    this.local?.removeTrack(track)
+    this.local?.addTrack(fresh)
+    await this.publishVideoTrack(fresh)
+    track.stop()
+    return { ok: true, facing: target, how: 'device' }
   }
 
   /** قرار المدرس: ما الذي يشغل المسرح، وهل السبورة مفتوحة أصلًا */
@@ -635,6 +957,10 @@ export class MeetingClient {
   }
 
   stop() {
+    if (this.annotationTimer) window.clearTimeout(this.annotationTimer)
+    this.annotationTimer = 0
+    this.pendingAdds = []
+    this.pendingDeletes = []
     for (const connId of [...this.pcs.keys()]) this.closePeer(connId)
     this.local?.getTracks().forEach((t) => t.stop())
     this.local = null

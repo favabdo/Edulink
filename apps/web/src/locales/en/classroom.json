@@ -32,7 +32,7 @@
     "you": "You are sharing your screen"
   },
   "camera": {
-    "you": "Rear camera is being shared"
+    "rearLive": "The room is seeing your rear camera now"
   },
   "tabs": {
     "chat": "Chat",
@@ -54,7 +54,23 @@
     "nextPage": "Next page",
     "enlarge": "Enlarge the board",
     "shrink": "Shrink the board",
-    "docMissing": "The shared file could not be loaded"
+    "fullscreen": "Full screen",
+    "writeBlocked": "Writing is stopped by the teacher",
+    "docMissing": "The shared file could not be loaded",
+    "tools": "Annotation tools",
+    "width": "Pen width",
+    "widthN": "Width {{n}}"
+  },
+  "tool": {
+    "pen": "Pen",
+    "highlighter": "Highlighter",
+    "line": "Line",
+    "arrow": "Arrow",
+    "rect": "Rectangle",
+    "ellipse": "Ellipse",
+    "text": "Text",
+    "eraser": "Eraser",
+    "undo": "Undo"
   },
   "link": {
     "host": "Same network",
@@ -72,7 +88,11 @@
     "cameraOff": "Stop camera",
     "hand": "Raise hand",
     "screen": "Share screen",
-    "cameraShare": "Share camera",
+    "toRear": "Rear",
+    "toFront": "Front",
+    "micBlocked": "Muted by the teacher",
+    "cameraBlocked": "Camera stopped by the teacher",
+    "screenUnavailable": "Screen share on computer",
     "board": "Whiteboard",
     "boardClose": "Video",
     "backToStage": "Back to the teacher's stage",
@@ -118,10 +138,29 @@
     "stageRejected": "The server refused to change what is on the stage.",
     "docRejected": "The server refused to show this file in the session.",
     "endFailed": "The session could not be ended from the room — it can be ended from the sessions page.",
+    "blockedMic": "The teacher muted you in this session — the button stays off until they allow it again.",
+    "blockedCamera": "The teacher stopped your camera — it will not return from this button.",
+    "noCameraTrack": "No camera is live in this session, so there is nothing to flip.",
+    "cameraUnsupported": "This device has no other camera to flip to.",
+    "cameraSwitchFailed": "The camera could not be switched.",
+    "cameraFlipped": "Camera flipped.",
+    "cameraDeviceSwitched": "Switched to another camera on this device.",
+    "controlFailed": "The server rejected the control — try again.",
+    "fullscreenBlocked": "The browser refused full screen for this tile.",
     "dismiss": "Dismiss notice"
   },
+  "perms": {
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "stopVideo": "Stop their video",
+    "startVideo": "Restore their video",
+    "blockWrite": "Block whiteboard writing",
+    "allowWrite": "Allow writing",
+    "blockShare": "Block file sharing",
+    "allowShare": "Allow file sharing"
+  },
   "share": {
-    "unsupported": "This browser cannot capture the screen — use Camera to film paper, or Show a file to present from your library.",
+    "unsupported": "This browser cannot capture the screen — on a phone use the Rear camera button to film paper, or Open file to present from your library.",
     "denied": "Camera or screen permission is blocked — allow it in site settings and try again.",
     "busy": "The camera or screen is busy in another app (a call or another broadcast).",
     "error": "Sharing failed on this device."

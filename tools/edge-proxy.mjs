@@ -122,15 +122,15 @@ server.on('upgrade', (req, socket, head) => {
     const lines = [`GET ${path} HTTP/1.1`]
     for (const [k, v] of Object.entries(headers)) lines.push(`${k}: ${v}`)
     proxySocket.write(`${lines.join('\r\n')}\r\n\r\n`)
-    socket.write('HTTP/1.1 101 Switching Protocols\r\n\r\n'.replace('\r\n\r\n', ''))
-    // نمرّر استجابة الخادم الخام ثم نلصق الطرفين
-    proxySocket.once('data', (chunk) => {
-      socket.write(chunk)
-      proxySocket.pipe(socket)
-      socket.pipe(proxySocket)
-      if (head?.length) proxySocket.write(head)
-    })
+    // اللصق فورًا في الاتجاهين: 101 الحقيقي يمر كما جاء من الخادم، وما يرسله العميل
+    // يصل إليه مباشرة. الانتظار «حتى أول بايت من الخادم» كان يُلقي مصافحة العميل
+    // في الفراغ، فيُغلق الخادم الاتصال بعد مهلة المصافحة وتبدو الشاشة ميتة.
+    proxySocket.pipe(socket)
+    socket.pipe(proxySocket)
+    if (head?.length) proxySocket.write(head)
   })
+  proxySocket.on('close', () => socket.destroy())
+  socket.on('close', () => proxySocket.destroy())
   proxySocket.on('error', () => socket.destroy())
   socket.on('error', () => proxySocket.destroy())
 })

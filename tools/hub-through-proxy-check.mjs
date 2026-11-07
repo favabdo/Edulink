@@ -111,6 +111,7 @@ results.push(`✓ الدور محسوب من القاعدة: مطالعة 'teach
 const teacherLogin = await api('POST', '/api/auth/login', { email: 'sara.edge@edulink.test', password: 'Sara@12345' })
 if (!teacherLogin?.token) throw new Error('تعذّر دخول المدرس لقياس الاتجاه المعاكس للدور')
 let teacherRole = null
+let atPeer = 0
 conn.on('peer-joined', (p) => { if (p?.name === 'edge-teacher') teacherRole = p.role ?? null })
 const conn3 = new HubConnectionBuilder()
   .withUrl(`${PROXY}/hubs/meetings?access_token=${encodeURIComponent(teacherLogin.token)}&room=${encodeURIComponent(session.code)}`, {
@@ -128,16 +129,17 @@ if (teacherRole !== 'teacher') {
 }
 results.push(`✓ الاتجاه المعاكس: مطالعة 'student' من المدرس رجعت '${teacherRole}' (مدرس الحصة من القاعدة)`)
 
+conn3.on('chat', () => { atPeer += 1 })
 await conn.send('sendChat', 'ping عبر الوسيط')
 await new Promise((r) => setTimeout(r, 1500))
-results.push(`✓ رسائل مستقبَلة عبر الوسيط: ${received}`)
+// القياس من الطرف الآخر لا من المُرسِل: الرسالة صارت OthersInGroup (كانت ترجع
+// لكاتبها مرتين)، فعدّ ما يصل conn نفسه كان سيصبح صفرًا دائمًا بلا معنى.
+if (atPeer === 0) throw new Error('لم تصل الرسالة إلى الطرف الآخر عبر الوسيط — مسار /hubs غير مكتمل')
+if (received !== 0) throw new Error(`الرسالة رجعت لكاتبها ${received} مرة — الصدى الذي أُصلح في الخادم عاد`)
+results.push(`✓ الرسالة وصلت الطرف الآخر ${atPeer} مرة وبلا صدى عند كاتبها`)
 await conn3.stop()
 await conn2.stop()
 await conn.stop()
 
 console.log(results.join('\n'))
-if (!received) {
-  console.log('✗ لم تصل رسالة عبر الوسيط — مسار /hubs غير مكتمل')
-  process.exit(1)
-}
-console.log('المسار الكامل عبر الوسيط يعمل (REST + WebSocket + غرفة + رسائل)')
+console.log('المسار الكامل عبر الوسيط يعمل (REST + WebSocket + غرفة + رسائل باتجاه واحد)')
