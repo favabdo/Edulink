@@ -17,25 +17,45 @@
  *
  * لا TURN هنا: قياس على شبكة واحدة (host candidates) — crossing NAT ما زال غير مُثبت.
  *
- * سبعة عشر بندًا: العشرة الأولى من الخطوة 63 (وسائط/قلم/كنترول)، وسبعة لنموذج الشرح
- * المُصنَّف — الأشكال كائن واحد، لون الكاتب وسماكته في الكائن نفسه، الممحاة تُمسح
- * الكائن لا اللوحة، التراجع على مستوى الكاتب، النصّ يصل حرفيًا، يد المشارك تظهر
- * باسمها عند الآخر فقط وتختفي عند السكون، والمسح يُسقط دفعة شرح لم تُرسَل بعد.
+ * أربعة وعشرون بندًا: عشرة من الخطوة 63 (وسائط/قلم/كنترول)، وسبعة لنموذج الشرح
+ * المُصنَّف في الخطوة 64 (الأشكال كائن واحد، لون الكاتب وسماكته في الكائن نفسه،
+ * الممحاة تُمسح الكائن لا اللوحة، التراجع على مستوى الكاتب، النصّ يصل حرفيًا، يد
+ * المشارك تظهر باسمها عند الآخر فقط وتختفي عند السكون، والمسح يُسقط دفعة شرح لم
+ * تُرسَل بعد)، وسبعة للموبايل والأيقونات في الخطوة 65 (الفيديو البعيد يملأ وصورتك
+ * شريحة ركن تُلمس فعلًا، وبلا زرّ ملء شاشة في مسار اللمس، و«ملف للحصة» في الشريط
+ * السفلي، والسبورة تملأ بشريحتين والقلم يصل الطرف الآخر، وأزرار أداة 42px في شريط
+ * واحد، وشارة الأداة الجارية، ورسومات متمايزة 22px بأسمائها).
  *
- * الحالات الحمراء المقيسة على هذه الزيادة (كلٌّ أحمر وحده لا غير):
+ * الحالات الحمراء المقيسة على هذه البنود (كلٌّ أحمر وحده لا غير، تسعًا):
  *   `hitAnnotation` تُرجع false ⇒ بند الممحاة.
  *   حذف `event.preventDefault()` من فرع النص ⇒ بند النصّ (caret يُولد ويُغلقه onBlur).
- *   حذف إسقاط الطابور من `clearBoard` ⇒ بند المسح الفوري (الطالب 447 بكسل والمدرس 0).
+ *   رجوع `clearBoard` إلى ما قبل إسقاط الطابور ⇒ بند المسح الفوري: «آخر add في إطار
+ *   ‎#16، والمسح في ‎#15 — الطالب يرى 227 بكسل والمدرس 0».
  *   إلغاء فلتر الكاتب في `UndoAnnotation` (خادم) ⇒ بند التراجع هنا + بند في الخادم.
  *   إلغاء بثّ `pointer` في `SendPointer` (خادم) ⇒ بند اليد هنا + بند في الخادم.
- * وأربعة فخاخ في الأداة نفسها كُشِفت بالتشغيل لا بالقراءة: غلاف `WebSocket` لا بدّ أن
- * ينسخ ثوابته الساكنة (وإلا قررت صفحة SignalR أن المقبس ليس OPEN فسقطت البنود وكأن
- * المنتج مكسور)؛ وإطار النداء الخام لا يحمل `protocol/version` (هما للمصافحة) وإلا أغلق
- * الخادم الاتصال بردّ عام بلا سبب؛ ونداء `annotate` يستلم الدفعة **نصًّا** فإطار SignalR
- * يحملها بتفريغ الاقتباسات، والخادم يُفرّغ غير ASCII إلى ‎\uXXXX‎، فالوجاف الحرفي لا
- * يطابق رسالة عربية سليمة وتُقارَن الإطارات بعد التفكيك لا قبله؛ والدفعة تتأخر ~50ms
- * فالقراءة الفورية بعد السحب تُظهر منتجًا سليمًا مكسورًا. وفحص الحقن قبل أي بند يسمّي
- * الأداة نفسها إن لم يعمل سكربت القياس.
+ *   كسر مُعرِّف الشريحة، أو إظهار زرّ الملء، أو تغيير وسام «ملف للحصة»، أو تثبيت
+ *   اللوح على 210px، أو تصغير الأزرار إلى 30px، أو نسيان قاعدة الشارة، أو تصغير
+ *   الرسمة إلى 15px، أو جعل المستطيل يرسم رسمة الخط ⇒ بنود الموبايل والرسومات واحدًا.
+ *
+ * فخاخ في الأداة نفسها كُشِفت بالتشغيل لا بالقراءة: غلاف `WebSocket` لا بدّ أن ينسخ
+ * ثوابته الساكنة (وإلا قررت صفحة SignalR أن المقبس ليس OPEN فسقطت البنود وكأن المنتج
+ * مكسور)؛ وإطار النداء الخام لا يحمل `protocol/version` (هما للمصافحة) وإلا أغلق الخادم
+ * الاتصال بردّ عام بلا سبب؛ ونداء `annotate` يستلم الدفعة **نصًّا** فإطار SignalR يحملها
+ * بتفريغ الاقتباسات، والخادم يُفرّغ غير ASCII إلى ‎\uXXXX‎، فالوجاف الحرفي لا يطابق رسالة
+ * عربية سليمة وتُقارَن الإطارات بعد التفكيك لا قبله؛ والدفعة تتأخر ~50ms فالقراءة
+ * الفورية بعد السحب تُظهر منتجًا سليمًا مكسورًا. وبند «الدفعة في الطريق» تحديدًا لا
+ * يقدر أن يعتمد على العدّ الزمني: النقر بعد بحث نصي (round-trips + 250ms نوم) كان
+ * يُخرج الدفعة قبل القرار في كل مرة، فالبند يقيس **ترتيب الإطارات على السلك** — موضع
+ * زرّ المسح يُتحقَّق منه بنقرة واحدة قبل السباق، ثم press+release بلا حركة ولا نوم،
+ * وترتيب add مقابل clearWhiteboard هو الحكم؛ وإن خرجت الدفعة قبل القرار تُعاد المحاولة
+ * حتى خمس مرات، وإن فشلت المحاولات كلها سمّت الأداة نفسها لا المنتج. وضبطٌ داخل البند نفسه:
+ * سحبة بلا مسح يجب أن تُخرج دفعة، وإلا كان «لم تخرج دفعة» نجاحًا بلا مقابل. وثلاثة
+ * فخاخ للموبايل: تبويبان في نفس البروفايل يتقاسمان localStorage واحدًا فإعادة التحميل
+ * يُدخل شاشة المدرس بتوكن الطالب؛ و`DOMRect` فيه `width/height` لا `w/h` فسؤال
+ * «طبقة فوق المسرح؟» قارن `NaN` وأجاب «لا طبقة» بينما اللوحة تغطي كل شيء؛ والتشغيل
+ * على `dist` من بناء سابق مخدّش يعطي أحمر كاذبًا فالترتيب إلزامي: بناء نظيف ⇒ بوابة
+ * ⇒ تدليس/قياس/تراجع ⇒ بناء نظيف آخرًا. وفحص الحقن قبل أي بند يسمّي الأداة نفسها إن
+ * لم يعمل سكربت القياس.
  */
 import { spawn } from 'node:child_process'
 import { mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'node:fs'
@@ -63,10 +83,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const results = []
 const failures = []
 const consoleErrors = []
-/** كود إغلاق المقبوس وسببه — SignalR يطبع «ليس OPEN» ولا يسمّي ما أغلقه */
+/** كود إغلاق المقبض وسببه — SignalR يطبع «ليس OPEN» ولا يسمّي ما أغلقه */
 const netEvents = new Map()
 
+// إعادة قياس بند واحد بحالته الحمراء لا يعني دفع ثمن البنود كلها: الفلتر يختار
+// بالاسم، والبند المتخطّى يُطبع متخطّى ولا يُحسب أخضر أبدًا.
+const ONLY = process.env.EDULINK_GATE_ONLY || ''
+
 async function item(name, fn) {
+  if (ONLY && !name.includes(ONLY)) {
+    console.log(`… متخطّى (FILTER=${ONLY}): ${name}`)
+    return
+  }
   try {
     const detail = await fn()
     results.push(`✓ ${name}${detail ? ` — ${detail}` : ''}`)
@@ -132,10 +160,13 @@ class CDP {
 /** وسم واحد = تبويب. كل النقرات بأحداث فأر حقيقية: .click() بلا user activation
  *  يرفض بها المتصفح ملء الشاشة، فيصير البند الأحمر كذبًا على المنتج. */
 class Tab {
-  constructor(browser, sessionId, name) {
+  constructor(browser, sessionId, name, token = '') {
     this.browser = browser
     this.sessionId = sessionId
     this.name = name
+    /** تبويبان في نفس البروفايل يتقاسمان localStorage واحدًا: من يُحمِّل الصفحة
+     *  من جديد يجب أن يكتب توكنه هو، وإلا استيقظت شاشة المدرس بشخصية الطالب. */
+    this.token = token
   }
 
   async init() {
@@ -187,6 +218,11 @@ class Tab {
           };
         })();
         window.__ws = [];
+        // ترتيب الإرسال على السلك، لا الزمن: مؤقّت دفعة الشرح ~50ms ونقرة الأداة عدة
+        // round-trips، فـ«هل كانت الدفعة ما تزال في الطريق عند قرار المسح؟» لا تُجاب
+        // بعدّاد وقت بل بمقارنة رقم إطار add برقم إطار clearWhiteboard.
+        window.__seq = 0; window.__addOut = 0; window.__clearOut = 0;
+        window.__addSeq = 0; window.__clearSeq = 0;
         (function () {
           const Orig = window.WebSocket;
           function Wrapped(url, protocols) {
@@ -218,6 +254,13 @@ class Tab {
               rec.frames.push(stamp() + (typeof data === 'string' && data.length > 1
                 ? 'out ' + data.slice(0, 420)
                 : 'send(type=' + (typeof data) + ',len=' + (data?.byteLength ?? data?.length ?? '?') + ')'))
+              if (typeof data === 'string' && data.length > 1) {
+                // الدفعة نصٌ داخل JSON، فالوجاف لا يطابق إلا بعد تفكيك التفريغ
+                const n = norm(data);
+                window.__seq += 1;
+                if (n.includes('"op":"add"')) { window.__addOut += 1; window.__addSeq = window.__seq }
+                if (n.includes('"target":"clearWhiteboard"')) { window.__clearOut += 1; window.__clearSeq = window.__seq }
+              }
               return origSend(data);
             };
             return ws;
@@ -279,6 +322,85 @@ class Tab {
         // المؤشرات الحيّة للآخرين (لا مؤشر لصاحبه) + اسم من يحملها
         window.__pointers = () => [...document.querySelectorAll('[data-pointer]')]
           .map((e) => (e.textContent || '').trim().slice(0, 24));
+        // قياس التخطيط كما رتّبه المتصفح فعلًا (لا كما تفترضه الأداة): المسرح
+        // محسوبًا من <main>، والبلاطات من figure، والشريحة المميزة بصفتها data-self،
+        // واللوح من كانفسه، وزرّ ملء الشاشة من ظهوره المحسوب لا من وجوده في الشجرة.
+        window.__metrics = () => {
+          const box = (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height } };
+          const stage = document.querySelector('main');
+          const grid = stage && stage.firstElementChild ? stage.firstElementChild : null;
+          const c = document.querySelector('canvas[aria-label]');
+          const de = document.documentElement;
+          return {
+            layout: grid ? String(grid.getAttribute('data-layout') || '') : 'لا-شبكة',
+            stage: stage ? box(stage) : null,
+            tiles: [...document.querySelectorAll('figure')].map((f) => ({ self: f.hasAttribute('data-self'), ...box(f) })),
+            board: c ? box(c) : null,
+            full: [...document.querySelectorAll('button')]
+              .filter((b) => /ملء الشاشة/.test(b.getAttribute('aria-label') || ''))
+              .map((b) => ({ shown: !!(b.offsetWidth || b.offsetHeight), ...box(b) })),
+            scroll: { sh: de.scrollHeight, ch: de.clientHeight },
+            vw: window.innerWidth, vh: window.innerHeight,
+          };
+        };
+        // كل زرّ أداة: رسمته كما كُتبت، ومقاسها ومقاس الزرّ، والنص الظاهر فيه.
+        // innerHTML للـ svg فقط (لا وسام الخصائص) حتى «رسمتان مختلفتان» معنى حقيقي.
+        window.__toolButtons = () => [...document.querySelectorAll('button[data-tool]')].map((b) => {
+          const svg = b.querySelector('svg');
+          const r = b.getBoundingClientRect();
+          const sr = svg ? svg.getBoundingClientRect() : null;
+          const label = b.querySelector('span');
+          return {
+            tool: b.getAttribute('data-tool'),
+            glyph: svg ? svg.innerHTML : '',
+            glyphW: sr ? Math.round(sr.width) : 0,
+            btnW: Math.round(r.width), btnH: Math.round(r.height),
+            text: (label ? label.textContent : '').trim(),
+            textShown: label ? !!(label.offsetWidth || label.offsetHeight) : false,
+          };
+        });
+        window.__caption = () => {
+          const el = document.querySelector('[data-tool-caption]');
+          if (!el) return null;
+          return { tool: el.getAttribute('data-tool-caption'), text: (el.textContent || '').trim(),
+                   shown: !!(el.offsetWidth || el.offsetHeight) };
+        };
+        // ما يلمسه الإصبع فعلًا عند نقطة: الطبقة العليا لا ما تظنه الأداة
+        window.__topAt = (x, y) => {
+          const el = document.elementFromPoint(x, y);
+          if (!el) return 'لا-عنصر';
+          const r = el.getBoundingClientRect();
+          const own = el.closest('figure[data-self]') ? '_figureSelf' : (el.closest('figure') ? '_figure' : '');
+          const chain = [];
+          for (let n = el; n && n !== document.body && chain.length < 6; n = n.parentElement) {
+            const cls = String((n.getAttribute && n.getAttribute('class')) || '').split(' ')[0].replace(/_[A-Za-z0-9]+$/, '');
+            chain.push(n.tagName + (cls ? '.' + cls : ''));
+          }
+          const region = el.closest('aside') ? ' داخل-اللوحة' : (el.closest('footer') ? ' داخل-الشريط' : (el.closest('main') ? ' داخل-المسرح' : ''));
+          return el.tagName + own + '[' + (el.getAttribute('data-tool') || el.getAttribute('aria-label') || '') + ']'
+            + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + '@' + Math.round(r.x) + ',' + Math.round(r.y)
+            + region + ' ← ' + chain.join('<');
+        };
+        // آخر لمسة وصلت الصفحة حقًا: تُفرّق «نقرة لم تصل» عن «زرّ لا يغيّر شيئًا».
+        // والأيقونة داخل الزرّ هي هدف الحدث، فلا بدّ من أقرب button وإلا لمّحت على path[]
+        const hit = (e) => {
+          const t = e.target;
+          const b = t && t.closest ? t.closest('button') : null;
+          const n = b || t;
+          return (n.tagName || '?') + '['
+            + ((n.getAttribute && (n.getAttribute('data-tool') || n.getAttribute('aria-label')))
+              || (n.textContent || '').trim().slice(0, 16)) + ']';
+        };
+        window.__hits = [];
+        document.addEventListener('pointerdown', (e) => {
+          window.__hits.push('down ' + hit(e));
+          if (window.__hits.length > 24) window.__hits.shift();
+        }, true);
+        document.addEventListener('click', (e) => {
+          window.__hits.push('click ' + hit(e));
+          if (window.__hits.length > 24) window.__hits.shift();
+        }, true);
+        window.__lastHit = () => window.__hits.slice(-2).join(' → ') || 'لا-لمسة';
         // الاتجاه مهم: «إطار فيه الأداة» قد يكون ردّ الأداة نفسه لا رسالة الطرف الآخر.
         // ونداء annotate يستلم الدفعة **نصًّا** فإطار SignalR يحملها بتفريغ الاقتباسات،
         // والخادم (System.Text.Json) يُفرّغ غير ASCII أيضًا إلى \\uXXXX — فالوجاف الحرفي
@@ -298,6 +420,7 @@ class Tab {
           }
           return out;
         };
+        window.__marks = () => [window.__addOut, window.__clearOut, window.__addSeq, window.__clearSeq].join(',');
         window.__wsOutCount = (needle) => window.__ws.flatMap((s) => s.frames)
           .filter((f) => f.includes('ms out') && norm(f).includes(needle)).length;
         window.__wsInCount = (needle) => window.__ws.flatMap((s) => s.frames)
@@ -363,6 +486,28 @@ class Tab {
     await sleep(1000)
   }
 
+  /** حالة الغرفة أولًا: بلا اتصال لا يوجد أي RTCPeerConnection، فيبدو العيب كأنه وسائط */
+  async waitForRoom() {
+    try {
+      await this.until('الغرفة اتصلت بالخادم', `(() => {
+        const b = document.body.innerText;
+        if (b.includes('تعذّر الوصول إلى خادم الاجتماعات') || b.includes('تعذّر الاتصال')) return 0;
+        return b.includes('متصل') ? 1 : 0;
+      })()`, 30000)
+    } catch (err) {
+      const body = await this.eval('window.__bodyText()').catch(() => 'لا جسم')
+      const sockets = await this.eval(`window.__ws.map((w) =>
+        w.url.slice(-46) + ' state=' + (w.ws ? w.ws.readyState : '?') + ' [' + w.frames.slice(-10).join('; ') + ']'
+      ).join(' ||| ')`).catch(() => 'لا مقبس')
+      const counters = await this.eval('[sessionStorage.getItem("wsCount"), sessionStorage.getItem("navCount")].join("/")').catch(() => '؟')
+      const boots = await this.eval('(window.__bootLog || []).join(" ; ")').catch(() => 'لا سجل')
+      throw new Error(`${this.name}: ${err.message} — مقابس=${counters} — إقلاع=(${boots}) — شاشته: «${String(body).replace(/\s+/g, ' ').slice(0, 260)}»`
+        + ` · مقابسها: ${sockets}`
+        + ` · مقبسها: ${this.socketTrace()}`
+        + ` · كونسول: ${consoleErrors.slice(-3).join(' | ') || 'بلا'}`)
+    }
+  }
+
   async eval(expression) {
     const r = await this.browser.send('Runtime.evaluate',
       { expression, awaitPromise: true, returnByValue: true }, this.sessionId)
@@ -406,14 +551,7 @@ class Tab {
     const before = await this.eval('window.__clickCount()')
     // بروتوكول CDP لا يعرف «mouseClicked»، وpress بلا clickCount لا يولّد click أبدًا:
     // press/release باثنين clickCount=1 هي التي تُنتج الحدث عند نفس العقدة.
-    for (const [type, buttons] of [['mouseMoved', 0], ['mousePressed', 1], ['mouseReleased', 0]]) {
-      await this.browser.send('Input.dispatchMouseEvent', {
-        type, x: Math.round(box.x), y: Math.round(box.y),
-        button: type === 'mouseMoved' ? 'none' : 'left',
-        buttons, clickCount: type === 'mouseMoved' ? 0 : 1,
-      }, this.sessionId)
-    }
-    await sleep(250)
+    await this.mouse(box.x, box.y)
     const after = await this.eval('window.__clickCount()')
     if (after <= before) {
       const last = await this.eval('window.__clicks.slice(-3).join(" | ")').catch(() => 'لا سجل')
@@ -430,6 +568,84 @@ class Tab {
     await this.until('لوحة المشاركين فيها أزرار الإذن',
       `(() => { const b = [...document.querySelectorAll('button')];
         return b.some((x) => /إذن المدرس|إسكات|منع الكتابة|السماح بالكتابة/.test((x.getAttribute('aria-label') || ''))) ? 1 : 0 })()`, 10000)
+  }
+
+  /** شاشة جوال حقيقية بالمقاسات: نفس الصفحة ونفس الوسائط، والعرض 390×844 مع لمس.
+   *  تُحمَّل الصفحة عند المقاس المطلوب لا تُعاد تحجيمها وهي قائمة: الغرفة تقرر حالة
+   *  اللوحة عند التركيب، ومتصفح الجوال لم يعرف يومًا نافذة عريضة ثم ضاقت. */
+  async setMobile(on) {
+    await this.browser.send('Emulation.setDeviceMetricsOverride', on
+      ? { width: 390, height: 844, deviceScaleFactor: 2, mobile: true }
+      : { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false }, this.sessionId)
+    await this.browser.send('Emulation.setTouchEmulationEnabled', { enabled: on }, this.sessionId)
+      .catch(() => undefined)
+    if (on) {
+      if (this.token) {
+        await this.eval(`localStorage.setItem('edulink.token', ${JSON.stringify(this.token)})`)
+      }
+      await this.browser.send('Page.reload', { ignoreCache: false }, this.sessionId)
+      await sleep(1500)
+      await this.waitForRoom()
+      await this.until('اتصال وسائط بعد التحميل عند مقاس الجوال', 'window.__pcs.length >= 1', 30000)
+      await sleep(2500)
+    } else {
+      await sleep(600)
+    }
+    return this.eval('[window.innerWidth, window.innerHeight].join("x")')
+  }
+
+  /** نقرة فأر حقيقية عند نقطة: press+release بـ clickCount=1 هما ما يولّد حدث click */
+  async mouse(x, y) {
+    for (const [type, buttons, clickCount] of [['mouseMoved', 0, 0], ['mousePressed', 1, 1], ['mouseReleased', 0, 1]]) {
+      await this.browser.send('Input.dispatchMouseEvent', {
+        type, x: Math.round(x), y: Math.round(y),
+        button: type === 'mouseMoved' ? 'none' : 'left',
+        buttons, clickCount,
+      }, this.sessionId)
+    }
+    await sleep(250)
+  }
+
+  /** نفس النقرة بلا حركة سابقة وبلا نوم afterward: البند الذي يجب أن يسبق مؤقّت
+   *  الدفعة (~50ms) لا يتحمّل round-trips زائدة، وموضع الزرّ يكون مُتحقَّقًا منه قبلها. */
+  async mouseFast(x, y) {
+    for (const [type, buttons, clickCount] of [['mousePressed', 1, 1], ['mouseReleased', 0, 1]]) {
+      await this.browser.send('Input.dispatchMouseEvent', {
+        type, x: Math.round(x), y: Math.round(y), button: 'left', buttons, clickCount,
+      }, this.sessionId)
+    }
+  }
+
+  /** نقرة بوسام CSS: أزرار الغرفة كثيرة تشارك الكلمة نفسها («السبورة» داخل
+   *  «تكبير السبورة»)، فالنص وحده لا يثبت أيّهما ضُغط. */
+  async clickSel(selector, what) {
+    await this.until(what, `document.querySelector(${JSON.stringify(selector)}) ? 1 : 0`, 12000)
+    const box = await this.eval(`(() => {
+      const b = document.querySelector(${JSON.stringify(selector)});
+      if (!b) return null;
+      if (b.disabled) return { disabled: true };
+      b.scrollIntoView({ block: 'center', inline: 'center' });
+      const r = b.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width, h: r.height,
+               want: b.getAttribute('data-tool') || b.getAttribute('aria-label') || (b.textContent || '').trim().slice(0, 16) };
+    })()`)
+    if (box?.disabled) throw new Error(`${what}: الزرّ معطَّل في الشاشة`)
+    if (!box || !box.x) throw new Error(`${what}: لا زرّ يطابق ${selector}`)
+    const before = await this.eval('window.__clickCount()')
+    await this.mouse(box.x, box.y)
+    const after = await this.eval('window.__clickCount()')
+    const hit = await this.eval('window.__lastHit()')
+    const top = await this.eval(`window.__topAt(${Math.round(box.x)}, ${Math.round(box.y)})`)
+    if (after <= before) {
+      throw new Error(`${what}: نقرة عند ${Math.round(box.x)},${Math.round(box.y)} لم تصل DOM `
+        + `(${top} في ذلك الموضع، آخر لمسة: ${hit}) — الأداة لا المنتج`)
+    }
+    // الوصول إلى الصفحة لا يكفي: طبقة فوق الزرّ تبتلع اللمسة، والقوائم تلتقطها
+    if (!hit.includes(box.want)) {
+      throw new Error(`${what}: اللمسة عند ${Math.round(box.x)},${Math.round(box.y)} وصلت «${hit}» لا «${box.want}» `
+        + `— الطبقة العليا هناك: ${top}`)
+    }
+    return box
   }
 
   async boardBox() {
@@ -614,7 +830,7 @@ try {
   async function openTab(token, label) {
     const { targetId } = await browser.send('Target.createTarget', { url: `${EDGE}/` })
     const { sessionId } = await browser.send('Target.attachToTarget', { targetId, flatten: true })
-    const tab = new Tab(browser, sessionId, label)
+    const tab = new Tab(browser, sessionId, label, token)
     await tab.init()
     // السياق قد يسبق ارتباط الصفحة بالأصل فلا يُقرأ localStorage — الكتابة تُعاد حتى تنجح
     await tab.until('كتابة التوكن في localStorage', `(() => {
@@ -624,27 +840,11 @@ try {
       } catch (err) { return 0; }
     })()`, 30000)
     await tab.goto(`${EDGE}/sessions/${session.id}/live`)
-    // حالة الغرفة أولًا: بلا اتصال لا يوجد أي RTCPeerConnection، فيبدو العيب كأنه وسائط
-    await tab.until('الغرفة اتصلت بالخادم', `(() => {
-      const b = document.body.innerText;
-      if (b.includes('تعذّر الوصول إلى خادم الاجتماعات') || b.includes('تعذّر الاتصال')) return 0;
-      return b.includes('متصل') ? 1 : 0;
-    })()`, 30000).catch(async (err) => {
-      const body = await tab.eval('window.__bodyText()').catch(() => 'لا جسم')
-      const sockets = await tab.eval(`window.__ws.map((w) =>
-        w.url.slice(-46) + ' state=' + (w.ws ? w.ws.readyState : '?') + ' [' + w.frames.slice(-10).join('; ') + ']'
-      ).join(' ||| ')`).catch(() => 'لا مقبس')
-      const counters = await tab.eval('[sessionStorage.getItem("wsCount"), sessionStorage.getItem("navCount")].join("/")').catch(() => '؟')
-      const boots = await tab.eval('(window.__bootLog || []).join(" ; ")').catch(() => 'لا سجل')
-      throw new Error(`${tab.name}: ${err.message} — مقابس=${counters} — إقلاع=(${boots}) — شاشته: «${String(body).replace(/\s+/g, ' ').slice(0, 260)}»`
-        + ` · مقابسها: ${sockets}`
-        + ` · مقبسها: ${tab.socketTrace()}`
-        + ` · كونسول: ${consoleErrors.slice(-3).join(' | ') || 'بلا'}`)
-    })
+    await tab.waitForRoom()
     // سكربت القياس إن لم يُحقن (خطأ صياغة واحد يُسقط كل الدالة) فإن كل بند يفشل
     // وكأن المنتج مكسور — فالتحقق من الحقن نفسه يسبق أي اتهام للشاشة
-    const injected = await tab.eval('[typeof window.__pcs, typeof window.__ws, typeof window.__clicks, typeof window.__wsReply, typeof window.__wsInBoth, typeof window.__wsNorm, typeof window.__inkRegion, typeof window.__boardTool, typeof window.__pointers].join("/")')
-    if (!/^object\/object\/object\/function\/function\/function\/function\/function\/function$/.test(injected)) {
+    const injected = await tab.eval('[typeof window.__pcs, typeof window.__ws, typeof window.__clicks, typeof window.__wsReply, typeof window.__wsInBoth, typeof window.__wsNorm, typeof window.__inkRegion, typeof window.__boardTool, typeof window.__pointers, typeof window.__metrics, typeof window.__toolButtons, typeof window.__caption, typeof window.__topAt, typeof window.__lastHit, typeof window.__marks].join("/")')
+    if (!/^object\/object\/object\/function\/function\/function\/function\/function\/function\/function\/function\/function\/function\/function\/function$/.test(injected)) {
       throw new Error(`الأداة: سكربت القياس لم يعمل في صفحة ${tab.name} (${injected}) — عيب في الأداة لا في الشاشة`)
     }
     tabs.push(tab)
@@ -662,6 +862,8 @@ try {
   const inCount = (tab, needle) => tab.eval(`window.__wsInCount(${JSON.stringify(needle)})`)
   const outCount = (tab, needle) => tab.eval(`window.__wsOutCount(${JSON.stringify(needle)})`)
   const inBoth = (tab, n1, n2) => tab.eval(`window.__wsInBoth(${JSON.stringify(n1)}, ${JSON.stringify(n2)})`)
+  /** ترتيب السلك: [عدد دفعات add، عدد قرارات المسح، رقم آخر add، رقم آخر مسح] */
+  const marks = async (tab) => (await tab.eval('window.__marks()')).split(',').map(Number)
 
   /**
    * بداية نظيفة لكل بند يقيس كائنًا: بلا هذا يُنسب حبر البند السابق إلى كائن البند
@@ -1031,27 +1233,266 @@ try {
   })
 
   await item('شرح في طريقه للإرسال ثم مسح فوري: المسح يُسقط الدفعة ولا تستعيد شاشة الطالب حبرًا', async () => {
-    await cleanBoard()
     await T.click('قلم')
+    /**
+     * الضبط داخل البند نفسه: سحبة بلا مسح يجب أن تُخرج دفعة على السلك، وإلا كان
+     * «لم تخرج دفعة» في الأسفل نجاحًا بلا مقابل.
+     */
+    const ctrl0 = await marks(T)
+    await T.dragBoard(0.5, 0.3, 0.54, 0.34, 1)
+    await sleep(400)
+    const ctrl1 = await marks(T)
+    if (ctrl1[0] <= ctrl0[0]) {
+      throw new Error('الأداة: سحبة بلا مسح لم تُخرج أي دفعة annotate على السلك، فبند «أُسقطت قبل الإرسال» بلا معنى')
+    }
+    await cleanBoard()
+
+    /** الموضع يُتحقَّق منه بنقرة حقيقية واحدة قبل السباق: clickSel يُثبت أن اللمسة
+     *  وصلت الزرّ نفسه لا طبقة فوقه، ثم يعيد إحداثياته لاستخدامها في كل محاولة. */
+    const box = await T.clickSel('button[data-board-clear]', 'زرّ مسح السبورة')
+    await sleep(400)
+
+    let flushedBefore = 0
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      const before = await marks(T)
+      await T.dragBoard(0.3, 0.5, 0.34, 0.54, 1)
+      // لا قراءة بكسل ولا نوم بين إفلات القلم ونقرة المسح: النافذة ~50ms، وأي
+      // round-trip إضافي يُخرج الدفعة قبل القرار فيُحمرّ المنتج بلا ذنب.
+      await T.mouseFast(box.x, box.y)
+      await sleep(500)
+      const after = await marks(T)
+      if (after[1] - before[1] !== 1) {
+        throw new Error(`الأداة: نقرة «${box.want}» عند ${Math.round(box.x)},${Math.round(box.y)} لم تُصدر قرار مسح واحدًا على السلك (${after[1] - before[1]})`)
+      }
+      const sentAdds = after[0] - before[0]
+      if (sentAdds === 0) {
+        const teacherAfter = await region(T, 0, 1)
+        const studentAfter = await region(S, 0, 1)
+        if (teacherAfter !== 0 || studentAfter !== 0) {
+          throw new Error(`المسح لم يُفرغ اللوح في الطرفين (${teacherAfter}/${studentAfter}) مع صفر دفعات متأخرة`)
+        }
+        return `محاولة ${attempt}: كائن في الطابور عند قرار المسح لم يخرج على السلك إطلاقًا · المدرس 0 والطالب 0`
+      }
+      // الدفعة خرجت: هل كانت قبل القرار (لم نُسابق المؤقّت) أم بعده (المنتج يُعيد حبرًا بعد المسح)؟
+      if (after[2] > after[3]) {
+        throw new Error(`بعد قرار المسح أُرسلت ${sentAdds} دفعة شرح كان لا بد أن تُسقَط (آخر add في إطار #${after[2]}، والمسح في #${after[3]}) `
+          + `— الطالب يرى ${await region(S, 0, 1)} بكسل والمدرس ${await region(T, 0, 1)}`)
+      }
+      flushedBefore = sentAdds
+      await cleanBoard()
+    }
+    throw new Error(`الأداة: لم تُصبِق مؤقّت الدفعة في 5 محاولات — ${flushedBefore} دفعة خرجت قبل قرار المسح في كلٍّ منها،`
+      + ' فالبند يحتاج لحظة يكون فيها الشرح ما يزال في الطابور')
+  })
+
+  // ================= الموبايل: ما بلَغ عنه صاحب المشروع من هاتفه =================
+  // القياس على مقاس 390×844 حقيقي (نفس الصفحة، نفس الوسائط، لمسة مفعّلة): الشكوى
+  // كانت «الحجم ثابت» لا «الشيفرة غلط»، فالدليل يجب أن يكون تخطيط المتصفح نفسه.
+  let phoneReady = false
+  const asPhone = async () => {
+    if (phoneReady) return
+    const seen = await T.setMobile(true)
+    if (!seen.startsWith('390x')) throw new Error(`الأداة: النافذة لم تُصبِح مقاس جوال (innerWidth×innerHeight=${seen})`)
+    const who = await T.eval('window.__bodyText()')
+    if (!who.includes('أ. غرفة')) {
+      throw new Error(`الأداة: صفحة المدرس بعد التحميل تحمل «${who.replace(/\s+/g, ' ').slice(0, 120)}» —`
+        + ' الهوية تبدّلت (بروفايل واحد وlocalStorage واحد)، فالقياس على شاشة خاطئة')
+    }
+    phoneReady = true
+  }
+
+  /** كل بند يقرر سطحه بنفسه: لا يُترك يعتمد على أي بند سبقه في الترتيب */
+  const ensureLayout = async (want) => {
+    for (let i = 0; i < 4; i += 1) {
+      if ((await T.eval('window.__metrics().layout')) === want) return
+      await T.clickSel('button[data-stage-toggle]', want === 'board' ? 'إخراج السبورة إلى المسرح' : 'ردّ المسرح إلى الفيديو')
+      await sleep(800)
+    }
+    throw new Error(`التخطيط لم يستجب إلى ${want} بعد أربع نقرات على زرّ المسرح`)
+  }
+
+  await item('موبايل: الفيديو البعيد يملأ المسرح وصورتك شريحة ركن فوقها، وبلا عمود تمرير', async () => {
+    await asPhone()
+    const m = await T.eval('window.__metrics()')
+    if (m.layout !== 'grid') throw new Error(`البند يفترض فيديو على المسرح، والتخطيط ${m.layout}`)
+    const selfTile = m.tiles.find((t) => t.self)
+    const remote = m.tiles.filter((t) => !t.self).sort((a, b) => b.w * b.h - a.w * a.h)[0]
+    if (!selfTile || !remote) throw new Error(`بلاطة لنفسه أو للبعيد: ${JSON.stringify(m.tiles)}`)
+    const area = m.stage.w * m.stage.h
+    const cover = (t) => (t.w * t.h) / area
+    if (cover(remote) < 0.8) {
+      throw new Error(`الفيديو البعيد لا يملأ المسرح: ${Math.round(remote.w)}×${Math.round(remote.h)} من مسرح `
+        + `${Math.round(m.stage.w)}×${Math.round(m.stage.h)} (${Math.round(cover(remote) * 100)}% من مساحته)`)
+    }
+    if (selfTile.w > m.stage.w * 0.4 || selfTile.h > m.stage.h * 0.3) {
+      throw new Error(`صورتك ليست شريحة صغيرة: ${Math.round(selfTile.w)}×${Math.round(selfTile.h)} في مسرح ${Math.round(m.stage.w)}×${Math.round(m.stage.h)}`)
+    }
+    const corner = selfTile.y <= m.stage.y + m.stage.h * 0.4
+      && (selfTile.x >= m.stage.x + m.stage.w * 0.5 || selfTile.x + selfTile.w <= m.stage.x + m.stage.w * 0.5)
+    if (!corner) throw new Error(`الشريحة ليست في ركن: @${Math.round(selfTile.x)},${Math.round(selfTile.y)}`)
+    const covering = await T.eval(`(() => { const m = window.__metrics(); const s = m.stage;
+      return [...document.querySelectorAll('aside, [role="dialog"]')]
+        .map((e) => ({ e, r: e.getBoundingClientRect() }))
+        .filter(({ r }) => r.width > 0 && r.height > 0
+          && r.x < s.x + s.w && r.x + r.width > s.x && r.y < s.y + s.h && r.y + r.height > s.y)
+        .map(({ e, r }) => e.tagName + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)
+          + '@' + Math.round(r.x) + ',' + Math.round(r.y)) })()`)
+    if (covering.length) {
+      throw new Error(`طبقة فوق المسرح على الجوال (${covering.join(' · ')}) — فالمسرح ليس مسرحًا: اللمسة تصل اللوحة لا البلاطة`)
+    }
+    const hit = await T.eval(`(() => { const m = window.__metrics(); const s = m.tiles.find((t) => t.self);
+      if (!s) return 'لا-شريحة'; return window.__topAt(s.x + s.w / 2, s.y + s.h / 2) })()`)
+    if (!/_figureSelf/.test(hit)) throw new Error(`لمسة منتصف الشريحة لا تصل صورتها: ${hit} في الطبقة العليا — فالشريحة تحت البعيد ولا تُنقر`)
+    if (m.scroll.sh > m.scroll.ch + 2) throw new Error(`الصفحة تتمرّر رأسيًا (${m.scroll.sh} ضد ${m.scroll.ch}) فـ«ملء الشاشة» وهم`)
+    if (m.board && m.board.w > 0) throw new Error(`السبورة مرئية مع الفيديو (${Math.round(m.board.w)}×${Math.round(m.board.h)}) — سطحان على شاشة واحدة`)
+    await T.screenshot(join(tmpdir(), `edu-room-phone-${RUN}-teacher.png`))
+    return `بعيد ${Math.round(cover(remote) * 100)}% من المسرح · شريحة ${Math.round(selfTile.w)}×${Math.round(selfTile.h)} في الركن وتُلمس · بلا تمرير · والسبورة خارج الشاشة`
+  })
+
+  await item('موبايل: لا زرّ «ملء الشاشة» في مسار اللمس — الملء تخطيط لا استجابة متصفح', async () => {
+    await asPhone()
+    const m = await T.eval('window.__metrics()')
+    if (m.vw > 500) throw new Error(`البند يعمل على مقاس جوال والعرض ${m.vw} — الأداة لا الشاشة`)
+    if (m.full.length === 0) throw new Error('الأداة: لا زرّ ملء شاشة في الشجرة أصلًا، فلا معنى للبند')
+    const shown = m.full.filter((f) => f.shown)
+    if (shown.length) {
+      throw new Error(`${shown.length} زرّ ملء شاشة ظاهر على الجوال (@${Math.round(shown[0].x)},${Math.round(shown[0].y)}) `
+        + '— نقرة المدرس عليه كانت تُنتج «رفض المتصفح ملء الشاشة لهذا المقطع»')
+    }
+    return `${m.full.length} زرّ ملء شاشة في الشجرة وكلها غير مرسومة عند ${m.vw}×${m.vh}`
+  })
+
+  await item('موبايل: «ملف للحصة» في شريط التحكم السفلي يفتح منتقيًا بمصدرين ويُغلق', async () => {
+    await asPhone()
+    const at = await T.eval(`(() => { const b = document.querySelector('button[data-share-file]');
+      if (!b) return null; const r = b.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height, footer: !!b.closest('footer'), disabled: b.disabled,
+               inBar: r.bottom <= window.innerHeight } })()`)
+    if (!at) throw new Error('لا زرّ مشاركة ملف في شريط التحكم (button[data-share-file]) — كان داخل شريط أدوات الشرح وحده، وهو خارج شاشة الموبايل'
+      + ` · شريط موجود: ${await T.eval('document.querySelector("footer") ? 1 : 0')}`
+      + ` · أزراره: ${await T.eval('[...document.querySelectorAll("footer button")].map((b) => (b.getAttribute("aria-label") || b.textContent || "?").trim().slice(0, 18)).join("|")')}`
+      + ` · شاشة الصفحة: «${String(await T.eval('window.__bodyText()')).replace(/\s+/g, ' ').slice(0, 160)}»`)
+    if (!at.footer) throw new Error('زرّ مشاركة الملف ليس في شريط التحكم السفلي')
+    if (!at.inBar) throw new Error(`الزرّ خارج الشاشة @${Math.round(at.x)},${Math.round(at.y)} في نافذة ${await T.eval('[window.innerWidth, window.innerHeight].join("x")')}`)
+    if (at.w < 40 || at.h < 40) throw new Error(`الزرّ ${Math.round(at.w)}×${Math.round(at.h)} لا تصله إصبع`)
+    if (at.disabled) throw new Error('زرّ مشاركة الملف معطَّل عند المدرس')
+    await T.click('ملف للحصة')
+    const dlg = await T.until('منتقي الملف ظهر بزرّ الجهاز', `(() => {
+      const d = document.querySelector('[role="dialog"]');
+      if (!d) return 0;
+      const b = [...d.querySelectorAll('button')];
+      return b.some((x) => /من الجهاز/.test(x.textContent || '')) ? 1 : 0 })()`, 8000)
+    if (!dlg) throw new Error('لم يفتح المنتقي')
+    const sources = await T.eval(`(() => { const d = document.querySelector('[role="dialog"]');
+      return [...d.querySelectorAll('button')].map((b) => (b.textContent || '').trim().slice(0, 26)).join(' | ') })()`)
+    await T.clickSel('[role="dialog"] button[aria-label="إغلاق"]', 'إغلاق المنتقي')
+    await T.until('المنتقي أُغلق', `document.querySelector('[role="dialog"]') ? 0 : 1`, 6000)
+    return `الزرّ ${Math.round(at.w)}×${Math.round(at.h)} في الشريط السفلي · أزرار المنتقي: ${sources}`
+  })
+
+  await item('موبايل: السبورة تملأ المسرح والبلاطتان شريحتان جنبها، والقلم فوقها فيصل الطالب', async () => {
+    await asPhone()
+    await ensureLayout('board')
+    const m = await T.eval('window.__metrics()')
+    const area = m.stage.w * m.stage.h
+    if (!m.board || m.board.w * m.board.h < area * 0.5) {
+      throw new Error(`السبورة لا تملأ المسرح على الجوال: لوح ${m.board ? Math.round(m.board.w) + '×' + Math.round(m.board.h) : 'غير مرئي'} من مسرح ${Math.round(m.stage.w)}×${Math.round(m.stage.h)}`)
+    }
+    if (m.tiles.length < 2) throw new Error(`بلا بلاطتين لتصبحا شريحتين: ${JSON.stringify(m.tiles)}`)
+    const wide = m.tiles.filter((t) => t.w > 170)
+    if (wide.length) throw new Error(`البلاطات لم تصغر إلى شرائح: ${m.tiles.map((t) => Math.round(t.w)).join('/')} بكسل عرضًا`)
+    const dy = Math.abs(m.tiles[0].y - m.tiles[1].y)
+    const dx = Math.abs(m.tiles[0].x - m.tiles[1].x)
+    if (dy > 8 || dx < 20) throw new Error(`الشرائح ليست جنبًا إلى جنب (dy=${Math.round(dy)} dx=${Math.round(dx)})`)
+    await T.clickSel('button[data-tool="pen"]', 'زرّ القلم')
+    const before = await S.eval('window.__inkRegion(0, 1)')
     const batchesBefore = await outCount(T, '"op":"add"')
-    // سحبة قصيرة بحركة واحدة: كائن ذو طول، مُثبَّت محليًا وموضوع في طابور الدفعة (~50ms)
-    await T.dragBoard(0.3, 0.5, 0.34, 0.54, 1)
-    const committed = await region(T, 0, 1)
-    if (committed <= 0) throw new Error(`الأداة: السحب لم يُثبّت كائنًا (بكسل ${committed}) فالبند بلا معنى`)
+    await T.dragBoard(0.2, 0.3, 0.7, 0.45, 6)
+    // لمسة على مقاس جوال يجب أن تثبّت كائنًا محليًا أولًا: بلا هذا يُنسب فشل السحب
+    // إلى الوسائط لا إلى الأداة
+    const localPainted = await T.eval('window.__inkRegion(0, 1)')
+    if (localPainted <= 0) {
+      throw new Error(`سحب الموبايل لم يرسم عند المدرس نفسه (${localPainted} بكسل فوق لوح `
+        + `${Math.round(m.board.w)}×${Math.round(m.board.h)} عند ${Math.round(m.board.x)},${Math.round(m.board.y)}) `
+        + `وآخر لمسة: ${await T.eval('window.__lastHit()')} — الأداة لا النقل`)
+    }
+    const queued = (await outCount(T, '"op":"add"')) - batchesBefore
+    try {
+      await S.until('حبر المدرس على شاشة الطالب', `(window.__inkRegion(0, 1) > ${before}) ? 1 : 0`, 12000)
+    } catch (err) {
+      throw new Error(`${err.message} · مدرس ${localPainted} بكسل و${queued} دفعة صادرة `
+        + `· لوح المدرس ${JSON.stringify(m.board)} · لوح الطالب ${JSON.stringify((await S.eval('window.__metrics()')).board)} `
+        + `· تنبيه المدرس: «${await T.eval('window.__notice()')}» · كونسول: ${consoleErrors.slice(-2).join(' | ') || 'بلا'}`)
+    }
+    const reached = await S.eval('window.__inkRegion(0, 1)')
     await T.click('مسح')
-    await sleep(900)
-    const batchesAfter = await outCount(T, '"op":"add"')
-    const teacherAfter = await region(T, 0, 1)
-    const studentAfter = await region(S, 0, 1)
-    const late = batchesAfter - batchesBefore
-    if (late !== 0) {
-      throw new Error(`بعد قرار المسح أُرسلت ${late} دفعة شرح كان لا بد أن تُسقَط — الطالب يرى ${studentAfter} بكسل`
-        + ` والمدرس ${teacherAfter} · آخر add صادر: «${await T.eval(`window.__wsNorm(${JSON.stringify('"op":"add"')})`).then((x) => x.slice(0, 130))}»`)
+    await T.until('لوح المدرس فاضي', 'window.__inkRegion(0, 1) === 0 ? 1 : 0', 10000)
+    await S.until('لوح الطالب فاضي', 'window.__inkRegion(0, 1) === 0 ? 1 : 0', 10000)
+    return `لوح ${Math.round(m.board.w)}×${Math.round(m.board.h)} يملأ ${Math.round((m.board.w * m.board.h / area) * 100)}% من المسرح · شرائح ${m.tiles.map((t) => Math.round(t.w)).join('/')} · القلم وصل (${reached} بكسل) ثم مسح نظّف الطرفين`
+  })
+
+  await item('موبايل: كل أداة تصلها إصبع داخل شريط واحد لا مقطوعة عن الشاشة', async () => {
+    await asPhone()
+    await ensureLayout('board')
+    const strip = await T.eval(`(() => {
+      const c = document.querySelector('[data-tool-caption]');
+      if (!c) return null;
+      const row = c.closest('div');
+      const rr = row.getBoundingClientRect();
+      const btns = [...document.querySelectorAll('button[data-tool]')].map((b) => {
+        b.scrollIntoView({ block: 'nearest', inline: 'center' });
+        const r = b.getBoundingClientRect();
+        return { tool: b.getAttribute('data-tool'), x: r.x, y: r.y, w: r.width, h: r.height };
+      });
+      return { rowH: rr.height, scrollW: row.scrollWidth, clientW: row.clientWidth,
+               clipped: btns.filter((b) => b.x < 0 || b.x + b.w > window.innerWidth),
+               small: btns.filter((b) => b.w < 40 || b.h < 40), n: btns.length };
+    })()`)
+    if (!strip) throw new Error('الأداة: لا شريط شرح في الصفحة (لا [data-tool-caption]) — فلا أدوات ليُقاس شريطها')
+    if (strip.clipped.length) {
+      throw new Error(`${strip.clipped.length}/${strip.n} من أدوات الشرح خارج الشاشة على الجوال `
+        + `(${strip.clipped.map((b) => b.tool + '@' + Math.round(b.x)).join(', ')}) — شريطٌ يلتفّ ولا يتمدّد، `
+        + `وعرضه المحسوب ${strip.scrollW} في ${strip.clientW}`)
     }
-    if (teacherAfter !== 0 || studentAfter !== 0) {
-      throw new Error(`المسح لم يُفرغ اللوح في الطرفين (${teacherAfter}/${studentAfter}) مع صفر دفعات متأخرة`)
+    if (strip.small.length) throw new Error(`أزرار أصغر من إصبع: ${strip.small.map((b) => b.tool + ' ' + Math.round(b.w) + '×' + Math.round(b.h)).join(', ')}`)
+    if (strip.rowH > 64) throw new Error(`شريط الأدوات صار ${Math.round(strip.rowH)}px ارتفاعًا (يلتفّ) فيأكل ارتفاع اللوح`)
+    return `${strip.n} أدوات كلها داخل الشاشة، زرّ 42px، وشريط بارتفاع ${Math.round(strip.rowH)}px`
+  })
+
+  await item('موبايل: شارة الأداة الجارية تسمّي ما في الإصبع وتتبدّل بالنقر', async () => {
+    await asPhone()
+    await ensureLayout('board')
+    const before = await T.eval('window.__caption()')
+    if (!before) throw new Error('لا شارة أداة جارية في الشجرة ([data-tool-caption]) — فالوضع الحالي للتلقين غير معلن')
+    if (!before.shown) throw new Error('شارة الأداة الجارية غير مرسومة على الجوال: المدرس لا يعرف أي وضع دخل بإصبعه')
+    await T.clickSel('button[data-tool="rect"]', 'زرّ المستطيل')
+    const after = await T.eval('window.__caption()')
+    if (after.tool !== 'rect') throw new Error(`النقر على المستطيل ترك الشارة ${after.tool} — الشارة لا تتبع الأداة`)
+    if (!after.text || after.text === before.text) {
+      throw new Error(`الشارة ظلّت «${before.text}» بعد تغيير الأداة، ونصّها الآن «${after.text}»`)
     }
-    return `كائن مثبَّت (${committed} بكسل) أُسقطت دفعته · والمدرس 0 والطالب 0`
+    await T.clickSel('button[data-tool="pen"]', 'ردّ الأداة إلى القلم')
+    return `«${before.text}» → «${after.text}» بشارة ظاهرة عند ${await T.eval('window.innerWidth')}px`
+  })
+
+  await item('أدوات الشرح على الحاسوب: لكل أداة رسمتها الكبيرة واسمها مكتوب بجوارها', async () => {
+    phoneReady = false
+    await T.setMobile(false)
+    await ensureLayout('grid')
+    const btns = await T.eval('window.__toolButtons()')
+    if (btns.length < 8) throw new Error(`عدد أدوات الشرح ${btns.length} — الشريط لم يُبنَ كاملًا`)
+    const glyphs = new Set(btns.map((b) => b.glyph))
+    if (glyphs.size !== btns.length) {
+      throw new Error(`${btns.length} أدوات بـ ${glyphs.size} رسمة فقط: أدوات تحمل الرسم نفسه فيقرؤها المدرس غلطًا `
+        + `(${btns.map((b) => b.tool + '=' + b.glyph.slice(0, 12)).join(', ')})`)
+    }
+    const tiny = btns.filter((b) => b.glyphW < 18)
+    if (tiny.length) throw new Error(`رسومات أصغر من 18px تُقرأ علامات عامة لا أدوات: ${tiny.map((b) => b.tool + ' ' + b.glyphW + 'px').join(', ')}`)
+    const unnamed = btns.filter((b) => !b.text || !b.textShown)
+    if (unnamed.length) throw new Error(`بلا اسم مكتوب على الحاسوب: ${unnamed.map((b) => b.tool).join(', ')}`)
+    const small = btns.filter((b) => b.btnH < 40)
+    if (small.length) throw new Error(`أزرار أصغر من 40px: ${small.map((b) => b.tool + ' ' + b.btnH).join(', ')}`)
+    return `${btns.length} رسمة متمايزة (${btns[0].glyphW}px) داخل أزرار ${btns[0].btnW}×${btns[0].btnH} وأسماء: ${btns.map((b) => b.text).join('، ')}`
   })
 
   const shots = join(tmpdir(), `edu-room-shots-${RUN}`)

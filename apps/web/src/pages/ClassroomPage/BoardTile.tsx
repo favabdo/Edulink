@@ -1,22 +1,13 @@
 import {
   ChevronLeft,
   ChevronRight,
-  Circle,
-  Eraser,
   FilePlus2,
-  Highlighter,
   Maximize2,
   Minimize2,
-  Minus,
-  MoveUpRight,
-  Pen,
   PenOff,
-  Redo2,
-  Square,
-  Type,
   X,
 } from 'lucide-react'
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { measureDoc, paintDoc, type SharedDoc } from '../../features/meeting/documents'
 import type { Annotation, AnnotationTool, BoardTool } from '../../features/meeting/whiteboard'
@@ -28,6 +19,18 @@ import {
   drawAnnotation,
   hitAnnotation,
 } from '../../features/meeting/whiteboard'
+import {
+  ArrowGlyph,
+  ClearGlyph,
+  EllipseGlyph,
+  EraserGlyph,
+  HighlighterGlyph,
+  LineGlyph,
+  PenGlyph,
+  RectGlyph,
+  TextGlyph,
+  UndoGlyph,
+} from './ToolIcons'
 import styles from './ClassroomPage.module.css'
 
 /**
@@ -86,15 +89,16 @@ function nextId(): string {
   return `a${Date.now().toString(36)}-${idSeq}`
 }
 
-const TOOL_ICONS: Record<BoardTool, typeof Pen> = {
-  pen: Pen,
-  highlighter: Highlighter,
-  line: Minus,
-  arrow: MoveUpRight,
-  rect: Square,
-  ellipse: Circle,
-  text: Type,
-  eraser: Eraser,
+/** الأداة → رسمتها. المفتاح هو اسم الأداة نفسه، فلا قائمة ثانية تُنسى عند إضافة أداة */
+const TOOL_GLYPHS: Record<BoardTool, (props: { size?: number }) => ReactElement> = {
+  pen: PenGlyph,
+  highlighter: HighlighterGlyph,
+  line: LineGlyph,
+  arrow: ArrowGlyph,
+  rect: RectGlyph,
+  ellipse: EllipseGlyph,
+  text: TextGlyph,
+  eraser: EraserGlyph,
 }
 
 export const BoardTile = forwardRef<BoardHandle, Props>(function BoardTile(
@@ -376,12 +380,13 @@ export const BoardTile = forwardRef<BoardHandle, Props>(function BoardTile(
         )}
         <div className={styles.toolRow} role="group" aria-label={t('classroom:board.tools')}>
           {BOARD_TOOLBAR.map((value) => {
-            const Icon = TOOL_ICONS[value]
+            const Glyph = TOOL_GLYPHS[value]
             const active = tool === value
             return (
               <button
                 key={value}
                 type="button"
+                data-tool={value}
                 className={`${styles.toolBtn} ${active ? styles.toolActive : ''}`}
                 aria-pressed={active}
                 disabled={!canWrite}
@@ -389,7 +394,8 @@ export const BoardTile = forwardRef<BoardHandle, Props>(function BoardTile(
                 title={t(`classroom:tool.${value}`)}
                 onClick={() => onTool(value)}
               >
-                <Icon size={15} aria-hidden="true" />
+                <Glyph size={22} />
+                <span className={styles.toolLabel}>{t(`classroom:tool.${value}`)}</span>
               </button>
             )
           })}
@@ -401,8 +407,12 @@ export const BoardTile = forwardRef<BoardHandle, Props>(function BoardTile(
             title={t('classroom:tool.undo')}
             onClick={onUndo}
           >
-            <Redo2 size={15} aria-hidden="true" style={{ transform: 'scaleX(-1)' }} />
+            <UndoGlyph size={22} />
+            <span className={styles.toolLabel}>{t('classroom:tool.undo')}</span>
           </button>
+          {/* على الموبايل تُخفى الأسماء فلا بدّ من سطر واحد يقول الأداة الجارية:
+              بلاهُ لا يعرف المدرس أي وضع دخل بإصبعه */}
+          <span className={styles.toolNow} data-tool-caption={tool} aria-hidden="true">{t(`classroom:tool.${tool}`)}</span>
         </div>
         <div className={styles.boardColors} role="group" aria-label={t('classroom:board.color')}>
           {BOARD_COLORS.map((value) => (
@@ -461,8 +471,8 @@ export const BoardTile = forwardRef<BoardHandle, Props>(function BoardTile(
           </button>
         )}
         {canHost && (
-          <button type="button" className={styles.boardBtn} onClick={onClear}>
-            <Eraser size={15} aria-hidden="true" />
+          <button type="button" data-board-clear="" className={styles.boardBtn} onClick={onClear}>
+            <ClearGlyph size={16} />
             {t('classroom:board.clear')}
           </button>
         )}

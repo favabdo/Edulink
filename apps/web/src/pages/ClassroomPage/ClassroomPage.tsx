@@ -4,6 +4,7 @@ import {
   Check,
   Circle,
   Expand,
+  FilePlus2,
   Hand,
   LayoutGrid,
   Lock,
@@ -114,8 +115,17 @@ export function ClassroomPage() {
   const [facing, setFacing] = useState<CameraFacing>('user')
   const [handRaised, setHandRaised] = useState(false)
   const [sharingScreen, setSharingScreen] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(true)
+  /** على الموبايل اللوحة طبقة فوق المسرح لا جنبه: فتحها الافتراضي كان يغطي
+   *  البلاطات كلها (قيس: اللمسة على الشريحة كانت تصل قائمة المحادثة). */
+  const [panelOpen, setPanelOpen] = useState(() => !window.matchMedia('(max-width: 980px)').matches)
   const [panelTab, setPanelTab] = useState<PanelTab>('chat')
+  /** نفس حدّ CSS: اللوحة تُغطّي المسرح حين تضيق الشاشة، فلا تُترك مفتوحة من تلقائها */
+  useEffect(() => {
+    const narrow = window.matchMedia('(max-width: 980px)')
+    const close = (state: MediaQueryListEvent) => { if (state.matches) setPanelOpen(false) }
+    narrow.addEventListener('change', close)
+    return () => narrow.removeEventListener('change', close)
+  }, [])
   const [draft, setDraft] = useState('')
   const [boardTool, setBoardTool] = useState<BoardTool>(DEFAULT_TOOL)
   const [boardColor, setBoardColor] = useState<string>(DEFAULT_COLOR)
@@ -629,7 +639,7 @@ export function ClassroomPage() {
             </div>
           )}
 
-          {pin !== 'auto' && (
+          {pin !== 'auto' && !boardLarge && (
             <button type="button" className={styles.unpin} onClick={() => setPin('auto')}>
               <Minimize2 size={14} aria-hidden="true" />
               {t('classroom:controls.backToStage')}
@@ -819,10 +829,26 @@ export function ClassroomPage() {
             <Monitor size={19} aria-hidden="true" />
             <span>{t('classroom:controls.screen')}</span>
           </button>
-        ) : (
+        ) : isHost ? null : (
           <button type="button" className={styles.ctrl} onClick={() => showNotice(t('classroom:share.unsupported'))} aria-disabled="true">
             <Monitor size={19} aria-hidden="true" />
             <span>{t('classroom:controls.screenUnavailable')}</span>
+          </button>
+        )}
+        {/* مشاركة الملف كانت داخل شريط أدوات الشرح وحده: على الموبايل ذلك الشريط
+            خارج الشاشة فيصير الزر «اتشال» عند المدرس. فالمسار من شريط التحكم. */}
+        {isHost && (
+          <button
+            type="button"
+            data-share-file=""
+            className={`${styles.ctrl} ${doc ? styles.ctrlHand : ''}`}
+            onClick={() => setPickerOpen(true)}
+            aria-pressed={doc !== null}
+            aria-label={t('classroom:controls.shareFile')}
+            title={t('classroom:controls.shareFile')}
+          >
+            <FilePlus2 size={19} aria-hidden="true" />
+            <span>{t('classroom:controls.shareFile')}</span>
           </button>
         )}
         <button type="button" className={`${styles.ctrl} ${handRaised ? styles.ctrlHand : ''}`} onClick={toggleHand} aria-pressed={handRaised}>
@@ -830,7 +856,7 @@ export function ClassroomPage() {
           <span>{t('classroom:controls.hand')}</span>
         </button>
         {isHost && (
-          <button type="button" className={`${styles.ctrl} ${stage !== 'video' ? styles.ctrlHand : ''}`} onClick={() => pushStage(stage === 'video' ? 'board' : 'video')} aria-pressed={stage !== 'video'}>
+          <button type="button" data-stage-toggle="" className={`${styles.ctrl} ${stage !== 'video' ? styles.ctrlHand : ''}`} onClick={() => pushStage(stage === 'video' ? 'board' : 'video')} aria-pressed={stage !== 'video'}>
             {stage === 'video' ? <Pen size={19} aria-hidden="true" /> : <LayoutGrid size={19} aria-hidden="true" />}
             <span>{t(stage === 'video' ? 'classroom:controls.board' : 'classroom:controls.boardClose')}</span>
           </button>
@@ -996,7 +1022,11 @@ function Tile({
   const initials = name.trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('')
 
   return (
-    <figure ref={boxRef} className={`${styles.tile} ${compact ? styles.tileCompact : ''} ${enlarged ? styles.tileLarge : ''}`}>
+    <figure
+      ref={boxRef}
+      data-self={self ? 'on' : undefined}
+      className={`${styles.tile} ${compact ? styles.tileCompact : ''} ${enlarged ? styles.tileLarge : ''}`}
+    >
       <video
         ref={videoRef}
         className={`${styles.tileVideo} ${hasVideo ? '' : styles.tileVideoIdle}`}

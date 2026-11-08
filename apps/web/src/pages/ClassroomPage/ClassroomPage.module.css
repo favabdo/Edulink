@@ -435,13 +435,26 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: calc(30 * var(--u));
-  height: calc(30 * var(--u));
+  gap: calc(6 * var(--u));
+  min-width: calc(40 * var(--u));
+  height: calc(40 * var(--u));
+  padding: 0 calc(10 * var(--u));
   border: 1px solid var(--dash-border);
   background: var(--dash-card);
   color: var(--dash-heading);
   border-radius: calc(8 * var(--u));
   cursor: pointer;
+}
+
+/* اسم الأداة مكتوب بجوار رسمتها: الظلّ وحده لا يكفي حين تكون النقرة بإصبع */
+.toolLabel {
+  font-size: calc(12.5 * var(--u));
+  white-space: nowrap;
+}
+
+/* الأداة الجارية: يظهر حيث تُخفى الأسماء (الموبايل) لا يكرر شيئًا على الحاسوب */
+.toolNow {
+  display: none;
 }
 
 .toolBtn:disabled {
@@ -583,8 +596,9 @@
 
 .stageGrid[data-layout='board'],
 .stageGrid[data-layout='peer'] {
-  /* auto-fit لا auto-fill: الفارغ يُطوى فلا تلصق البلاطات في ركن المسرح */
-  grid-template-columns: repeat(auto-fit, minmax(clamp(110px, 15vw, 190px), 240px));
+  /* auto-fit لا auto-fill: الفارغ يُطوى فلا تلصق البلاطات في ركن المسرح.
+     السقف صغير عمدًا: ما على المسرح سطح واحد، والبلاطات شرائح رجوع لا مشاهد. */
+  grid-template-columns: repeat(auto-fit, minmax(clamp(96px, 11vw, 132px), 176px));
   grid-template-rows: minmax(0, 1fr) auto;
   align-content: stretch;
   justify-content: center;
@@ -1273,47 +1287,139 @@
   text-decoration: none;
 }
 
-/* ---------------- التجاوب ---------------- */
+/* ---------------- التجاوب: نموذج زووم على الموبايل ----------------
+   على الموبايل لا يُرجى «ملء شاشة» من المتصفح: أندرويد يرفضه إلا مع gesture
+   موثوق، والرفض كان يظهر للمدرس كزرّ ميت. فالملء هنا قرار تخطيط لا استجابة
+   متصفح: سطح واحد يملأ المسرح، والباقي شرائح في الركن. */
 @media (max-width: 980px) {
-  .stageGrid {
-    grid-template-columns: min(92%, calc(38dvh * 16 / 9));
-    grid-template-rows: none;
-    grid-auto-rows: auto;
-    align-content: start;
-    overflow-y: auto;
+  .stage {
+    padding: 8px;
   }
 
+  .stageGrid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 8px;
+    overflow: hidden; /* لا عمود تمرير: ما يخرج عن المسرح لا يوجد */
+    align-content: stretch;
+    justify-items: stretch;
+  }
+
+  .stageGrid .tile {
+    height: 100%;
+    aspect-ratio: auto;
+    width: 100%;
+  }
+
+  /* فيديو فقط: البعيد يملأ، وصورتك شريحة في الركن تُنقر فتتبادلا المكان */
+  .stageGrid[data-layout='grid'] .tile {
+    grid-area: 1 / 1;
+  }
+
+  .stageGrid[data-layout='grid'] .tile[data-self] {
+    width: clamp(88px, 27vw, 132px);
+    height: auto;
+    aspect-ratio: 16 / 9;
+    justify-self: end;
+    align-self: start;
+    z-index: 3;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  }
+
+  /* السطح الذي ليس على المسرح لا يُعرض شريطًا صغيرًا على شاشة ضيقة */
+  .stageGrid[data-layout='grid'] .boardCell,
+  .stageGrid[data-layout='peer'] .boardCell {
+    display: none;
+  }
+
+  /* السبورة/الملف على المسرح: يملأ، وبلاطتا الفيديو شريحتان جنبًا إلى جنب تحته */
   .stageGrid[data-layout='board'],
   .stageGrid[data-layout='peer'] {
-    grid-template-columns: min(94%, calc(52dvh * 16 / 9));
-    grid-template-rows: minmax(0, 1fr);
-    grid-auto-rows: minmax(96px, 22dvh);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) auto;
   }
 
-  .stageGrid[data-layout='board'] .boardCell,
-  .stageGrid[data-layout='peer'] .boardCell {
-    grid-column: 1;
+  .stageGrid[data-layout='board'] .boardCell {
+    grid-column: 1 / -1;
     grid-row: 1;
-    min-height: min(52dvh, 340px);
-    order: -1;
+    height: auto;
+    min-height: 0;
+    order: 0;
   }
 
   .stageGrid[data-layout='board'] .tile,
-  .stageGrid[data-layout='peer'] .tile,
+  .stageGrid[data-layout='peer'] .tile {
+    grid-row: 2;
+    width: 100%;
+    max-width: 150px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    justify-self: center;
+  }
+
   .stageGrid[data-layout='peer'] .tileLarge {
-    grid-column: 1;
-    grid-row: auto;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    max-height: 100%;
+  }
+
+  /* شريط الشرح يمتد أفقيًا لا رأسيًا: الالتفاف كان يجعل أداتين تختفيان خلف البلاطة */
+  .boardTools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 6px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .boardTools > * {
+    flex: none;
+  }
+
+  .toolLabel,
+  .tileFull {
+    display: none; /* لا مساحة للنص تحت الإصبع، ولا fullscreen يُرفض على الشاشة */
+  }
+
+  .toolBtn,
+  .widthBtn {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0;
+  }
+
+  .toolNow {
+    display: inline-flex;
+    align-items: center;
+    height: 42px;
+    padding: 0 calc(12 * var(--u));
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .colorDot {
+    width: 30px;
+    height: 30px;
   }
 
   /* لا hover على اللمس: الزر يجب أن يُرى وإلا لا يعرف اللمس أن البلاطة قابلة للتكبير */
-  .tileEnlarge,
-  .tileFull {
+  .tileEnlarge {
     opacity: 1;
+    width: 34px;
+    height: 34px;
   }
 
   .unpin {
-    inset-block-end: 10px;
-    inset-block-start: auto;
+    inset-block-start: 8px;
+    inset-inline-start: 8px;
+    inset-block-end: auto;
+    inset-inline-end: auto;
   }
 
   .panel {
@@ -1332,8 +1438,47 @@
 }
 
 @media (max-width: 640px) {
+  /* شريط واحد يُمسح بإصبع لا كتلتان تأكلان ارتفاع المسرح */
+  .controls {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .top {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topInfo {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  /* السطر الواحد يكفي: بلا هذا ينكسر الكود نفسه إلى سطرين («EL-» / «4564») */
+  .code,
+  .subject,
+  .timer,
+  .status,
+  .count,
+  .leaveTop {
+    white-space: nowrap;
+  }
+
+  .noRec {
+    display: none; /* بلاغ «لا تسجيل» ثابت على الحاسوب؛ هنا كل سطر = ارتفاع للسبورة */
+  }
+
   .ctrl {
-    min-width: 58px;
+    flex: none;
+    min-width: 54px;
+    min-height: 44px;
     padding: 8px;
   }
 

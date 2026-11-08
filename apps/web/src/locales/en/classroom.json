@@ -93,6 +93,7 @@
     "micBlocked": "Muted by the teacher",
     "cameraBlocked": "Camera stopped by the teacher",
     "screenUnavailable": "Screen share on computer",
+    "shareFile": "File on stage",
     "board": "Whiteboard",
     "boardClose": "Video",
     "backToStage": "Back to the teacher's stage",

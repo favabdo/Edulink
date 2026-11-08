@@ -63,7 +63,7 @@
   },
   "tool": {
     "pen": "قلم",
-    "highlighter": "ناسر",
+    "highlighter": "مظلل",
     "line": "خط",
     "arrow": "سهم",
     "rect": "مستطيل",
@@ -93,6 +93,7 @@
     "micBlocked": "الكتم بأمر المدرس",
     "cameraBlocked": "الكاميرا موقوفة بأمر المدرس",
     "screenUnavailable": "مشاركة الشاشة على الحاسوب",
+    "shareFile": "ملف للحصة",
     "board": "السبورة",
     "boardClose": "الفيديو",
     "backToStage": "رجوع لتحكم المدرس",
